@@ -6,12 +6,22 @@ export interface User {
     avatar: string;
     role: 'user' | 'admin' | 'staff';
     balance: number;
+    zyncPoints: number;
     tier: 'Standard' | 'Gold' | 'Platinum';
+    cards: PaymentMethod[];
     stats: {
         orders: number;
         spent: number;
         nights: number;
     };
+}
+
+export interface PaymentMethod {
+    id: string;
+    type: 'visa' | 'mastercard' | 'amex';
+    last4: string;
+    expiry: string;
+    holderName: string;
 }
 
 export interface Establishment {
@@ -55,7 +65,12 @@ export const MOCK_USERS: User[] = [
         avatar: 'https://i.pravatar.cc/150?u=frank',
         role: 'user',
         balance: 15000,
+        zyncPoints: 2450,
         tier: 'Gold',
+        cards: [
+            { id: 'c1', type: 'visa', last4: '4242', expiry: '12/26', holderName: 'FRANK YANEZ' },
+            { id: 'c2', type: 'mastercard', last4: '8899', expiry: '09/25', holderName: 'FRANK YANEZ' }
+        ],
         stats: {
             orders: 12,
             spent: 154000,

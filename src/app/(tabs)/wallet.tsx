@@ -1,226 +1,342 @@
 import { useZync } from '@/application/ZyncContext';
+import { MOCK_USERS, PaymentMethod } from '@/infrastructure/mock-data';
 import { ScreenLayout } from '@/presentation/components/ScreenLayout';
+import { AddCardSheet } from '@/presentation/components/sheets/AddCardSheet';
 import { ThemedText } from '@/presentation/components/themed-text';
-import { CyberCard } from '@/presentation/components/ui/CyberCard';
-import { NeonButton } from '@/presentation/components/ui/NeonButton';
+import { PaymentCard } from '@/presentation/components/ui/PaymentCard';
 import { ZyncTheme } from '@/shared/constants/theme';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import BottomSheet from '@gorhom/bottom-sheet';
+import React, { useRef, useState } from 'react';
+import { Dimensions, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import Animated, { interpolate, SharedValue, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
+
 
 export default function WalletScreen() {
-    const router = useRouter();
-    const { updateBalance, authState } = useZync();
-    const [selectedAmount, setSelectedAmount] = useState<number | null>(20000);
-    const [customAmount, setCustomAmount] = useState('');
+    const { width } = Dimensions.get('window');
+    const ITEM_SIZE = width * 0.75;
+    const SPACING = 15;
+    const EMPTY_ITEM_SIZE = (width - ITEM_SIZE) / 2;
 
-    const amounts = [10000, 20000, 50000];
+    const { authState } = useZync();
+    const user = authState.user || MOCK_USERS[0];
+    const points = user.zyncPoints || 0;
 
-    const handleCharge = () => {
-        const amount = selectedAmount || parseInt(customAmount) || 0;
-        if (amount > 0) {
-            updateBalance((authState.user?.balance || 0) + amount);
-            router.back();
-        }
+    const [cards, setCards] = useState<PaymentMethod[]>(user.cards || []);
+    const bottomSheetRef = useRef<BottomSheet>(null);
+    const scrollX = useSharedValue(0);
+
+    const scrollHandler = useAnimatedScrollHandler(event => {
+        scrollX.value = event.contentOffset.x;
+    });
+
+    const handleAddCard = (newCardData: any) => {
+        const newCard: PaymentMethod = {
+            id: `c${Date.now()}`,
+            type: 'mastercard',
+            last4: newCardData.cardNumber.slice(-4) || '0000',
+            expiry: newCardData.expiry || '00/00',
+            holderName: newCardData.holderName.toUpperCase() || 'USER'
+        };
+        setCards([...cards, newCard]);
     };
 
+    const [customAmount, setCustomAmount] = useState('');
+
+    const openAddCardSheet = () => {
+        bottomSheetRef.current?.expand();
+    };
+
+    const carouselData = [...cards, { id: 'add-btn', type: 'add' } as any];
+
     return (
-        <ScreenLayout style={styles.container}>
-            {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="chevron-back" size={28} color={ZyncTheme.colors.text} />
-                </TouchableOpacity>
-                <ThemedText style={styles.headerTitle}>CARGAR SALDO</ThemedText>
-                <View style={{ width: 28 }} />
-            </View>
+        <ScreenLayout noPadding>
+            <Animated.ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                <View style={styles.container}>
 
-            <View style={styles.content}>
-                {/* Select Amount */}
-                <ThemedText style={styles.sectionTitle}>SELECCIONA UN MONTO</ThemedText>
-                <View style={styles.amountGrid}>
-                    {amounts.map((amount) => {
-                        const isSelected = selectedAmount === amount;
-                        return (
-                            <TouchableOpacity
-                                key={amount}
-                                style={[
-                                    styles.amountCard,
-                                    isSelected && styles.amountCardSelected
-                                ]}
-                                onPress={() => {
-                                    setSelectedAmount(amount);
-                                    setCustomAmount('');
-                                }}
-                            >
-                                <ThemedText style={[
-                                    styles.amountText,
-                                    isSelected && styles.amountTextSelected
-                                ]}>
-                                    ${amount / 1000}k
-                                </ThemedText>
-                            </TouchableOpacity>
-                        );
-                    })}
-                </View>
-
-                {/* Custom Amount */}
-                <ThemedText style={styles.sectionTitle}>OTRO MONTO</ThemedText>
-                <CyberCard style={styles.customAmountContainer}>
-                    <ThemedText style={styles.currencySymbol}>$</ThemedText>
-                    <TextInput
-                        style={styles.customInput}
-                        value={customAmount}
-                        onChangeText={(text) => {
-                            setCustomAmount(text);
-                            setSelectedAmount(null);
-                        }}
-                        placeholder="0"
-                        placeholderTextColor={ZyncTheme.colors.textSecondary}
-                        keyboardType="numeric"
-                    />
-                </CyberCard>
-
-                {/* Payment Method */}
-                <ThemedText style={styles.sectionTitle}>MÉTODO DE PAGO</ThemedText>
-                <CyberCard style={styles.paymentCard}>
-                    <View style={styles.cardInfo}>
-                        <View style={styles.cardIcon}>
-                            <View style={styles.visaChip} />
-                            <ThemedText style={{ fontSize: 10, fontWeight: 'bold', color: 'white', marginTop: 14 }}>VISA</ThemedText>
+                    {/* Points Section */}
+                    <View style={styles.pointsContainer}>
+                        <ThemedText style={styles.pointsLabel}>ZYNC POINTS</ThemedText>
+                        <View style={styles.pointsValueContainer}>
+                            <ThemedText style={styles.pointsValue}>{points.toLocaleString()}</ThemedText>
+                            <ThemedText style={styles.pointsSub}>pts</ThemedText>
                         </View>
-                        <View>
-                            <ThemedText style={styles.cardTitle}>Visa ****4589</ThemedText>
-                            <ThemedText style={styles.cardSubtitle}>Crédito • Banco de Chile</ThemedText>
+                        <ThemedText style={styles.pointsDesc}>Earned from your payments</ThemedText>
+                    </View>
+
+                    {/* Cards Carousel */}
+                    <View style={styles.carouselContainer}>
+                        <ThemedText style={styles.sectionTitle}>MY WALLET</ThemedText>
+                        <Animated.FlatList
+                            data={carouselData}
+                            keyExtractor={item => item.id}
+                            renderItem={({ item, index }) => (
+                                <WalletCarouselItem
+                                    item={item}
+                                    index={index}
+                                    scrollX={scrollX}
+                                    itemSize={ITEM_SIZE}
+                                    onPressAdd={openAddCardSheet}
+                                    onPressCard={() => { }}
+                                />
+                            )}
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={{
+                                paddingHorizontal: EMPTY_ITEM_SIZE,
+                                paddingVertical: 20
+                            }}
+                            snapToInterval={ITEM_SIZE}
+                            decelerationRate={0.8}
+                            bounces={false}
+                            onScroll={scrollHandler}
+                            scrollEventThrottle={16}
+                        />
+                    </View>
+
+                    {/* Top Up Section */}
+                    <View style={styles.topUpContainer}>
+                        <ThemedText style={styles.sectionTitle}>QUICK TOP UP</ThemedText>
+
+                        <View style={styles.presetRow}>
+                            {['$10', '$50', '$100'].map((amount) => (
+                                <TouchableOpacity
+                                    key={amount}
+                                    style={styles.presetButton}
+                                    activeOpacity={0.7}
+                                    onPress={() => setCustomAmount(amount.replace('$', ''))}
+                                >
+                                    <ThemedText style={styles.presetText}>{amount}</ThemedText>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+
+                        <View style={styles.inputWrapper}>
+                            <ThemedText style={styles.currencyPrefix}>$</ThemedText>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Enter custom amount"
+                                placeholderTextColor="#666"
+                                keyboardType="numeric"
+                                value={customAmount}
+                                onChangeText={setCustomAmount}
+                            />
                         </View>
                     </View>
-                    <Ionicons name="pencil" size={20} color={ZyncTheme.colors.primary} />
-                </CyberCard>
-            </View>
 
-            {/* Footer Action */}
-            <View style={styles.footer}>
-                <NeonButton
-                    title="CARGAR AHORA"
-                    onPress={handleCharge}
-                    icon={<Ionicons name="flash" size={20} color="black" />}
-                    textStyle={{ fontWeight: '900', fontSize: 18 }}
-                />
-            </View>
+                </View>
+            </Animated.ScrollView>
+
+            <AddCardSheet
+                bottomSheetRef={bottomSheetRef}
+                onAddCard={handleAddCard}
+            />
         </ScreenLayout>
     );
 }
 
+// Extracted component to safely use hooks
+interface WalletCarouselItemProps {
+    item: PaymentMethod | any;
+    index: number;
+    scrollX: SharedValue<number>;
+    itemSize: number;
+    onPressAdd: () => void;
+    onPressCard: (card: PaymentMethod) => void;
+}
+
+const WalletCarouselItem = ({ item, index, scrollX, itemSize, onPressAdd, onPressCard }: WalletCarouselItemProps) => {
+    // Reanimated style for scroll interpolation
+    const animatedStyle = useAnimatedStyle(() => {
+        const inputRange = [
+            (index - 1) * itemSize,
+            index * itemSize,
+            (index + 1) * itemSize,
+        ];
+
+        const scale = interpolate(
+            scrollX.value,
+            inputRange,
+            [0.85, 1, 0.85],
+            'clamp'
+        );
+
+        const opacity = interpolate(
+            scrollX.value,
+            inputRange,
+            [0.5, 1, 0.5],
+            'clamp'
+        );
+
+        const translateY = interpolate(
+            scrollX.value,
+            inputRange,
+            [10, 0, 10], // Slight floating effect for active card
+            'clamp'
+        );
+
+        return {
+            transform: [{ scale }, { translateY }],
+            opacity: opacity,
+            width: itemSize, // Explicit width
+        };
+    });
+
+    if (item.id === 'add-btn') {
+        return (
+            <Animated.View style={[{ alignItems: 'center' }, animatedStyle]}>
+                <PaymentCard
+                    isAddMode
+                    onPress={onPressAdd}
+                    style={styles.card}
+                />
+            </Animated.View>
+        );
+    }
+
+    return (
+        <Animated.View style={[{ alignItems: 'center' }, animatedStyle]}>
+            <PaymentCard
+                card={item}
+                onPress={() => onPressCard(item)}
+                style={styles.card}
+            />
+        </Animated.View>
+    );
+};
+
 const styles = StyleSheet.create({
     container: {
-        padding: ZyncTheme.spacing.m,
+        flex: 1,
+        paddingTop: 60,
+
     },
-    header: {
+    pointsContainer: {
+        alignItems: 'center',
+        marginBottom: 40,
+
+    },
+    pointsLabel: {
+        fontSize: 14,
+        color: ZyncTheme.colors.textSecondary,
+        letterSpacing: 2,
+        marginBottom: 8,
+
+    },
+    pointsValueContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: ZyncTheme.spacing.l,
+        justifyContent: 'center',
+
     },
-    backButton: {
-        padding: ZyncTheme.spacing.s,
+    pointsValue: {
+        textAlign: 'center',
+        fontSize: 64,
+        fontWeight: '900',
+        color: ZyncTheme.colors.primary,
+        textShadowColor: 'rgba(204, 255, 0, 0.5)',
+        textShadowOffset: { width: 0, height: 0 },
+        textShadowRadius: 20,
+        paddingTop: ZyncTheme.spacing.xxl,
     },
-    headerTitle: {
-        fontSize: ZyncTheme.typography.size.l,
+    pointsSub: {
+        fontSize: 24,
         fontWeight: 'bold',
-        letterSpacing: 1,
+        color: ZyncTheme.colors.primary,
+        marginLeft: 4,
     },
-    content: {
+    pointsDesc: {
+        fontSize: 12,
+        color: '#666',
+        marginTop: 8,
+    },
+    carouselContainer: {
         flex: 1,
     },
     sectionTitle: {
-        fontSize: ZyncTheme.typography.size.xs,
-        color: ZyncTheme.colors.textSecondary,
-        marginBottom: ZyncTheme.spacing.m,
-        marginTop: ZyncTheme.spacing.l,
-        letterSpacing: 1,
+        fontSize: 18,
         fontWeight: 'bold',
+        color: 'white',
+        letterSpacing: 1,
+        marginLeft: ZyncTheme.spacing.l,
+        marginBottom: ZyncTheme.spacing.m,
     },
-    amountGrid: {
+    carouselContent: {
+        paddingHorizontal: 20, // Center first item
+        paddingVertical: 20,
+        gap: 20,
+    },
+    cardWrapper: {
+        width: 400,
+        alignItems: 'center',
+    },
+    card: {
+        width: '100%',
+        height: 200,
+    },
+    scrollContent: {
+        paddingBottom: 100,
+    },
+    topUpContainer: {
+        marginTop: ZyncTheme.spacing.xl,
+        paddingHorizontal: ZyncTheme.spacing.l,
+    },
+    presetRow: {
         flexDirection: 'row',
-        gap: ZyncTheme.spacing.m,
+        justifyContent: 'space-between',
+        marginBottom: ZyncTheme.spacing.l,
+        gap: 12,
     },
-    amountCard: {
+    presetButton: {
         flex: 1,
-        aspectRatio: 1,
-        backgroundColor: ZyncTheme.colors.card,
-        borderRadius: ZyncTheme.borderRadius.m,
+        paddingVertical: 16,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        borderRadius: 12,
         alignItems: 'center',
         justifyContent: 'center',
         borderWidth: 1,
-        borderColor: ZyncTheme.colors.border,
+        borderColor: 'rgba(255,255,255,0.1)',
+        // Glow effect
+        shadowColor: ZyncTheme.colors.primary,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 4,
     },
-    amountCardSelected: {
-        backgroundColor: ZyncTheme.colors.primary,
-        borderColor: ZyncTheme.colors.primary,
-    },
-    amountText: {
-        fontSize: 24,
+    presetText: {
+        fontSize: 18,
         fontWeight: 'bold',
-        color: ZyncTheme.colors.text,
-    },
-    amountTextSelected: {
-        color: '#000000',
-    },
-    customAmountContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: ZyncTheme.spacing.l,
-        backgroundColor: ZyncTheme.colors.card, // Override CyberCard default usually same but ensuring specific style
-    },
-    currencySymbol: {
-        fontSize: 32,
         color: ZyncTheme.colors.primary,
-        marginRight: ZyncTheme.spacing.s,
-        fontWeight: 'bold',
+        textShadowColor: 'rgba(204, 255, 0, 0.5)',
+        textShadowRadius: 8,
     },
-    customInput: {
+    inputWrapper: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.3)',
+        borderWidth: 1,
+        borderColor: ZyncTheme.colors.primary,
+        borderRadius: 12,
+        paddingHorizontal: 16,
+        height: 56,
+        // Glow effect for input
+        shadowColor: ZyncTheme.colors.primary,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.2,
+        shadowRadius: 10,
+        elevation: 2,
+    },
+    currencyPrefix: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: ZyncTheme.colors.primary,
+        marginRight: 8,
+    },
+    input: {
         flex: 1,
-        fontSize: 32,
-        color: ZyncTheme.colors.textSecondary, // "0" color when placeholder? 
-        // Actual text color
+        fontSize: 20,
         fontWeight: 'bold',
-    },
-    paymentCard: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-    },
-    cardInfo: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: ZyncTheme.spacing.m,
-    },
-    cardIcon: {
-        width: 40,
-        height: 26,
-        backgroundColor: '#1a1a50',
-        borderRadius: 4,
-        padding: 2,
-        alignItems: 'flex-end',
-    },
-    visaChip: {
-        width: 6,
-        height: 4,
-        backgroundColor: '#f1c40f',
-        borderRadius: 1,
-        alignSelf: 'flex-start',
-        marginBottom: 2,
-    },
-    cardTitle: {
-        fontWeight: 'bold',
-        fontSize: ZyncTheme.typography.size.m,
-    },
-    cardSubtitle: {
-        fontSize: ZyncTheme.typography.size.xs,
-        color: ZyncTheme.colors.textSecondary,
-    },
-    footer: {
-        paddingVertical: ZyncTheme.spacing.m,
+        color: 'white',
+        letterSpacing: 1,
     }
 });
+
