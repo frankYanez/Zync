@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-import { MOCK_USERS, User } from '@/infrastructure/mock-data';
+import { Establishment, MOCK_USERS, User } from '@/infrastructure/mock-data';
 
 // User type imported from mock-data
 
@@ -15,6 +15,8 @@ type ZyncContextType = {
     login: (email: string) => Promise<boolean>;
     logout: () => Promise<void>;
     updateBalance: (amount: number) => void;
+    currentEstablishment: Establishment | null;
+    setEstablishment: (establishment: Establishment | null) => void;
 };
 
 const ZyncContext = createContext<ZyncContextType | undefined>(undefined);
@@ -25,6 +27,8 @@ export function ZyncProvider({ children }: { children: React.ReactNode }) {
         user: null,
         token: null,
     });
+
+    const [currentEstablishment, setEstablishment] = useState<Establishment | null>(null);
 
     // Mock initial loading or check storage
     useEffect(() => {
@@ -52,6 +56,7 @@ export function ZyncProvider({ children }: { children: React.ReactNode }) {
             user: null,
             token: null,
         });
+        setEstablishment(null);
     };
 
     const updateBalance = (amount: number) => {
@@ -64,7 +69,7 @@ export function ZyncProvider({ children }: { children: React.ReactNode }) {
     };
 
     return (
-        <ZyncContext.Provider value={{ authState, login, logout, updateBalance }}>
+        <ZyncContext.Provider value={{ authState, login, logout, updateBalance, currentEstablishment, setEstablishment }}>
             {children}
         </ZyncContext.Provider>
     );

@@ -20,6 +20,8 @@ export interface Establishment {
     location: string;
     image: string;
     theme: 'cyber' | 'retro' | 'industrial';
+    video: string;
+    rating: number;
 }
 
 export interface Song {
@@ -65,11 +67,55 @@ export const MOCK_USERS: User[] = [
 export const MOCK_ESTABLISHMENTS: Establishment[] = [
     {
         id: 'e1',
+        name: 'Brothers',
+        location: 'Sector 7, Neo-Santiago',
+        image: 'https://example.com/vertigo.jpg',
+        theme: 'cyber',
+        video: 'https://www.pexels.com/es-es/download/video/854128/',
+        rating: 4.5,
+
+    },
+    {
+        id: 'e2',
         name: 'Club Vertigo',
         location: 'Sector 7, Neo-Santiago',
         image: 'https://example.com/vertigo.jpg',
-        theme: 'cyber'
-    }
+        theme: 'cyber',
+        video: 'https://www.pexels.com/es-es/download/video/854128/',
+        rating: 4.5,
+
+    },
+    {
+        id: 'e3',
+        name: 'Ogham',
+        location: 'Sector 7, Neo-Santiago',
+        image: 'https://example.com/vertigo.jpg',
+        theme: 'cyber',
+        video: 'https://www.pexels.com/es-es/download/video/854128/',
+        rating: 4.5,
+
+    },
+    {
+        id: 'e4',
+        name: 'Harrys',
+        location: 'Sector 7, Neo-Santiago',
+        image: 'https://example.com/vertigo.jpg',
+        theme: 'cyber',
+        video: 'https://www.pexels.com/es-es/download/video/854128/',
+        rating: 4.5,
+
+    },
+    {
+        id: 'e5',
+        name: 'The Last',
+        location: 'Sector 7, Neo-Santiago',
+        image: 'https://example.com/vertigo.jpg',
+        theme: 'cyber',
+        video: 'https://www.pexels.com/es-es/download/video/854128/',
+        rating: 4.5,
+
+    },
+
 ];
 
 export const MOCK_SONGS: Song[] = [

@@ -2,28 +2,33 @@ import { useZync } from '@/application/ZyncContext';
 import { ScreenLayout } from '@/presentation/components/ScreenLayout';
 import { ThemedText } from '@/presentation/components/themed-text';
 import { CyberCard } from '@/presentation/components/ui/CyberCard';
+import { NeonModal } from '@/presentation/components/ui/NeonModal';
 import { ZyncTheme } from '@/shared/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React from 'react';
+import React, { useState } from 'react';
 import { Dimensions, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { authState } = useZync();
+  const { authState, currentEstablishment } = useZync();
   const balance = authState.user?.balance || 0;
+  const [modalVisible, setModalVisible] = useState(false);
 
   return (
     <ScreenLayout noPadding>
       <ScrollView contentContainerStyle={styles.scrollContent}>
 
         {/* Header Status */}
-        <View style={styles.header}>
+        <TouchableOpacity style={styles.header} onPress={() => setModalVisible(true)}>
           <View style={styles.statusDot} />
-          <ThemedText style={styles.statusText}>ESTÁS EN: CLUB VERTIGO</ThemedText>
-        </View>
+          <ThemedText style={styles.statusText}>
+            ESTÁS EN: {currentEstablishment ? currentEstablishment.name.toUpperCase() : 'SELECCIONAR LUGAR'}
+          </ThemedText>
+          <Ionicons name="chevron-down" size={12} color={ZyncTheme.colors.primary} style={{ marginLeft: 4 }} />
+        </TouchableOpacity>
 
         {/* Balance Section */}
         <View style={styles.balanceContainer}>
@@ -82,6 +87,11 @@ export default function HomeScreen() {
         </View>
 
       </ScrollView>
+
+      <NeonModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+      />
     </ScreenLayout>
   );
 }
