@@ -1,4 +1,5 @@
 import { useZync } from '@/application/ZyncContext';
+import { SpotifyTrack, spotifyService } from '@/infrastructure/spotify-service';
 import { ScreenLayout } from '@/presentation/components/ScreenLayout';
 import { ThemedText } from '@/presentation/components/themed-text';
 import { CyberCard } from '@/presentation/components/ui/CyberCard';
@@ -6,22 +7,33 @@ import { NeonButton } from '@/presentation/components/ui/NeonButton';
 import { NeonInput } from '@/presentation/components/ui/NeonInput';
 import { ZyncTheme } from '@/shared/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
-import React, { useState } from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
-
-import { MOCK_SONGS } from '@/infrastructure/mock-data';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, FlatList, Image, StyleSheet, View } from 'react-native';
 
 export default function BeatsScreen() {
     const { authState, updateBalance } = useZync();
     const [search, setSearch] = useState('');
+    const [songs, setSongs] = useState<SpotifyTrack[]>([]);
+    const [loading, setLoading] = useState(false);
 
-    const filteredSongs = MOCK_SONGS.filter(song =>
-        song.title.toLowerCase().includes(search.toLowerCase()) ||
-        song.artist.toLowerCase().includes(search.toLowerCase())
-    );
+    useEffect(() => {
+        const timeoutId = setTimeout(async () => {
+            if (search.length >= 2) {
+                setLoading(true);
+                const results = await spotifyService.searchTracks(search);
+                setSongs(results);
+                setLoading(false);
+            } else {
+                setSongs([]);
+            }
+        }, 500); // 500ms debounce
 
-    const handleRequest = (price: number) => {
-        // Logic to request and deduct balance
+        return () => clearTimeout(timeoutId);
+    }, [search]);
+
+    const handleRequest = (track: SpotifyTrack) => {
+        // fixed price for now, or dynamic based on logic
+        const price = 250;
         if ((authState.user?.balance || 0) >= price) {
             updateBalance((authState.user?.balance || 0) - price);
             // Show success toast/alert
@@ -30,21 +42,29 @@ export default function BeatsScreen() {
         }
     };
 
-    const renderItem = ({ item }: { item: typeof MOCK_SONGS[0] }) => (
+    const renderItem = ({ item }: { item: SpotifyTrack }) => (
         <CyberCard style={styles.songCard}>
             <View style={styles.songInfo}>
                 <View style={styles.coverArt}>
-                    {/* Placeholder for real image since remote images might need config */}
-                    <Ionicons name="musical-note" size={24} color={ZyncTheme.colors.textSecondary} />
+                    {item.album.images[0] ? (
+                        <Image
+                            source={{ uri: item.album.images[0].url }}
+                            style={{ width: '100%', height: '100%', borderRadius: 4 }}
+                        />
+                    ) : (
+                        <Ionicons name="musical-note" size={24} color={ZyncTheme.colors.textSecondary} />
+                    )}
                 </View>
                 <View style={styles.details}>
-                    <ThemedText style={styles.songTitle}>{item.title}</ThemedText>
-                    <ThemedText style={styles.artist}>{item.artist}</ThemedText>
+                    <ThemedText style={styles.songTitle} numberOfLines={1}>{item.name}</ThemedText>
+                    <ThemedText style={styles.artist} numberOfLines={1}>
+                        {item.artists.map(a => a.name).join(', ')}
+                    </ThemedText>
                 </View>
             </View>
             <NeonButton
-                title={`PEDIR X $${item.price.toLocaleString()}`}
-                onPress={() => handleRequest(item.price)}
+                title={`PEDIR X $250`}
+                onPress={() => handleRequest(item)}
                 textStyle={{ fontSize: 12, fontWeight: 'bold' }}
                 style={styles.requestButton}
             />
@@ -72,13 +92,31 @@ export default function BeatsScreen() {
                 />
             </View>
 
-            <FlatList
-                data={filteredSongs}
-                renderItem={renderItem}
-                keyExtractor={item => item.id}
-                contentContainerStyle={styles.listContent}
-                showsVerticalScrollIndicator={false}
-            />
+            {loading ? (
+                <View style={styles.centerContainer}>
+                    <ActivityIndicator size="large" color={ZyncTheme.colors.primary} />
+                </View>
+            ) : (
+                <FlatList
+                    data={songs}
+                    renderItem={renderItem}
+                    keyExtractor={item => item.id}
+                    contentContainerStyle={styles.listContent}
+                    showsVerticalScrollIndicator={false}
+                    ListEmptyComponent={
+                        search.length > 0 ? (
+                            <View style={styles.centerContainer}>
+                                <ThemedText style={styles.emptyText}>No se encontraron resultados</ThemedText>
+                            </View>
+                        ) : (
+                            <View style={styles.centerContainer}>
+                                <Ionicons name="musical-notes-outline" size={48} color={ZyncTheme.colors.textSecondary} style={{ opacity: 0.5 }} />
+                                <ThemedText style={styles.emptyText}>Busca tu música favorita</ThemedText>
+                            </View>
+                        )
+                    }
+                />
+            )}
         </ScreenLayout>
     );
 }
@@ -117,6 +155,17 @@ const styles = StyleSheet.create({
         gap: ZyncTheme.spacing.m,
         paddingBottom: 100,
     },
+    centerContainer: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingTop: 40,
+    },
+    emptyText: {
+        color: ZyncTheme.colors.textSecondary,
+        marginTop: 16,
+        fontSize: 16,
+    },
     songCard: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -131,6 +180,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: ZyncTheme.spacing.m,
         flex: 1,
+        marginRight: 8,
     },
     coverArt: {
         width: 48,
@@ -142,10 +192,12 @@ const styles = StyleSheet.create({
     },
     details: {
         justifyContent: 'center',
+        flex: 1,
     },
     songTitle: {
         fontWeight: 'bold',
         fontSize: ZyncTheme.typography.size.m,
+        color: 'white',
     },
     artist: {
         color: ZyncTheme.colors.textSecondary,
@@ -154,5 +206,6 @@ const styles = StyleSheet.create({
     requestButton: {
         height: 36,
         paddingHorizontal: ZyncTheme.spacing.m,
+        minWidth: 100,
     }
 });
