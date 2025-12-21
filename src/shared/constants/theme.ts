@@ -42,6 +42,13 @@ export const ZyncTheme = {
     l: 16,
     xl: 24,
     round: 9999,
+  },
+  shadowGlow: {
+    shadowColor: '#CCFF00',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 20,
+    elevation: 10,
   }
 };
 

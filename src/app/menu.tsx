@@ -8,12 +8,7 @@ import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { FlatList, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
-const DRINKS = [
-    { id: '1', name: 'Neon Noir', description: 'Gin, blackberry liqueur, lemon, tonic, activated charcoal foam.', price: 12, image: 'https://example.com/neon-noir.jpg' },
-    { id: '2', name: 'Cyber Sour', description: 'Pisco, lime, egg white, neon bitters, electric dust.', price: 10, image: 'https://example.com/cyber-sour.jpg' },
-    { id: '3', name: 'Matrix Mule', description: 'Vodka, ginger beer, lime, cucumber, digital mint.', price: 11, image: 'https://example.com/matrix-mule.jpg' },
-    { id: '4', name: 'Void Walker', description: 'Blue curaçao, white rum, pineapple, glowing ice cube.', price: 14, image: 'https://example.com/void-walker.jpg' },
-];
+import { MOCK_MENU } from '@/infrastructure/mock-data';
 
 const FILTERS = ['Autor', 'Clásicos', 'Cervezas', 'Shots', 'Sin Alcohol'];
 
@@ -22,11 +17,13 @@ export default function MenuScreen() {
     const [selectedFilter, setSelectedFilter] = useState('Autor');
     const [cartCount, setCartCount] = useState(0);
 
+    const filteredDrinks = MOCK_MENU.filter(item => item.category === selectedFilter);
+
     const addToCart = () => {
         setCartCount(prev => prev + 1);
     };
 
-    const renderDrink = ({ item }: { item: typeof DRINKS[0] }) => (
+    const renderDrink = ({ item }: { item: typeof MOCK_MENU[0] }) => (
         <CyberCard style={styles.drinkCard}>
             <View style={styles.drinkRow}>
                 <View style={styles.drinkImagePlaceholder}>
@@ -52,7 +49,7 @@ export default function MenuScreen() {
                 <View style={styles.headerTop}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <View style={styles.logoIcon}>
-                            <Ionicons name="hexagon" size={24} color={ZyncTheme.colors.primary} />
+                            <Ionicons name="cube" size={24} color={ZyncTheme.colors.primary} />
                         </View>
                         <ThemedText style={styles.headerTitle}>Zync</ThemedText>
                     </View>
@@ -87,11 +84,11 @@ export default function MenuScreen() {
                 </View>
 
                 <FlatList
-                    data={DRINKS}
+                    data={filteredDrinks}
                     renderItem={renderDrink}
                     keyExtractor={item => item.id}
                     contentContainerStyle={styles.listContent}
-                    paddingBottom={100}
+
                 />
             </View>
 

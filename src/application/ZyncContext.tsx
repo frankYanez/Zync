@@ -1,22 +1,18 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-type User = {
-    id: string;
-    name: string;
-    email: string;
-    role: 'user' | 'admin';
-    balance: number;
-} | null;
+import { MOCK_USERS, User } from '@/infrastructure/mock-data';
+
+// User type imported from mock-data
 
 type AuthState = {
     isAuthenticated: boolean;
-    user: User;
+    user: User | null;
     token: string | null;
 };
 
 type ZyncContextType = {
     authState: AuthState;
-    login: (email: string) => Promise<void>;
+    login: (email: string) => Promise<boolean>;
     logout: () => Promise<void>;
     updateBalance: (amount: number) => void;
 };
@@ -36,18 +32,18 @@ export function ZyncProvider({ children }: { children: React.ReactNode }) {
     }, []);
 
     const login = async (email: string) => {
-        // Mock login logic
-        setAuthState({
-            isAuthenticated: true,
-            token: 'mock-token-xyz',
-            user: {
-                id: '1',
-                name: 'Cyber User',
-                email,
-                role: 'user',
-                balance: 15000,
-            },
-        });
+        // Mock login logic using MOCK_USERS
+        const foundUser = MOCK_USERS.find(u => u.email.toLowerCase() === email.toLowerCase());
+
+        if (foundUser) {
+            setAuthState({
+                isAuthenticated: true,
+                token: 'mock-token-xyz',
+                user: foundUser,
+            });
+            return true;
+        }
+        return false;
     };
 
     const logout = async () => {

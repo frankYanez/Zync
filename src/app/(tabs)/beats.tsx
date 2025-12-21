@@ -9,17 +9,16 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 
-const SONGS = [
-    { id: '1', title: 'Neon Lights', artist: 'Kraftwerk', price: 2000, cover: 'https://i.scdn.co/image/ab67616d0000b273295b9557b447831003756a11' },
-    { id: '2', title: 'Midnight City', artist: 'M83', price: 2000, cover: 'https://i.scdn.co/image/ab67616d0000b2733bccc993683a483ca8605c30' },
-    { id: '3', title: 'Tech Noir', artist: 'Gunship', price: 2000, cover: 'https://i.scdn.co/image/ab67616d0000b273ca612b77a944ae5573752e07' },
-    { id: '4', title: 'Turbo Killer', artist: 'Carpenter Brut', price: 2000, cover: 'https://i.scdn.co/image/ab67616d0000b273c0993952541dd31471da3791' },
-    { id: '5', title: 'Resonance', artist: 'Home', price: 2000, cover: 'https://i.scdn.co/image/ab67616d0000b273574c965c276587c427382285' },
-];
+import { MOCK_SONGS } from '@/infrastructure/mock-data';
 
 export default function BeatsScreen() {
     const { authState, updateBalance } = useZync();
     const [search, setSearch] = useState('');
+
+    const filteredSongs = MOCK_SONGS.filter(song =>
+        song.title.toLowerCase().includes(search.toLowerCase()) ||
+        song.artist.toLowerCase().includes(search.toLowerCase())
+    );
 
     const handleRequest = (price: number) => {
         // Logic to request and deduct balance
@@ -31,7 +30,7 @@ export default function BeatsScreen() {
         }
     };
 
-    const renderItem = ({ item }: { item: typeof SONGS[0] }) => (
+    const renderItem = ({ item }: { item: typeof MOCK_SONGS[0] }) => (
         <CyberCard style={styles.songCard}>
             <View style={styles.songInfo}>
                 <View style={styles.coverArt}>
@@ -74,7 +73,7 @@ export default function BeatsScreen() {
             </View>
 
             <FlatList
-                data={SONGS}
+                data={filteredSongs}
                 renderItem={renderItem}
                 keyExtractor={item => item.id}
                 contentContainerStyle={styles.listContent}

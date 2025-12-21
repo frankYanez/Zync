@@ -111,10 +111,12 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   balanceContainer: {
+
     alignItems: 'center',
     marginBottom: ZyncTheme.spacing.xxl,
   },
   balanceAmount: {
+    paddingTop: ZyncTheme.spacing.xl,
     fontSize: 56,
     fontFamily: ZyncTheme.typography.weight.extraBold, // Ensure font supports this or use bold
     fontWeight: '800',

@@ -7,7 +7,7 @@ import { ZyncTheme } from '@/shared/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Alert, Keyboard, StyleSheet, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 
 export default function AuthScreen() {
     const router = useRouter();
@@ -17,72 +17,88 @@ export default function AuthScreen() {
     const [loading, setLoading] = useState(false);
 
     const handleLogin = async () => {
+        if (!email || !password) {
+            Alert.alert('Error', 'Please enter both email and password');
+            return;
+        }
+
         setLoading(true);
+        Keyboard.dismiss();
+
         // Simulate network delay
         setTimeout(async () => {
-            await login(email || 'user@zync.com');
+            const success = await login(email || 'user@zync.com');
             setLoading(false);
-            router.replace('/(tabs)');
+
+            if (success) {
+                router.replace('/(tabs)');
+            } else {
+                Alert.alert('Access Denied', 'Invalid credentials');
+            }
         }, 1500);
     };
 
     return (
         <ScreenLayout style={styles.container}>
-            <View style={styles.header}>
-                <View style={styles.logoContainer}>
-                    <Ionicons name="flash" size={40} color="black" />
+            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                <View style={{ flex: 1, justifyContent: 'space-between' }}>
+                    <View style={styles.header}>
+                        <View style={styles.logoContainer}>
+                            <Ionicons name="flash" size={40} color="black" />
+                        </View>
+
+                        <ThemedText style={styles.welcome}>WELCOME BACK</ThemedText>
+                        <ThemedText style={styles.subtitle}>Enter the system</ThemedText>
+                    </View>
+
+                    <View style={styles.form}>
+                        <NeonInput
+                            label="ID / EMAIL"
+                            icon="person"
+                            placeholder="username@cyber.net"
+                            value={email}
+                            onChangeText={setEmail}
+                            autoCapitalize="none"
+                        />
+
+                        <NeonInput
+                            label="PASSWORD"
+                            icon="lock-closed"
+                            placeholder="••••••••"
+                            isPassword
+                            value={password}
+                            onChangeText={setPassword}
+                        />
+
+                        <TouchableOpacity style={styles.forgotContainer}>
+                            <ThemedText style={styles.forgotText}>Forgot access code?</ThemedText>
+                        </TouchableOpacity>
+
+                        <NeonButton
+                            title="INITIALIZE"
+                            onPress={handleLogin}
+                            loading={loading}
+                            icon={<Ionicons name="arrow-forward" size={20} color="black" />}
+                            textStyle={{ fontSize: 18, fontWeight: '900' }}
+                            style={styles.loginButton}
+                        />
+                    </View>
+
+                    <View style={styles.footer}>
+                        <View style={styles.signupContainer}>
+                            <ThemedText style={styles.footerText}>New user? </ThemedText>
+                            <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
+                                <ThemedText style={styles.createAccount}>CREATE ACCOUNT</ThemedText>
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={styles.bioContainer}>
+                            <Ionicons name="finger-print" size={40} color={ZyncTheme.colors.primary} style={{ opacity: 0.5 }} />
+                            <ThemedText style={styles.bioText}>BIOMETRIC SCAN AVAILABLE</ThemedText>
+                        </View>
+                    </View>
                 </View>
-
-                <ThemedText style={styles.welcome}>WELCOME BACK</ThemedText>
-                <ThemedText style={styles.subtitle}>Enter the system</ThemedText>
-            </View>
-
-            <View style={styles.form}>
-                <NeonInput
-                    label="ID / EMAIL"
-                    icon="person"
-                    placeholder="username@cyber.net"
-                    value={email}
-                    onChangeText={setEmail}
-                    autoCapitalize="none"
-                />
-
-                <NeonInput
-                    label="PASSWORD"
-                    icon="lock-closed"
-                    placeholder="••••••••"
-                    secureTextEntry
-                    value={password}
-                    onChangeText={setPassword}
-                />
-
-                <TouchableOpacity style={styles.forgotContainer}>
-                    <ThemedText style={styles.forgotText}>Forgot access code?</ThemedText>
-                </TouchableOpacity>
-
-                <NeonButton
-                    title="INITIALIZE"
-                    onPress={handleLogin}
-                    loading={loading}
-                    icon={<Ionicons name="arrow-forward" size={20} color="black" />}
-                    textStyle={{ fontSize: 18, fontWeight: '900' }}
-                    style={styles.loginButton}
-                />
-            </View>
-
-            <View style={styles.footer}>
-                <View style={styles.signupContainer}>
-                    <ThemedText style={styles.footerText}>New user? </ThemedText>
-                    <TouchableOpacity>
-                        <ThemedText style={styles.createAccount}>CREATE ACCOUNT</ThemedText>
-                    </TouchableOpacity>
-                </View>
-
-                <View style={styles.bioContainer}>
-                    <Ionicons name="finger-print" size={40} color={ZyncTheme.colors.primary} style={{ opacity: 0.5 }} />
-                    <ThemedText style={styles.bioText}>BIOMETRIC SCAN AVAILABLE</ThemedText>
-                </View>
-            </View>
+            </TouchableWithoutFeedback>
         </ScreenLayout>
     );
 }
@@ -94,7 +110,7 @@ const styles = StyleSheet.create({
     },
     header: {
         alignItems: 'center',
-        marginTop: 40,
+        // marginTop: 40,
     },
     logoContainer: {
         width: 60,
@@ -111,6 +127,7 @@ const styles = StyleSheet.create({
         elevation: 10,
     },
     welcome: {
+        paddingTop: ZyncTheme.spacing.xxl,
         fontSize: 32,
         fontFamily: ZyncTheme.typography.weight.extraBold,
         letterSpacing: 2,

@@ -2,7 +2,7 @@ import { ThemedText } from '@/presentation/components/themed-text';
 import { ZyncTheme } from '@/shared/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { StyleProp, StyleSheet, TextInput, TextInputProps, View, ViewStyle } from 'react-native';
+import { StyleProp, StyleSheet, TextInput, TextInputProps, TouchableOpacity, View, ViewStyle } from 'react-native';
 
 interface NeonInputProps extends TextInputProps {
     label?: string;
@@ -10,7 +10,9 @@ interface NeonInputProps extends TextInputProps {
     containerStyle?: StyleProp<ViewStyle>;
 }
 
-export function NeonInput({ label, icon, containerStyle, style, ...props }: NeonInputProps) {
+export function NeonInput({ label, icon, containerStyle, style, isPassword, ...props }: NeonInputProps & { isPassword?: boolean }) {
+    const [isSecure, setIsSecure] = React.useState(!!isPassword);
+
     return (
         <View style={[styles.container, containerStyle]}>
             {label && <ThemedText style={styles.label}>{label}</ThemedText>}
@@ -22,10 +24,18 @@ export function NeonInput({ label, icon, containerStyle, style, ...props }: Neon
                     style={[styles.input, style]}
                     placeholderTextColor={ZyncTheme.colors.textSecondary}
                     cursorColor={ZyncTheme.colors.primary}
+                    secureTextEntry={isSecure}
                     {...props}
                 />
-                {props.secureTextEntry && (
-                    <Ionicons name="eye-outline" size={20} color={ZyncTheme.colors.textSecondary} style={styles.rightIcon} />
+                {isPassword && (
+                    <TouchableOpacity onPress={() => setIsSecure(!isSecure)}>
+                        <Ionicons
+                            name={isSecure ? "eye-off-outline" : "eye-outline"}
+                            size={20}
+                            color={ZyncTheme.colors.textSecondary}
+                            style={styles.rightIcon}
+                        />
+                    </TouchableOpacity>
                 )}
             </View>
         </View>
