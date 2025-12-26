@@ -27,7 +27,7 @@ export default function RootLayout() {
   }, []);
 
   if (isLoading) {
-    return <ZyncLoader visible={true} type="splash" />;
+    return <ZyncLoader visible={true} type="overlay" />;
   }
 
   return (

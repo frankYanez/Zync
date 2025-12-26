@@ -1,3 +1,4 @@
+import { SpotifyTrack } from '@/infrastructure/spotify-service';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 import { Establishment, MOCK_USERS, User } from '@/infrastructure/mock-data';
@@ -17,6 +18,9 @@ type ZyncContextType = {
     updateBalance: (amount: number) => void;
     currentEstablishment: Establishment | null;
     setEstablishment: (establishment: Establishment | null) => void;
+    activeRequest: SpotifyTrack | null;
+    submitSongRequest: (track: SpotifyTrack) => void;
+    clearRequest: () => void;
 };
 
 const ZyncContext = createContext<ZyncContextType | undefined>(undefined);
@@ -29,6 +33,7 @@ export function ZyncProvider({ children }: { children: React.ReactNode }) {
     });
 
     const [currentEstablishment, setEstablishment] = useState<Establishment | null>(null);
+    const [activeRequest, setActiveRequest] = useState<SpotifyTrack | null>(null);
 
     // Mock initial loading or check storage
     useEffect(() => {
@@ -57,6 +62,7 @@ export function ZyncProvider({ children }: { children: React.ReactNode }) {
             token: null,
         });
         setEstablishment(null);
+        setActiveRequest(null);
     };
 
     const updateBalance = (amount: number) => {
@@ -68,8 +74,26 @@ export function ZyncProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
+    const submitSongRequest = (track: SpotifyTrack) => {
+        setActiveRequest(track);
+    };
+
+    const clearRequest = () => {
+        setActiveRequest(null);
+    };
+
     return (
-        <ZyncContext.Provider value={{ authState, login, logout, updateBalance, currentEstablishment, setEstablishment }}>
+        <ZyncContext.Provider value={{
+            authState,
+            login,
+            logout,
+            updateBalance,
+            currentEstablishment,
+            setEstablishment,
+            activeRequest,
+            submitSongRequest,
+            clearRequest
+        }}>
             {children}
         </ZyncContext.Provider>
     );

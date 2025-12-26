@@ -1,90 +1,104 @@
 import { useZync } from '@/application/ZyncContext';
 import { ScreenLayout } from '@/presentation/components/ScreenLayout';
+import { PromotionsCarousel } from '@/presentation/components/home/PromotionsCarousel';
+import { QuickAccessCarousel } from '@/presentation/components/home/QuickAccessCarousel';
 import { ThemedText } from '@/presentation/components/themed-text';
-import { CyberCard } from '@/presentation/components/ui/CyberCard';
 import { NeonModal } from '@/presentation/components/ui/NeonModal';
 import { ZyncTheme } from '@/shared/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { ResizeMode, Video } from 'expo-av';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import { MotiView } from 'moti';
 import React, { useState } from 'react';
-import { Dimensions, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
-
-const { width } = Dimensions.get('window');
+import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 export default function HomeScreen() {
   const router = useRouter();
   const { authState, currentEstablishment } = useZync();
-  const balance = authState.user?.balance || 0;
   const [modalVisible, setModalVisible] = useState(false);
+
+
+  const hasLiveDj = currentEstablishment?.currentDj?.isLive;
 
   return (
     <ScreenLayout noPadding>
+      {/* VIDEO BACKGROUND */}
+      {hasLiveDj && currentEstablishment?.video ? (
+        <View style={StyleSheet.absoluteFill}>
+          <Video
+            source={{ uri: currentEstablishment.video }}
+            style={StyleSheet.absoluteFill}
+            resizeMode={ResizeMode.COVER}
+            shouldPlay
+            isLooping
+            isMuted
+          />
+          <LinearGradient
+            colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.8)', '#000']}
+            style={StyleSheet.absoluteFill}
+          />
+        </View>
+      ) : null}
+
       <ScrollView contentContainerStyle={styles.scrollContent}>
 
-        {/* Header Status */}
-        <TouchableOpacity style={styles.header} onPress={() => setModalVisible(true)}>
-          <View style={styles.statusDot} />
-          <ThemedText style={styles.statusText}>
-            ESTÁS EN: {currentEstablishment ? currentEstablishment.name.toUpperCase() : 'SELECCIONAR LUGAR'}
-          </ThemedText>
-          <Ionicons name="chevron-down" size={12} color={ZyncTheme.colors.primary} style={{ marginLeft: 4 }} />
-        </TouchableOpacity>
+        {/* HEADER: Club Name & Status */}
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.clubBadge} onPress={() => setModalVisible(true)}>
+            <View style={styles.statusDot} />
+            <ThemedText style={styles.clubName}>
+              {currentEstablishment ? currentEstablishment.name.toUpperCase() : 'SELECCIONAR LUGAR'}
+            </ThemedText>
+          </TouchableOpacity>
 
-        {/* Balance Section */}
-        <View style={styles.balanceContainer}>
-          <ThemedText style={styles.balanceAmount}>
-            ${balance.toLocaleString()}
-          </ThemedText>
-          <ThemedText style={styles.balanceLabel}>Saldo Disponible</ThemedText>
+          <TouchableOpacity style={styles.iconButton}>
+            <Ionicons name="bag-outline" size={20} color={ZyncTheme.colors.primary} />
+            <View style={styles.notifDot} />
+          </TouchableOpacity>
         </View>
 
-        {/* Scan Button - Central Feature */}
-        <View style={styles.scanContainer}>
-          <TouchableOpacity
-            style={styles.scanButtonOuter}
-            onPress={() => router.push('/scanner')}
-          >
-            <View style={styles.scanButtonInner}>
-              <Ionicons name="scan-outline" size={48} color="#000" />
+        {/* LIVE DJ SECTION */}
+        {hasLiveDj && (
+          <View style={styles.djContainer}>
+            <View style={styles.liveBadge}>
+              <View style={styles.liveDot} />
+              <ThemedText style={styles.liveText}>LIVE DJ SET</ThemedText>
             </View>
+            <ThemedText style={styles.djName}>{currentEstablishment?.currentDj?.name}</ThemedText>
+          </View>
+        )}
+
+        {/* PROMOTIONS CAROUSEL */}
+        <View style={styles.promoSection}>
+          <PromotionsCarousel />
+        </View>
+
+        {/* MAIN ACTION: SCAN */}
+        <View style={styles.scanSection}>
+          <MotiView
+            from={{ opacity: 0.5, scale: 0.8 }}
+            animate={{ opacity: 0, scale: 1.5 }}
+            transition={{
+              type: 'timing',
+              duration: 2000,
+              loop: true,
+              repeatReverse: false
+            }}
+            style={[styles.scanGlow]}
+          />
+          <TouchableOpacity
+            style={styles.scanButton}
+            onPress={() => router.push('/scanner')}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="qr-code-outline" size={48} color="#000" />
           </TouchableOpacity>
           <ThemedText style={styles.scanLabel}>ESCANEAR PARA PAGAR</ThemedText>
         </View>
 
-        {/* Quick Access Cards */}
-        <View style={styles.cardsContainer}>
-          <TouchableOpacity
-            style={styles.cardWrapper}
-            onPress={() => router.push('/menu')} // Assuming menu is mapped or tab
-          >
-            <CyberCard style={styles.card}>
-              <View style={styles.cardIcon}>
-                <Ionicons name="wine" size={24} color={ZyncTheme.colors.background} />
-              </View>
-              <View style={styles.cardContent}>
-                <Ionicons name="arrow-forward" size={16} color={ZyncTheme.colors.textSecondary} style={{ alignSelf: 'flex-end' }} />
-                <View style={{ flex: 1 }} />
-                <ThemedText style={styles.cardTitle}>Menú{'\n'}del Bar</ThemedText>
-              </View>
-            </CyberCard>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.cardWrapper}
-            onPress={() => router.push('/beats')}
-          >
-            <CyberCard style={styles.card}>
-              <View style={[styles.cardIcon, { backgroundColor: ZyncTheme.colors.textSecondary }]}>
-                <Ionicons name="musical-notes" size={24} color={ZyncTheme.colors.background} />
-              </View>
-              <View style={styles.cardContent}>
-                <Ionicons name="arrow-forward" size={16} color={ZyncTheme.colors.textSecondary} style={{ alignSelf: 'flex-end' }} />
-                <View style={{ flex: 1 }} />
-                <ThemedText style={styles.cardTitle}>Zync{'\n'}Beats (DJ)</ThemedText>
-              </View>
-            </CyberCard>
-          </TouchableOpacity>
-        </View>
+        {/* QUICK ACCESS CAROUSEL */}
+        <QuickAccessCarousel />
 
       </ScrollView>
 
@@ -98,111 +112,140 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   scrollContent: {
-    paddingBottom: 100, // Space for tab bar
+    paddingBottom: 100,
+    paddingTop: 10, // Space for status bar
   },
   header: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: ZyncTheme.spacing.xl,
-    marginBottom: ZyncTheme.spacing.l,
+    paddingHorizontal: ZyncTheme.spacing.l,
+    marginBottom: ZyncTheme.spacing.xl,
+  },
+  clubBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
   },
   statusDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
     backgroundColor: ZyncTheme.colors.primary,
-    marginRight: ZyncTheme.spacing.s,
+    marginRight: 8,
   },
-  statusText: {
-    fontSize: ZyncTheme.typography.size.xs,
-    letterSpacing: 1,
-    color: ZyncTheme.colors.textSecondary,
-    textTransform: 'uppercase',
-  },
-  balanceContainer: {
-
-    alignItems: 'center',
-    marginBottom: ZyncTheme.spacing.xxl,
-  },
-  balanceAmount: {
-    paddingTop: ZyncTheme.spacing.xl,
-    fontSize: 56,
-    fontFamily: ZyncTheme.typography.weight.extraBold, // Ensure font supports this or use bold
-    fontWeight: '800',
-    color: ZyncTheme.colors.primary,
-    textShadowColor: 'rgba(204, 255, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 20,
-  },
-  balanceLabel: {
-    fontSize: ZyncTheme.typography.size.m,
-    color: ZyncTheme.colors.textSecondary,
-    marginTop: -ZyncTheme.spacing.s,
-  },
-  scanContainer: {
-    alignItems: 'center',
-    marginBottom: ZyncTheme.spacing.xxl,
-  },
-  scanButtonOuter: {
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: 'rgba(204, 255, 0, 0.1)', // Outer glow
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: ZyncTheme.spacing.l,
-    borderWidth: 1,
-    borderColor: 'rgba(204, 255, 0, 0.3)',
-  },
-  scanButtonInner: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: ZyncTheme.colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: ZyncTheme.colors.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 30,
-    elevation: 20,
-  },
-  scanLabel: {
-    fontSize: ZyncTheme.typography.size.s,
+  clubName: {
+    fontSize: 12,
     fontWeight: 'bold',
-    letterSpacing: 2,
-    color: ZyncTheme.colors.primary,
+    letterSpacing: 1,
+    color: 'white',
   },
-  cardsContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: ZyncTheme.spacing.m,
-    gap: ZyncTheme.spacing.m,
-  },
-  cardWrapper: {
-    flex: 1,
-  },
-  card: {
-    height: 160,
-    backgroundColor: '#1E1E1E',
-    padding: ZyncTheme.spacing.m,
-    justifyContent: 'space-between',
-    borderRadius: ZyncTheme.borderRadius.l,
-  },
-  cardIcon: {
+  iconButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: 'rgba(255,255,255,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
   },
-  cardContent: {
-    flex: 1,
+  notifDot: {
+    position: 'absolute',
+    top: 10,
+    right: 12,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: ZyncTheme.colors.primary,
   },
-  cardTitle: {
-    fontSize: ZyncTheme.typography.size.l,
+  djContainer: {
+    alignItems: 'center',
+    marginBottom: ZyncTheme.spacing.l,
+  },
+  liveBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(204, 255, 0, 0.1)',
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(204, 255, 0, 0.3)',
+    marginBottom: 8,
+  },
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: ZyncTheme.colors.primary,
+    marginRight: 6,
+  },
+  liveText: {
+    color: ZyncTheme.colors.primary,
+    fontSize: 10,
     fontWeight: 'bold',
-    lineHeight: 24,
+    letterSpacing: 2,
+  },
+  djName: {
+    paddingTop: ZyncTheme.spacing.l,
+    alignItems: 'center',
+    fontSize: 48,
+    fontWeight: '900',
+    color: 'white',
+    // textShadowColor: 'rgba(0,0,0,0.5)',
+    // textShadowOffset: { width: 0, height: 2 },
+    // textShadowRadius: 10,
+    letterSpacing: -1,
+    textShadowColor: ZyncTheme.colors.primary,
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 10,
+  },
+  promoSection: {
+    marginBottom: ZyncTheme.spacing.l,
+  },
+  scanSection: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    // marginVertical: ZyncTheme.spacing.l,
+    height: 200,
+  },
+  scanButton: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: ZyncTheme.colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
+    // Shadow/Glow
+    shadowColor: ZyncTheme.colors.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  scanGlow: {
+    position: 'absolute',
+    top: 20,
+    width: 120,
+    height: 120,
+    borderRadius: 80,
+    backgroundColor: 'rgba(204, 255, 0, 0.2)',
+    zIndex: 1,
+  },
+  scanLabel: {
+    marginTop: 20,
+    fontSize: 10,
+    fontWeight: 'bold',
+    letterSpacing: 2,
+    color: 'white',
+    textTransform: 'uppercase',
   },
 });
+

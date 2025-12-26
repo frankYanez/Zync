@@ -9,12 +9,32 @@ import { ZyncTheme } from '@/shared/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, StyleSheet, View } from 'react-native';
+import Animated, { interpolate, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 
 export default function BeatsScreen() {
-    const { authState, updateBalance } = useZync();
+    const { authState, updateBalance, activeRequest, submitSongRequest } = useZync();
     const [search, setSearch] = useState('');
     const [songs, setSongs] = useState<SpotifyTrack[]>([]);
     const [loading, setLoading] = useState(false);
+    const [isRequesting, setIsRequesting] = useState(false);
+
+    const CLIENT_ID = 'e11abe3738f34ac28dcd2ade25d1cfb4';
+    const CLIENT_SECRET = 'ec39c89a04364c028630d0811f41c982';
+    // Background Animation
+    const pulseAnim = useSharedValue(0.1);
+
+    useEffect(() => {
+        pulseAnim.value = withRepeat(
+            withTiming(0.2, { duration: 2000 }),
+            -1,
+            true
+        );
+    }, []);
+
+    const animatedBgStyle = useAnimatedStyle(() => ({
+        opacity: pulseAnim.value,
+        transform: [{ scale: interpolate(pulseAnim.value, [0.1, 0.2], [1, 1.1]) }]
+    }));
 
     useEffect(() => {
         const timeoutId = setTimeout(async () => {
@@ -31,48 +51,75 @@ export default function BeatsScreen() {
         return () => clearTimeout(timeoutId);
     }, [search]);
 
-    const handleRequest = (track: SpotifyTrack) => {
-        // fixed price for now, or dynamic based on logic
+    const handleRequest = async (track: SpotifyTrack) => {
+        if (activeRequest) {
+            alert("Ya tienes un pedido en curso. Espera a que el DJ lo ponga.");
+            return;
+        }
+
         const price = 250;
         if ((authState.user?.balance || 0) >= price) {
+            setIsRequesting(true);
+
+            // Simulate network delay
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
             updateBalance((authState.user?.balance || 0) - price);
-            // Show success toast/alert
+            submitSongRequest(track);
+            setIsRequesting(false);
+            setSearch(''); // Clear search to show the request better
+            // Ideally scroll to top here
         } else {
             // Show error
+            alert("Saldo insuficiente");
         }
     };
 
-    const renderItem = ({ item }: { item: SpotifyTrack }) => (
-        <CyberCard style={styles.songCard}>
-            <View style={styles.songInfo}>
-                <View style={styles.coverArt}>
-                    {item.album.images[0] ? (
-                        <Image
-                            source={{ uri: item.album.images[0].url }}
-                            style={{ width: '100%', height: '100%', borderRadius: 4 }}
-                        />
-                    ) : (
-                        <Ionicons name="musical-note" size={24} color={ZyncTheme.colors.textSecondary} />
-                    )}
+    const renderItem = ({ item }: { item: SpotifyTrack }) => {
+        const isPending = !!activeRequest;
+
+        return (
+            <CyberCard style={[styles.songCard, isPending && { opacity: 0.6 }]}>
+                <View style={styles.songInfo}>
+                    <View style={styles.coverArt}>
+                        {item.album.images[0] ? (
+                            <Image
+                                source={{ uri: item.album.images[0].url }}
+                                style={{ width: '100%', height: '100%', borderRadius: 4 }}
+                            />
+                        ) : (
+                            <Ionicons name="musical-note" size={24} color={ZyncTheme.colors.textSecondary} />
+                        )}
+                    </View>
+                    <View style={styles.details}>
+                        <ThemedText style={styles.songTitle} numberOfLines={1}>{item.name}</ThemedText>
+                        <ThemedText style={styles.artist} numberOfLines={1}>
+                            {item.artists.map(a => a.name).join(', ')}
+                        </ThemedText>
+                    </View>
                 </View>
-                <View style={styles.details}>
-                    <ThemedText style={styles.songTitle} numberOfLines={1}>{item.name}</ThemedText>
-                    <ThemedText style={styles.artist} numberOfLines={1}>
-                        {item.artists.map(a => a.name).join(', ')}
-                    </ThemedText>
-                </View>
-            </View>
-            <NeonButton
-                title={`PEDIR X $250`}
-                onPress={() => handleRequest(item)}
-                textStyle={{ fontSize: 12, fontWeight: 'bold' }}
-                style={styles.requestButton}
-            />
-        </CyberCard>
-    );
+                <NeonButton
+                    title={isRequesting && !activeRequest ? "..." : (isPending ? "PENDIENTE" : `PEDIR $250`)}
+                    onPress={() => handleRequest(item)}
+                    textStyle={{ fontSize: 10, fontWeight: 'bold' }}
+                    style={[styles.requestButton, isPending && { borderColor: '#555', backgroundColor: 'transparent' }]}
+                    disabled={isRequesting || isPending}
+                />
+            </CyberCard>
+        );
+    };
 
     return (
         <ScreenLayout noPadding>
+            {/* Background Animation */}
+            <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
+                <View style={styles.bgContainer}>
+                    <Animated.View style={[styles.pulseCircle, animatedBgStyle]}>
+                        <Ionicons name="musical-notes" size={300} color={ZyncTheme.colors.primary} />
+                    </Animated.View>
+                </View>
+            </View>
+
             <View style={styles.header}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <Ionicons name="stats-chart" size={24} color={ZyncTheme.colors.primary} style={{ marginRight: 8 }} />
@@ -80,6 +127,32 @@ export default function BeatsScreen() {
                 </View>
                 <View style={styles.statusDot} />
             </View>
+
+            {/* Current Request Section */}
+            {activeRequest && (
+                <View style={[styles.searchContainer, { paddingBottom: 0 }]}>
+                    <ThemedText style={styles.sectionTitle}>PLAYING NEXT</ThemedText>
+                    <CyberCard style={[styles.songCard, styles.currentRequestCard]}>
+                        <View style={styles.songInfo}>
+                            <View style={styles.coverArt}>
+                                {activeRequest.album.images[0] && (
+                                    <Image
+                                        source={{ uri: activeRequest.album.images[0].url }}
+                                        style={{ width: '100%', height: '100%', borderRadius: 4 }}
+                                    />
+                                )}
+                            </View>
+                            <View style={styles.details}>
+                                <ThemedText style={styles.songTitle} numberOfLines={1}>{activeRequest.name}</ThemedText>
+                                <ThemedText style={[styles.artist, { color: ZyncTheme.colors.primary }]} numberOfLines={1}>
+                                    Pedido Confirmado
+                                </ThemedText>
+                            </View>
+                        </View>
+                        <Ionicons name="checkmark-circle" size={32} color={ZyncTheme.colors.primary} />
+                    </CyberCard>
+                </View>
+            )}
 
             <View style={styles.searchContainer}>
                 <NeonInput
@@ -92,9 +165,10 @@ export default function BeatsScreen() {
                 />
             </View>
 
-            {loading ? (
+            {loading || isRequesting ? (
                 <View style={styles.centerContainer}>
                     <ActivityIndicator size="large" color={ZyncTheme.colors.primary} />
+                    {isRequesting && <ThemedText style={styles.loadingText}>Enviando pedido...</ThemedText>}
                 </View>
             ) : (
                 <FlatList
@@ -207,5 +281,34 @@ const styles = StyleSheet.create({
         height: 36,
         paddingHorizontal: ZyncTheme.spacing.m,
         minWidth: 100,
+    },
+    bgContainer: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        opacity: 0.1,
+    },
+    pulseCircle: {
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    currentRequestCard: {
+        borderColor: ZyncTheme.colors.primary,
+        borderWidth: 1,
+        backgroundColor: 'rgba(204, 255, 0, 0.05)',
+        marginBottom: ZyncTheme.spacing.m,
+    },
+    sectionTitle: {
+        fontSize: 12,
+        color: ZyncTheme.colors.primary,
+        marginBottom: 8,
+        letterSpacing: 1.5,
+        fontWeight: 'bold',
+    },
+    loadingText: {
+        marginTop: 10,
+        color: ZyncTheme.colors.primary,
+        fontSize: 14,
+        letterSpacing: 1,
     }
 });

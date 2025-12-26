@@ -32,6 +32,13 @@ export interface Establishment {
     theme: 'cyber' | 'retro' | 'industrial';
     video: string;
     rating: number;
+    currentDj?: {
+        name: string;
+        genre: string;
+        startTime: string;
+        endTime: string;
+        isLive: boolean;
+    };
 }
 
 export interface Song {
@@ -88,7 +95,13 @@ export const MOCK_ESTABLISHMENTS: Establishment[] = [
         theme: 'cyber',
         video: 'https://www.pexels.com/es-es/download/video/854128/',
         rating: 4.5,
-
+        currentDj: {
+            name: 'K-LIX',
+            genre: 'Tech House',
+            startTime: '22:00',
+            endTime: '04:00',
+            isLive: true
+        }
     },
     {
         id: 'e2',

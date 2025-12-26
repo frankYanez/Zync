@@ -1,7 +1,6 @@
 import { Buffer } from 'buffer';
 
-const CLIENT_ID = 'e11abe3738f34ac28dcd2ade25d1cfb4';
-const CLIENT_SECRET = 'ec39c89a04364c028630d0811f41c982';
+
 
 interface SpotifyToken {
     access_token: string;
@@ -21,6 +20,8 @@ export interface SpotifyTrack {
 }
 
 class SpotifyService {
+    private CLIENT_ID = 'e11abe3738f34ac28dcd2ade25d1cfb4';
+    private CLIENT_SECRET = 'ec39c89a04364c028630d0811f41c982';
     private token: string | null = null;
     private tokenExpiration: number = 0;
 
@@ -30,7 +31,7 @@ class SpotifyService {
         }
 
         try {
-            const credentials = Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString('base64');
+            const credentials = Buffer.from(`${this.CLIENT_ID}:${this.CLIENT_SECRET}`).toString('base64');
             const response = await fetch('https://accounts.spotify.com/api/token', {
                 method: 'POST',
                 headers: {
