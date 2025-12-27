@@ -1,7 +1,10 @@
+import { useCart } from '@/application/CartContext';
 import { useZync } from '@/application/ZyncContext';
 import { ScreenLayout } from '@/presentation/components/ScreenLayout';
+import { LiveOrderBanner } from '@/presentation/components/home/LiveOrderBanner';
 import { PromotionsCarousel } from '@/presentation/components/home/PromotionsCarousel';
 import { QuickAccessCarousel } from '@/presentation/components/home/QuickAccessCarousel';
+import { OrderStatusModal } from '@/presentation/components/order/OrderStatusModal';
 import { ThemedText } from '@/presentation/components/themed-text';
 import { NeonModal } from '@/presentation/components/ui/NeonModal';
 import { ZyncTheme } from '@/shared/constants/theme';
@@ -16,13 +19,17 @@ import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 export default function HomeScreen() {
   const router = useRouter();
   const { authState, currentEstablishment } = useZync();
+  const { activeOrders } = useCart();
   const [modalVisible, setModalVisible] = useState(false);
-
+  const [orderModalVisible, setOrderModalVisible] = useState(false);
 
   const hasLiveDj = currentEstablishment?.currentDj?.isLive;
 
+
   return (
     <ScreenLayout noPadding>
+
+
       {/* VIDEO BACKGROUND */}
       {hasLiveDj && currentEstablishment?.video ? (
         <View style={StyleSheet.absoluteFill}>
@@ -51,11 +58,20 @@ export default function HomeScreen() {
               {currentEstablishment ? currentEstablishment.name.toUpperCase() : 'SELECCIONAR LUGAR'}
             </ThemedText>
           </TouchableOpacity>
+          <View style={styles.iconContainer}  >
+            {/* ACTIVE ORDER BANNER */}
+            {activeOrders && activeOrders.length > 0 && (
+              <LiveOrderBanner
+                count={activeOrders.length}
+                onPress={() => setOrderModalVisible(true)}
+              />
+            )}
 
-          <TouchableOpacity style={styles.iconButton}>
-            <Ionicons name="bag-outline" size={20} color={ZyncTheme.colors.primary} />
-            <View style={styles.notifDot} />
-          </TouchableOpacity>
+            <TouchableOpacity style={styles.iconButton}>
+              <Ionicons name="bag-outline" size={20} color={ZyncTheme.colors.primary} />
+              <View style={styles.notifDot} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* LIVE DJ SECTION */}
@@ -105,6 +121,11 @@ export default function HomeScreen() {
       <NeonModal
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
+      />
+
+      <OrderStatusModal
+        visible={orderModalVisible}
+        onClose={() => setOrderModalVisible(false)}
       />
     </ScreenLayout>
   );
@@ -192,6 +213,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     letterSpacing: 2,
   },
+  iconContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: ZyncTheme.spacing.m,
+  },
   djName: {
     paddingTop: ZyncTheme.spacing.l,
     alignItems: 'center',
@@ -248,4 +274,3 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
 });
-

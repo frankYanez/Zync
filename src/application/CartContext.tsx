@@ -5,6 +5,16 @@ export interface CartItem extends Product {
     quantity: number;
 }
 
+export interface ActiveOrder {
+    id: string;
+    items: CartItem[];
+    total: number;
+    savings: number;
+    status: 'pending' | 'ready';
+    establishmentName?: string;
+    establishmentLogo?: string;
+}
+
 interface CartContextType {
     items: CartItem[];
     addToCart: (product: Product) => void;
@@ -14,12 +24,14 @@ interface CartContextType {
     totalAmount: number;
     totalItems: number;
     checkout: () => Promise<{ success: boolean; orderId?: string; error?: string }>;
+    activeOrders: ActiveOrder[];
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
     const [items, setItems] = useState<CartItem[]>([]);
+    const [activeOrders, setActiveOrders] = useState<ActiveOrder[]>([]);
 
     const addToCart = (product: Product) => {
         setItems(currentItems => {
@@ -71,7 +83,20 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                 // Mock 90% success rate
                 const isSuccess = Math.random() > 0.1;
                 if (isSuccess) {
-                    resolve({ success: true, orderId: Math.floor(1000 + Math.random() * 9000).toString() });
+                    const newOrderId = Math.floor(1000 + Math.random() * 9000).toString();
+
+                    // Create active order
+                    setActiveOrders(prev => [{
+                        id: newOrderId,
+                        items: [...items],
+                        total: totalAmount,
+                        savings: 0,
+                        status: 'pending',
+                        establishmentName: 'Club Vertigo', // Mock data
+                        establishmentLogo: 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80' // Mock logo
+                    }, ...prev]);
+
+                    resolve({ success: true, orderId: newOrderId });
                 } else {
                     resolve({ success: false, error: 'Payment declined by bank' });
                 }
@@ -88,7 +113,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             clearCart,
             totalAmount,
             totalItems,
-            checkout
+            checkout,
+            activeOrders
         }}>
             {children}
         </CartContext.Provider>

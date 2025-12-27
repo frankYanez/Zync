@@ -440,12 +440,11 @@ const styles = StyleSheet.create({
     successContainer: {
         flex: 1,
         padding: 20,
-        paddingTop: 60,
         alignItems: 'center',
     },
     closeButton: {
         position: 'absolute',
-        top: 60,
+        top: 10,
         left: 20,
         width: 40,
         height: 40,
@@ -458,7 +457,7 @@ const styles = StyleSheet.create({
     successHeader: {
         alignItems: 'center',
         marginBottom: 30,
-        marginTop: 40,
+
     },
     successIconOuter: {
         width: 80,

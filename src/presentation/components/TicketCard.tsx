@@ -11,9 +11,10 @@ interface TicketCardProps {
     items: CartItem[];
     total: number;
     savings: number;
+    establishmentLogo?: string;
 }
 
-export function TicketCard({ orderId, items, total, savings }: TicketCardProps) {
+export function TicketCard({ orderId, items, total, savings, establishmentLogo }: TicketCardProps) {
     const rotate = useSharedValue(0);
 
     const handleFlip = () => {
@@ -51,6 +52,16 @@ export function TicketCard({ orderId, items, total, savings }: TicketCardProps) 
         <TouchableOpacity activeOpacity={1} onPress={handleFlip} style={styles.container}>
             {/* Front Side */}
             <Animated.View style={[styles.card, frontStyle]}>
+                {establishmentLogo && (
+                    <Image
+                        source={{ uri: establishmentLogo }}
+                        style={StyleSheet.absoluteFill}
+                        resizeMode="cover"
+                        blurRadius={30}
+                        opacity={0.3}
+                    />
+                )}
+
                 <View style={styles.cardHeader}>
                     <View>
                         <ThemedText style={styles.label}>TICKET DIGITAL</ThemedText>
