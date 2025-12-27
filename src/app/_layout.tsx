@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
+import { CartProvider } from '@/application/CartContext';
 import { ZyncProvider } from '@/application/ZyncContext';
 
 export const unstable_settings = {
@@ -32,16 +33,19 @@ export default function RootLayout() {
 
   return (
     <ZyncProvider>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <ThemeProvider value={DarkTheme}>
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-          </Stack>
-          <StatusBar style="light" />
-        </ThemeProvider>
-      </GestureHandlerRootView>
+      <CartProvider>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <ThemeProvider value={DarkTheme}>
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+              <Stack.Screen name="cart" options={{ presentation: 'modal', headerShown: false }} />
+            </Stack>
+            <StatusBar style="light" />
+          </ThemeProvider>
+        </GestureHandlerRootView>
+      </CartProvider>
     </ZyncProvider>
   );
 }

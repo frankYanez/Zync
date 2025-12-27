@@ -6,41 +6,57 @@ import { ZyncTheme } from '@/shared/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { FlatList, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { FlatList, Image, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
+import { useCart } from '@/application/CartContext';
 import { MOCK_MENU } from '@/infrastructure/mock-data';
+import { MotiView } from 'moti';
 
 const FILTERS = ['Autor', 'Clásicos', 'Cervezas', 'Shots', 'Sin Alcohol'];
 
 export default function MenuScreen() {
     const router = useRouter();
     const [selectedFilter, setSelectedFilter] = useState('Autor');
-    const [cartCount, setCartCount] = useState(0);
+    const { totalItems, addToCart } = useCart();
 
     const filteredDrinks = MOCK_MENU.filter(item => item.category === selectedFilter);
 
-    const addToCart = () => {
-        setCartCount(prev => prev + 1);
+    const handleAddToCart = (item: typeof MOCK_MENU[0]) => {
+        addToCart(item);
     };
 
-    const renderDrink = ({ item }: { item: typeof MOCK_MENU[0] }) => (
-        <CyberCard style={styles.drinkCard}>
-            <View style={styles.drinkRow}>
-                <View style={styles.drinkImagePlaceholder}>
-                    <Ionicons name="wine" size={32} color={ZyncTheme.colors.textSecondary} />
-                </View>
-                <View style={styles.drinkInfo}>
-                    <View style={styles.drinkHeader}>
-                        <ThemedText style={styles.drinkName}>{item.name}</ThemedText>
-                        <ThemedText style={styles.drinkPrice}>${item.price}</ThemedText>
+    const renderDrink = ({ item, index }: { item: typeof MOCK_MENU[0], index: number }) => (
+        <MotiView
+            from={{ opacity: 0, translateY: 20 }}
+            animate={{ opacity: 1, translateY: 0 }}
+            transition={{ delay: index * 100, type: 'timing', duration: 500 }}
+        >
+            <CyberCard style={styles.drinkCard}>
+                <View style={styles.drinkRow}>
+                    <View style={styles.drinkImagePlaceholder}>
+                        {item.image ? (
+                            <Image
+                                source={{ uri: item.image }}
+                                style={styles.drinkImage}
+                                resizeMode="cover"
+                            />
+                        ) : (
+                            <Ionicons name="wine" size={32} color={ZyncTheme.colors.textSecondary} />
+                        )}
                     </View>
-                    <ThemedText style={styles.drinkDesc}>{item.description}</ThemedText>
-                    <TouchableOpacity style={styles.addButton} onPress={addToCart}>
-                        <Ionicons name="add" size={24} color="#000" />
-                    </TouchableOpacity>
+                    <View style={styles.drinkInfo}>
+                        <View style={styles.drinkHeader}>
+                            <ThemedText style={styles.drinkName}>{item.name}</ThemedText>
+                            <ThemedText style={styles.drinkPrice}>${item.price.toLocaleString()}</ThemedText>
+                        </View>
+                        <ThemedText style={styles.drinkDesc}>{item.description}</ThemedText>
+                        <TouchableOpacity style={styles.addButton} onPress={() => handleAddToCart(item)}>
+                            <Ionicons name="add" size={24} color="#000" />
+                        </TouchableOpacity>
+                    </View>
                 </View>
-            </View>
-        </CyberCard>
+            </CyberCard>
+        </MotiView>
     );
 
     return (
@@ -93,14 +109,14 @@ export default function MenuScreen() {
             </View>
 
             {/* Floating Cart Button */}
-            {cartCount > 0 && (
+            {totalItems > 0 && (
                 <View style={styles.cartButtonContainer}>
                     <NeonButton
                         title="CART"
                         onPress={() => router.push('/cart')}
                         icon={<View style={{ position: 'relative' }}>
                             <Ionicons name="cart" size={24} color="black" />
-                            <View style={styles.badge}><ThemedText style={styles.badgeText}>{cartCount}</ThemedText></View>
+                            <View style={styles.badge}><ThemedText style={styles.badgeText}>{totalItems}</ThemedText></View>
                         </View>}
                         style={styles.cartButton}
                         textStyle={{ fontSize: 16, fontWeight: 'bold' }}
@@ -215,6 +231,11 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         borderTopLeftRadius: 16,
         borderBottomLeftRadius: 16,
+        overflow: 'hidden',
+    },
+    drinkImage: {
+        width: '100%',
+        height: '100%',
     },
     drinkInfo: {
         flex: 1,
