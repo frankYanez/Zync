@@ -3,7 +3,7 @@ import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import { AuthResponse, LoginUserDto, RegisterDto, User } from '../domain/auth.types';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL;
+const API_URL = 'http://44.222.141.70:3000';
 const STORAGE_KEY = 'auth_token';
 
 let cachedToken: string | null = null;
@@ -80,7 +80,7 @@ const setToken = async (token: string) => {
     }
 };
 
-const getToken = async (): Promise<string | null> => {
+export const getToken = async (): Promise<string | null> => {
     if (cachedToken) return cachedToken;
     if (Platform.OS !== 'web') {
         cachedToken = await SecureStore.getItemAsync(STORAGE_KEY);

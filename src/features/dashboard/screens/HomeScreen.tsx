@@ -69,6 +69,16 @@ export default function HomeScreen() {
               />
             )}
 
+            {/* CHAT BUTTON */}
+            {hasLiveDj && (
+              <TouchableOpacity
+                style={styles.iconButton}
+                onPress={() => router.push('/chat-test')}
+              >
+                <Ionicons name="chatbubbles-outline" size={20} color={ZyncTheme.colors.primary} />
+              </TouchableOpacity>
+            )}
+
             <TouchableOpacity style={styles.iconButton}>
               <Ionicons name="bag-outline" size={20} color={ZyncTheme.colors.primary} />
               <View style={styles.notifDot} />
