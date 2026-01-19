@@ -26,6 +26,7 @@ export interface User {
     state?: string;
     country?: string;
     zyncPoints: number;
+    sub: string;
     // Add other user fields as needed
 }
 

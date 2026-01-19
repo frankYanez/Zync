@@ -32,15 +32,21 @@ const getAuthHeaders = async () => {
     };
 };
 
-// Renamed to getMessages to reflect that it fetches messages
+//Historial del chat 1 a 1
 export const getChatMessages = async (eventId: string, otherUserId: string): Promise<Message[]> => {
     try {
         const headers = await getAuthHeaders();
         const response = await axios.get(`${API_URL}/events/${eventId}/chats/${otherUserId}/messages`, headers);
 
-        console.log(response.data, "response en chat service");
+        if (Array.isArray(response.data)) {
+            return response.data;
+        } else if (response.data && Array.isArray(response.data.messages)) {
+            return response.data.messages;
+        } else if (response.data && Array.isArray(response.data.data)) {
+            return response.data.data;
+        }
 
-        return response.data;
+        return [];
 
     } catch (error) {
         console.log(error, "error en chat service");
@@ -49,12 +55,50 @@ export const getChatMessages = async (eventId: string, otherUserId: string): Pro
     }
 };
 
-// Renamed to endEvent/endChat based on usage
+//Lista de chats de un usuario
+export const getChats = async (eventId: string): Promise<any[]> => {
+    try {
+        const headers = await getAuthHeaders();
+        const response = await axios.get(`${API_URL}/events/${eventId}/chats`, headers);
+
+        if (Array.isArray(response.data)) return response.data;
+        if (response.data && Array.isArray(response.data.chats)) return response.data.chats;
+        if (response.data && Array.isArray(response.data.data)) return response.data.data;
+
+        return [];
+    } catch (error) {
+        console.log("Error fetching chats:", error);
+        return [];
+    }
+};
+
+//Termina el chat y limpia los mensajes
 export const endChatEvent = async (eventId: string): Promise<any> => {
     const headers = await getAuthHeaders();
     // User requested POST for this endpoint
     const response = await axios.post(`${API_URL}/events/${eventId}/end`, {}, headers);
     return response.data;
+};
+
+export const getEventMessages = async (eventId: string): Promise<Message[]> => {
+    try {
+        const headers = await getAuthHeaders();
+        // Updated to match backend doc: /event-chat/messages
+        const response = await axios.get(`${API_URL}/events/${eventId}/event-chat/messages`, headers);
+
+        if (Array.isArray(response.data)) {
+            return response.data;
+        } else if (response.data && Array.isArray(response.data.messages)) {
+            return response.data.messages;
+        } else if (response.data && Array.isArray(response.data.data)) {
+            return response.data.data;
+        }
+
+        return [];
+    } catch (error) {
+        console.log(error, "error en getEventMessages");
+        return [];
+    }
 };
 
 

@@ -73,7 +73,7 @@ export default function VerifyScreen() {
                     onChangeText={setOtp}
                     keyboardType="number-pad"
                     maxLength={6}
-                    style={{ textAlign: 'center', letterSpacing: 8, fontSize: 24 }}
+                    style={{ textAlign: 'center', letterSpacing: 8, fontSize: 24, width: '100%' }}
                 />
 
                 <NeonButton

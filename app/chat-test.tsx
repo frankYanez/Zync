@@ -1,2 +1,2 @@
-import ChatTestScreen from '../src/features/chat/screens/ChatTestScreen';
-export default ChatTestScreen;
+import { GroupChatScreen } from '../src/features/chat/screens/GroupChatScreen';
+export default GroupChatScreen;

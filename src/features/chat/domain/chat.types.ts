@@ -12,6 +12,8 @@ export interface Message {
     content: string;
     createdAt: string;
     sender?: User; // Optional, depends on backend response
+    deliveredAt?: string;
+    seenAt?: string;
 }
 
 export interface ChatRoom {
@@ -25,4 +27,16 @@ export interface ChatRoom {
 export interface CreateMessageDto {
     chatId: string;
     content: string;
+}
+
+export interface TypingPayload {
+    eventId: string;
+    toUserId?: string; // Optional for group chat typing? Or strict 1-1? Backend doc says toUserId is required
+    fromUserId?: string; // Received in event
+}
+
+export interface MessageStatusPayload {
+    messageId: string;
+    userId?: string; // Received in event
+    at?: string; // Timestamp
 }

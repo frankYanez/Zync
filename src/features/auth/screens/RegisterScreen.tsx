@@ -276,7 +276,7 @@ export default function RegisterScreen() {
                             }}
                             keyboardType="number-pad"
                             maxLength={6}
-                            style={{ textAlign: 'center', letterSpacing: 5, fontSize: 24 }}
+                            style={{ textAlign: 'center', letterSpacing: 5, fontSize: 24, width: "100%" }}
                             containerStyle={{ marginBottom: 20 }}
                         />
 

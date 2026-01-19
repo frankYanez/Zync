@@ -29,6 +29,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const checkUser = async () => {
         try {
             const user = await authService.checkAuth();
+
+            console.log(user, "user en checkuser");
+
             setUser(user);
         } catch (e) {
             console.error(e);
@@ -39,9 +42,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const login = async (loginDto: LoginUserDto) => {
         const response = await authService.login(loginDto);
-
-        console.log(response);
-
         setUser(response.user);
         return true;
     };

@@ -10,9 +10,6 @@ let cachedToken: string | null = null;
 
 export const login = async (loginDto: LoginUserDto): Promise<AuthResponse> => {
     const response = await axios.post(`${API_URL}/auth/login`, loginDto);
-
-    console.log(response.data);
-
     const data = response.data;
     if (data.accessToken) {
         await setToken(data.accessToken);
