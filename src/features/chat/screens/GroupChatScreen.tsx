@@ -1,4 +1,5 @@
 import { useAuth } from '@/features/auth/context/AuthContext';
+import { useChat } from '@/features/chat/hooks/useChat';
 import { ZyncTheme } from '@/shared/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
@@ -8,17 +9,30 @@ import React from 'react';
 import { FlatList, Image, ImageBackground, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ConnectedUsersCarousel } from '../components/ConnectedUsersCarousel';
-import { useChat } from '../hooks/useChat';
+
 
 export const GroupChatScreen = () => {
-    // const { eventId } = useLocalSearchParams<{ eventId: string }>();
-    const eventId = '68164919-88df-4a63-b9b3-6d4fc793a8c2';
+    // const { eventId } = useLocalSearchParams<{ eventId: string }>();\
+    const otherUserId = '19a04f82-79ff-49c6-b4d7-7c61ee5893b4';
+    const eventId = '8aac60c1-351b-4289-a152-88a017de32bd';
     const insets = useSafeAreaInsets();
     const router = useRouter();
     const { user, isLoading: authLoading } = useAuth();
-    const effectiveUserId = user?.id || user?.sub || '';
+    const effectiveUserId = user?.sub || '';
 
-    const { sendTyping, messages, messageText, setMessageText, handleSend, flatListRef, typingUser, markAllAsSeen, isJoined, scrollToBottom, leaveEvent, onNewMessage } = useChat(eventId, effectiveUserId);
+    const {
+        sendTyping,
+        messages,
+        messageText,
+        setMessageText,
+        handleSend,
+        flatListRef,
+        typingUser,
+        markAllAsSeen,
+        isJoined,
+        scrollToBottom,
+        onNewMessage
+    } = useChat(eventId, effectiveUserId);
 
     // Listen for new messages for side effects (e.g. sounds, haptics)
     React.useEffect(() => {
@@ -95,7 +109,7 @@ export const GroupChatScreen = () => {
     return (
         <View style={styles.container}>
             <ImageBackground
-                source={{ uri: 'https://images.pexels.com/photos/34328350/pexels-photo-34328350.jpeg' }} // Different club vibe image
+                source={{ uri: 'https://images.pexels.com/photos/34328350/pexels-photo-34328350.jpeg' }}
                 style={styles.backgroundImage}
                 resizeMode="cover"
             >
@@ -114,7 +128,19 @@ export const GroupChatScreen = () => {
                     </TouchableOpacity>
                     <View>
                         <Text style={styles.headerTitle}>CHAT GENERAL</Text>
-                        <Text style={styles.headerSubtitle}>Live • 128 Online</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <View style={{
+                                width: 8,
+                                height: 8,
+                                borderRadius: 4,
+                                backgroundColor: isJoined ? '#4CAF50' : '#FF5252',
+                                marginRight: 6
+                            }} />
+                            <Text style={styles.headerSubtitle}>
+                                {isJoined ? 'Live • ' : 'Connecting... '}
+                            </Text>
+                            <Text style={styles.headerSubtitle}>128 Online</Text>
+                        </View>
                     </View>
                     <TouchableOpacity style={styles.menuButton}>
                         <Ionicons name="ellipsis-horizontal" size={24} color="white" />
@@ -140,7 +166,7 @@ export const GroupChatScreen = () => {
                     }}
                     onLayout={() => {
                         markAllAsSeen();
-                        scrollToBottom();
+                        /*  scrollToBottom(); */
                     }}
                 />
 
@@ -164,15 +190,23 @@ export const GroupChatScreen = () => {
                             style={styles.input}
                             value={messageText}
                             onChangeText={(t) => {
+                                // ⚠️ FIX: Pasar eventId explícitamente
                                 setMessageText(t);
-                                sendTyping(eventId);
                             }}
-
                             placeholder="Type a message..."
                             placeholderTextColor="#666"
+                            editable={isJoined} // Solo permitir escribir si está conectado
                         />
-                        <TouchableOpacity onPress={handleSend} activeOpacity={0.8}>
-                            <View style={[styles.sendButton, ZyncTheme.shadowGlow]}>
+                        <TouchableOpacity
+                            onPress={handleSend}
+                            activeOpacity={0.8}
+                            disabled={!isJoined || !messageText.trim()} // Deshabilitar si no está conectado o no hay texto
+                        >
+                            <View style={[
+                                styles.sendButton,
+                                ZyncTheme.shadowGlow,
+                                (!isJoined || !messageText.trim()) && { opacity: 0.5 }
+                            ]}>
                                 <Ionicons name="send" size={18} color="black" />
                             </View>
                         </TouchableOpacity>
@@ -262,7 +296,7 @@ const styles = StyleSheet.create({
         marginLeft: 2,
     },
     messageBubble: {
-        maxWidth: '80%', // Constrain width
+        maxWidth: '80%',
         padding: 6,
         paddingHorizontal: 16,
         borderRadius: 10,

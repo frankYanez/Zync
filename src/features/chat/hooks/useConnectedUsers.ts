@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { connectSocket, getOnlineUsers, joinEvent, offSocket, onJoinedEvent, onOnlineUsersList, onUserJoined, onUserLeft } from '../services/socket.service';
+import { connectSocket, getOnlineUsers, joinEvent, offSocket, onJoinedEvent, onOnlineUsersList, onPresenceUpdate } from '../services/socket.service';
 
 export interface ConnectedUser {
     id: string;
@@ -40,21 +40,19 @@ export const useConnectedUsers = (eventId: string) => {
             setLoading(false);
         };
 
-        const handleUserJoined = (user: any) => {
+        const handlePresenceUpdate = (data: { type: 'join' | 'leave'; user?: any; userId?: string }) => {
             if (!isMounted) return;
-            console.log('User joined:', user);
-            setUsers(prev => {
-                const exists = prev.find(u => u.id === user.id);
-                if (exists) return prev.map(u => u.id === user.id ? { ...u, isOnline: true } : u);
-                return [...prev, { ...user, isOnline: true }];
-            });
-        };
+            console.log('Presence update:', data);
 
-        const handleUserLeft = (data: { userId: string } | string) => {
-            if (!isMounted) return;
-            const userId = typeof data === 'string' ? data : data.userId;
-            console.log('User left:', userId);
-            setUsers(prev => prev.filter(u => u.id !== userId));
+            if (data.type === 'join' && data.user) {
+                setUsers(prev => {
+                    const exists = prev.find(u => u.id === data.user.id);
+                    if (exists) return prev.map(u => u.id === data.user.id ? { ...u, isOnline: true } : u);
+                    return [...prev, { ...data.user, isOnline: true }];
+                });
+            } else if (data.type === 'leave' && data.userId) {
+                setUsers(prev => prev.filter(u => u.id !== data.userId));
+            }
         };
 
         const handleJoinedEvent = () => {
@@ -72,20 +70,15 @@ export const useConnectedUsers = (eventId: string) => {
 
             // Register Listeners with specific callbacks
             onOnlineUsersList(handleOnlineUsers);
-            onUserJoined(handleUserJoined);
-            onUserLeft(handleUserLeft);
+            onPresenceUpdate(handlePresenceUpdate);
             onJoinedEvent(handleJoinedEvent);
 
             // Join the event
+            console.log('useConnectedUsers: Joining event:', eventId);
             joinEvent(eventId);
 
             // Backup mechanism: in case we are already joined or event doesn't fire 'joined-event' for re-joins
-            setTimeout(() => {
-                if (isMounted && !hasJoinedRef.current) {
-                    console.log('Backup: requesting online users directly');
-                    getOnlineUsers(eventId);
-                }
-            }, 1000);
+
         };
 
         init();
@@ -93,8 +86,7 @@ export const useConnectedUsers = (eventId: string) => {
         return () => {
             isMounted = false;
             // Cleanup specific listeners
-            offSocket('user-joined', handleUserJoined);
-            offSocket('user-left', handleUserLeft);
+            offSocket('presence:update', handlePresenceUpdate);
             offSocket('presence:list', handleOnlineUsers);
             offSocket('joined-event', handleJoinedEvent);
         };

@@ -1,19 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList } from 'react-native';
 import { Message } from '../domain/chat.types';
-import { getChatMessages, getEventMessages } from '../services/chat.service';
+import { enterEvent, getChatMessages, getEventMessages, leaveEventApi, sendPrivateMessage } from '../services/chat.service';
 import {
     connectSocket,
+    disconnectSocket,
     joinEvent,
     leaveEvent,
     offSocket,
+    onEventMessage,
     onJoinedEvent,
     onMessageDelivered,
     onMessageSeen,
     onNewMessage,
     onTyping,
     sendEventMessage,
-    sendMessage,
     sendMessageDelivered,
     sendMessageSeen,
     sendTyping
@@ -78,7 +79,8 @@ export const useChat = (eventId: string, currentUserId: string, otherUserId?: st
         const handleNewMessage = (newMessage: Message & { self?: boolean }) => {
             console.log('useChat: NEW MESSAGE RECEIVED', newMessage);
             const isMyMessage = newMessage.fromUserId === currentUserId;
-            if (isMyMessage && newMessage.self) return;
+            // Ignore own messages from socket to prevent duplication (handled optimistically + via HTTP)
+            if (isMyMessage) return;
 
             if (!isMyMessage) {
                 sendMessageDelivered(newMessage.id!);
@@ -123,7 +125,13 @@ export const useChat = (eventId: string, currentUserId: string, otherUserId?: st
 
             console.log('useChat: Socket connected, registered listeners');
             onJoinedEvent(handleJoinedEvent);
-            onNewMessage(handleNewMessage);
+            if (otherUserId) {
+                console.log('useChat: Listening for private messages');
+                onNewMessage(handleNewMessage);
+            } else {
+                console.log('useChat: Listening for event messages');
+                onEventMessage(handleNewMessage);
+            }
             onTyping(handleTyping);
             onMessageDelivered(handleMessageDelivered);
             onMessageSeen(handleMessageSeen);
@@ -143,7 +151,10 @@ export const useChat = (eventId: string, currentUserId: string, otherUserId?: st
             } catch (e) {
                 console.error('useChat: Error fetching history:', e);
             } finally {
-                console.log('useChat: Joining event', eventId);
+                console.log('useChat: Entering event API', eventId);
+                await enterEvent(eventId);
+
+                console.log('useChat: Joining event socket', eventId);
                 joinEvent(eventId);
                 if (isMounted) setLoading(false);
             }
@@ -158,11 +169,14 @@ export const useChat = (eventId: string, currentUserId: string, otherUserId?: st
             // Clean up listeners with specific callbacks
             offSocket('joined-event', handleJoinedEvent);
             offSocket('new-message', handleNewMessage);
+            offSocket('event-message', handleNewMessage);
             offSocket('typing', handleTyping);
             offSocket('message-delivered', handleMessageDelivered);
             offSocket('message-seen', handleMessageSeen);
 
-            leaveEvent(eventId);
+            leaveEvent(eventId); // Socket leave
+            leaveEventApi(eventId); // API leave
+            disconnectSocket();
         };
     }, [eventId, otherUserId, currentUserId]);
 
@@ -184,14 +198,23 @@ export const useChat = (eventId: string, currentUserId: string, otherUserId?: st
             content: content,
             createdAt: new Date().toISOString(),
         };
+
+        setMessages(prev => [...prev, optimisticMsg]);
         setTimeout(scrollToBottom, 50);
 
+        console.log(otherUserId);
+
+
         if (otherUserId) {
-            sendMessage({
-                eventId,
-                toUserId: otherUserId,
-                content
-            });
+            sendPrivateMessage(eventId, otherUserId, content)
+                .then((savedMsg) => {
+                    // Replace optimistic ID with real one
+                    setMessages(prev => prev.map(m => m.id === tempId ? { ...m, ...savedMsg } : m));
+                })
+                .catch(err => {
+                    console.error('Failed to send private message', err);
+                    // Optionally remove the optimistic message
+                });
         } else {
             sendEventMessage({
                 eventId,

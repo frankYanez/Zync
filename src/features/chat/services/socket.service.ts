@@ -79,6 +79,11 @@ export const onNewMessage = (callback: (message: any) => void) => {
     socket?.on('new-message', callback);
 };
 
+export const onEventMessage = (callback: (message: any) => void) => {
+    console.log('SocketService: Registering event-message listener');
+    socket?.on('event-message', callback);
+};
+
 // PASO 9: Salir del evento
 export const leaveEvent = (eventId: string) => {
     socket?.emit('leave-event', { eventId });
@@ -96,9 +101,7 @@ export const onUserLeft = (callback: (data: { userId: string } | string) => void
 
 // TYPING
 export const sendTyping = (eventId: string, toUserId?: string) => {
-    // NOTE: Backend doc requires toUserId. If it's a group chat, maybe backend handles specific logic or we only support 1-1 typing?
-    // Assuming for group chat we might emit without toUserId or broadcast? 
-    // Based on user request: socket.emit('typing', { eventId, toUserId }) 
+
     socket?.emit('typing', toUserId ? { eventId, toUserId } : { eventId });
 };
 
@@ -130,12 +133,13 @@ export const getOnlineUsers = (eventId: string) => {
 };
 
 export const onOnlineUsersList = (callback: (users: any[]) => void) => {
-    // Given the previous patterns, it might be 'presence:list'.
-    // Let's ask the user or assume 'presence:who' response.
-    // Actually, normally `presence:who` is the request. 
-    // I will add a listener for 'presence:list' and 'presence:who' just in case.
+
     socket?.on('presence:list', callback);
     // socket?.on('presence:who', callback); // Possible echo/response
+};
+
+export const onPresenceUpdate = (callback: (data: { type: 'join' | 'leave'; user?: any; userId?: string }) => void) => {
+    socket?.on('presence:update', callback);
 };
 
 // Cleanup listeners
