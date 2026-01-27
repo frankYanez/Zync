@@ -1,3 +1,4 @@
+import { useAuth } from '@/features/auth/context/AuthContext';
 import { ZyncTheme } from '@/shared/constants/theme';
 import { useRouter } from 'expo-router';
 import React from 'react';
@@ -11,6 +12,9 @@ interface ConnectedUsersCarouselProps {
 export const ConnectedUsersCarousel = ({ eventId }: ConnectedUsersCarouselProps) => {
     const router = useRouter();
     const { users } = useConnectedUsers(eventId);
+    const { user } = useAuth();
+
+    const filteredUsers = users.filter(u => u.id !== user?.sub);
 
     const handleUserPress = (userId: string) => {
         // Navigate to 1-on-1 chat
@@ -28,18 +32,18 @@ export const ConnectedUsersCarousel = ({ eventId }: ConnectedUsersCarouselProps)
         </TouchableOpacity>
     );
 
-    if (users.length === 0) return null;
+    if (filteredUsers.length === 0) return null;
 
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.title}>Conectados ({users.length})</Text>
+                <Text style={styles.title}>Conectados ({filteredUsers.length})</Text>
                 <TouchableOpacity onPress={handleViewAll}>
                     <Text style={styles.viewAll}>Ver todos</Text>
                 </TouchableOpacity>
             </View>
             <FlatList
-                data={users}
+                data={filteredUsers}
                 renderItem={renderItem}
                 keyExtractor={item => item.id}
                 horizontal

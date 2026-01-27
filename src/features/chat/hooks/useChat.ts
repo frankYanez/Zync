@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList } from 'react-native';
 import { Message } from '../domain/chat.types';
-import { enterEvent, getChatMessages, getEventMessages, leaveEventApi, sendPrivateMessage } from '../services/chat.service';
+import { enterEvent, getChatMessages, getEventMessages, leaveEventApi } from '../services/chat.service';
 import {
     connectSocket,
     disconnectSocket,
@@ -15,6 +15,7 @@ import {
     onNewMessage,
     onTyping,
     sendEventMessage,
+    sendMessage,
     sendMessageDelivered,
     sendMessageSeen,
     sendTyping
@@ -77,7 +78,7 @@ export const useChat = (eventId: string, currentUserId: string, otherUserId?: st
         };
 
         const handleNewMessage = (newMessage: Message & { self?: boolean }) => {
-            console.log('useChat: NEW MESSAGE RECEIVED', newMessage);
+            // console.log('useChat: NEW MESSAGE RECEIVED', newMessage);
             const isMyMessage = newMessage.fromUserId === currentUserId;
             // Ignore own messages from socket to prevent duplication (handled optimistically + via HTTP)
             if (isMyMessage) return;
@@ -96,7 +97,17 @@ export const useChat = (eventId: string, currentUserId: string, otherUserId?: st
             }
         };
 
-        const handleTyping = ({ fromUserId }: { fromUserId: string }) => {
+        const handleTyping = (data: any) => {
+            // console.log('useChat: Received typing event RAW:', data);
+            const fromUserId = data?.fromUserId || data?.userId || (typeof data === 'string' ? data : null);
+
+            if (!fromUserId) {
+                // console.warn('useChat: Could not extract fromUserId from typing event', data);
+                return;
+            }
+
+            // console.log('useChat: Processing typing from:', fromUserId, 'Current:', currentUserId);
+
             if (fromUserId === currentUserId) return;
             setTypingUser(fromUserId);
 
@@ -123,13 +134,14 @@ export const useChat = (eventId: string, currentUserId: string, otherUserId?: st
             await connectSocket();
             if (!isMounted) return;
 
-            console.log('useChat: Socket connected, registered listeners');
+            // console.log('useChat: Socket connected, registered listeners');
+            onJoinedEvent(handleJoinedEvent);
             onJoinedEvent(handleJoinedEvent);
             if (otherUserId) {
-                console.log('useChat: Listening for private messages');
+                // console.log('useChat: Listening for private messages');
                 onNewMessage(handleNewMessage);
             } else {
-                console.log('useChat: Listening for event messages');
+                // console.log('useChat: Listening for event messages');
                 onEventMessage(handleNewMessage);
             }
             onTyping(handleTyping);
@@ -151,10 +163,10 @@ export const useChat = (eventId: string, currentUserId: string, otherUserId?: st
             } catch (e) {
                 console.error('useChat: Error fetching history:', e);
             } finally {
-                console.log('useChat: Entering event API', eventId);
+                // console.log('useChat: Entering event API', eventId);
                 await enterEvent(eventId);
 
-                console.log('useChat: Joining event socket', eventId);
+                // console.log('useChat: Joining event socket', eventId);
                 joinEvent(eventId);
                 if (isMounted) setLoading(false);
             }
@@ -181,9 +193,9 @@ export const useChat = (eventId: string, currentUserId: string, otherUserId?: st
     }, [eventId, otherUserId, currentUserId]);
 
     const handleSend = () => {
-        console.log('Attempting to send message. isJoined:', isJoined, 'text:', messageText);
+        // console.log('Attempting to send message. isJoined:', isJoined, 'text:', messageText);
         if (!messageText.trim() || !isJoined) {
-            console.log('Send aborted. Empty text or not joined.');
+            // console.log('Send aborted. Empty text or not joined.');
             return;
         }
 
@@ -206,15 +218,13 @@ export const useChat = (eventId: string, currentUserId: string, otherUserId?: st
 
 
         if (otherUserId) {
-            sendPrivateMessage(eventId, otherUserId, content)
-                .then((savedMsg) => {
-                    // Replace optimistic ID with real one
-                    setMessages(prev => prev.map(m => m.id === tempId ? { ...m, ...savedMsg } : m));
-                })
-                .catch(err => {
-                    console.error('Failed to send private message', err);
-                    // Optionally remove the optimistic message
-                });
+            sendMessage({
+                eventId,
+                toUserId: otherUserId,
+                content
+            });
+            // We assume successful emission for now, as socket doesn't return a promise in this setup across the hook boundary easily without ack
+            // The optimistic message remains in the list.
         } else {
             sendEventMessage({
                 eventId,

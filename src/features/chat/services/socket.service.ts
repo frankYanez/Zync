@@ -11,7 +11,7 @@ export const connectSocket = async () => {
     const token = await getToken();
 
     if (!token) {
-        console.error('SocketService: No token found for connection');
+        // console.error('SocketService: No token found for connection');
         return;
     }
 
@@ -24,7 +24,7 @@ export const connectSocket = async () => {
     });
 
     socket.on('connect', () => {
-        console.log('Socket connected:', socket?.id);
+        // console.log('Socket connected:', socket?.id);
     });
 
     socket.on('disconnect', () => {
@@ -32,7 +32,7 @@ export const connectSocket = async () => {
     });
 
     socket.on('connect_error', (err) => {
-        console.error('Socket connection error:', err);
+        console.warn('Socket connection error:', err);
     });
 };
 
@@ -63,24 +63,24 @@ export const onJoinedEvent = (callback: () => void) => {
 
 // PASO 6: Enviar mensaje
 export const sendMessage = (payload: { eventId: string; toUserId: string; content: string }) => {
-    console.log('SocketService: Emitting send-message', payload);
+    // console.log('SocketService: Emitting send-message', payload);
     socket?.emit('send-message', payload);
 };
 
 // PASO 6.5: Enviar mensaje grupal (evento)
 export const sendEventMessage = (payload: { eventId: string; content: string }) => {
-    console.log('SocketService: Emitting send-event-message', payload);
+    // console.log('SocketService: Emitting send-event-message', payload);
     socket?.emit('send-event-message', payload);
 };
 
 // PASO 7: Recibir mensajes
 export const onNewMessage = (callback: (message: any) => void) => {
-    console.log('SocketService: Registering new-message listener');
+    // console.log('SocketService: Registering new-message listener');
     socket?.on('new-message', callback);
 };
 
 export const onEventMessage = (callback: (message: any) => void) => {
-    console.log('SocketService: Registering event-message listener');
+    // console.log('SocketService: Registering event-message listener');
     socket?.on('event-message', callback);
 };
 
@@ -100,12 +100,17 @@ export const onUserLeft = (callback: (data: { userId: string } | string) => void
 // --- SIGNALING EVENTS ---
 
 // TYPING
+// TYPING
 export const sendTyping = (eventId: string, toUserId?: string) => {
-
-    socket?.emit('typing', toUserId ? { eventId, toUserId } : { eventId });
+    // Backend Doc Example: socket.emit('typing', { eventId: '...', toUserId: '...' });
+    // Note: If toUserId is missing (Group Chat), we still emit { eventId }.
+    const payload = toUserId ? { eventId, toUserId } : { eventId };
+    // console.log('SocketService: Emitting typing', payload);
+    socket?.emit('typing', payload);
 };
 
 export const onTyping = (callback: (data: { fromUserId: string }) => void) => {
+    // Backend Doc Example: socket.on('typing', ({ fromUserId }) => { ... });
     socket?.on('typing', callback);
 };
 

@@ -101,20 +101,7 @@ export const getEventMessages = async (eventId: string): Promise<Message[]> => {
     }
 };
 
-export const sendPrivateMessage = async (eventId: string, otherUserId: string, content: string): Promise<Message> => {
-    try {
-        const headers = await getAuthHeaders();
-        const response = await axios.post(
-            `${API_URL}/events/${eventId}/chats/${otherUserId}/messages`,
-            { content },
-            headers
-        );
-        return response.data;
-    } catch (error) {
-        console.error("Error sending private message:", error);
-        throw error;
-    }
-};
+
 
 
 

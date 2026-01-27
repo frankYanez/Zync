@@ -20,7 +20,7 @@ export const useConnectedUsers = (eventId: string) => {
 
         const handleOnlineUsers = (data: any) => {
             if (!isMounted) return;
-            console.log('Received online users:', data);
+            // console.log('Received online users:', data);
 
             if (Array.isArray(data)) {
                 setUsers(data.map(u => ({ ...u, isOnline: true })));
@@ -34,31 +34,43 @@ export const useConnectedUsers = (eventId: string) => {
                     isOnline: true
                 })));
             } else {
-                console.warn('Received online users list in unknown format:', data);
+                // console.warn('Received online users list in unknown format:', data);
                 setUsers([]);
             }
             setLoading(false);
         };
 
-        const handlePresenceUpdate = (data: { type: 'join' | 'leave'; user?: any; userId?: string }) => {
+        const handlePresenceUpdate = (data: any) => {
             if (!isMounted) return;
             console.log('Presence update:', data);
 
-            if (data.type === 'join' && data.user) {
+            // Handle { online: boolean, userId: string } format from backend logs
+            const isOnline = data.online === true || data.type === 'join';
+            const userId = data.userId || (data.user ? data.user.id : null);
+
+            if (!userId) {
+                // console.warn('Presence update missing userId:', data);
+                return;
+            }
+
+            if (isOnline) {
                 setUsers(prev => {
-                    const exists = prev.find(u => u.id === data.user.id);
-                    if (exists) return prev.map(u => u.id === data.user.id ? { ...u, isOnline: true } : u);
-                    return [...prev, { ...data.user, isOnline: true }];
+                    const exists = prev.find(u => u.id === userId);
+                    if (exists) return prev.map(u => u.id === userId ? { ...u, isOnline: true } : u);
+
+                    // If we have user details in data.user, use them. Otherwise placeholder.
+                    const newUser = data.user || { id: userId, name: 'User', avatar: undefined };
+                    return [...prev, { ...newUser, isOnline: true }];
                 });
-            } else if (data.type === 'leave' && data.userId) {
-                setUsers(prev => prev.filter(u => u.id !== data.userId));
+            } else {
+                setUsers(prev => prev.filter(u => u.id !== userId));
             }
         };
 
         const handleJoinedEvent = () => {
             if (!isMounted) return;
             hasJoinedRef.current = true;
-            console.log('Successfully joined event via useConnectedUsers');
+            // console.log('Successfully joined event via useConnectedUsers');
             // Now it's safe to ask who is online
             getOnlineUsers(eventId);
         };
@@ -74,7 +86,7 @@ export const useConnectedUsers = (eventId: string) => {
             onJoinedEvent(handleJoinedEvent);
 
             // Join the event
-            console.log('useConnectedUsers: Joining event:', eventId);
+            // console.log('useConnectedUsers: Joining event:', eventId);
             joinEvent(eventId);
 
             // Backup mechanism: in case we are already joined or event doesn't fire 'joined-event' for re-joins

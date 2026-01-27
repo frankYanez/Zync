@@ -9,11 +9,13 @@ import React from 'react';
 import { FlatList, Image, ImageBackground, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ConnectedUsersCarousel } from '../components/ConnectedUsersCarousel';
+import { TypingIndicator } from '../components/TypingIndicator';
 
 
 export const GroupChatScreen = () => {
     // const { eventId } = useLocalSearchParams<{ eventId: string }>();\
-    const otherUserId = '19a04f82-79ff-49c6-b4d7-7c61ee5893b4';
+    // const { eventId } = useLocalSearchParams<{ eventId: string }>();\
+    // const otherUserId = '19a04f82-79ff-49c6-b4d7-7c61ee5893b4'; // Removed as it is unused in Group Chat
     const eventId = '8aac60c1-351b-4289-a152-88a017de32bd';
     const insets = useSafeAreaInsets();
     const router = useRouter();
@@ -37,7 +39,7 @@ export const GroupChatScreen = () => {
     // Listen for new messages for side effects (e.g. sounds, haptics)
     React.useEffect(() => {
         onNewMessage((msg) => {
-            console.log('GroupChatScreen: New message received in view', msg);
+            // console.log('GroupChatScreen: New message received in view', msg);
             // Here we could trigger haptic feedback or a sound
         });
     }, [onNewMessage]);
@@ -53,7 +55,7 @@ export const GroupChatScreen = () => {
 
             if (item.seenAt) {
                 statusIcon = "checkmark-done"; // Seen
-                statusColor = "#000"; // Visible on lime
+                statusColor = "#34B7F1"; // Blue
             } else if (item.deliveredAt) {
                 statusIcon = "checkmark-done-outline"; // Delivered
                 statusColor = "rgba(0,0,0,0.6)";
@@ -178,11 +180,9 @@ export const GroupChatScreen = () => {
                 >
                     {/* Typing Indicator */}
                     {typingUser && (
-                        <View style={styles.typingContainer}>
-                            <Text style={styles.typingText}>
-                                <Text style={{ fontWeight: 'bold' }}>Alguien</Text> está escribiendo...
-                            </Text>
-                        </View>
+                        <TypingIndicator
+                            avatarUrl={messages.find(m => m.fromUserId === typingUser)?.sender?.avatar}
+                        />
                     )}
 
                     <BlurView intensity={90} tint="dark" style={[styles.inputContainer, { paddingBottom: insets.bottom + 10 }]}>
