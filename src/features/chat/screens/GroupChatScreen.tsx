@@ -9,6 +9,7 @@ import React from 'react';
 import { FlatList, Image, ImageBackground, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ConnectedUsersCarousel } from '../components/ConnectedUsersCarousel';
+import { EventStoriesCarousel } from '../components/EventStoriesCarousel';
 import { TypingIndicator } from '../components/TypingIndicator';
 
 
@@ -148,6 +149,9 @@ export const GroupChatScreen = () => {
                         <Ionicons name="ellipsis-horizontal" size={24} color="white" />
                     </TouchableOpacity>
                 </View>
+
+                {/* Event Stories */}
+                <EventStoriesCarousel eventId={eventId} />
 
                 {/* Connected Users - Transparent BG */}
                 <View style={{ height: 100 }}>

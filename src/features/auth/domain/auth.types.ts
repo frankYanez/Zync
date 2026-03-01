@@ -3,11 +3,6 @@ export interface RegisterDto {
     password?: string;
     firstName: string;
     lastName: string;
-    nationality: string;
-    phone: string;
-    city: string;
-    state: string;
-    country: string;
 }
 
 export interface LoginUserDto {
@@ -25,6 +20,7 @@ export interface User {
     city?: string;
     state?: string;
     country?: string;
+    avatarUrl?: string; // Newly added
     zyncPoints: number;
     sub: string;
     // Add other user fields as needed

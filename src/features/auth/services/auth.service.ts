@@ -86,3 +86,20 @@ export const getToken = async (): Promise<string | null> => {
     }
     return cachedToken;
 };
+
+export const refreshToken = async (refreshTokenValue: string): Promise<string> => {
+    const response = await axios.post(`${API_URL}/auth/refresh`, { refreshToken: refreshTokenValue });
+    if (response.data.accessToken) {
+        await setToken(response.data.accessToken);
+        return response.data.accessToken;
+    }
+    throw new Error('Failed to refresh token');
+};
+
+export const forgotPassword = async (email: string): Promise<void> => {
+    await axios.post(`${API_URL}/auth/forgot-password`, { email });
+};
+
+export const resetPassword = async (email: string, code: string, newPassword: string): Promise<void> => {
+    await axios.post(`${API_URL}/auth/reset-password`, { email, code, newPassword });
+};

@@ -1,29 +1,65 @@
 import { CyberCard } from '@/components/CyberCard';
 import { NeonButton } from '@/components/NeonButton';
+import { RoleSelector } from '@/components/profile/RoleSelector';
 import { ScreenLayout } from '@/components/ScreenLayout';
 import { ThemedText } from '@/components/themed-text';
 import { useAuth } from '@/features/auth/context/AuthContext';
+import { AvatarUpload } from '@/features/profile/components/AvatarUpload';
+import { getPublicProfile } from '@/features/profile/services/profile.service';
 import { ZyncTheme } from '@/shared/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
 
+/**
+ * Main Profile Screen for the authenticated user.
+ * 
+ * Displays the user's avatar, basic information (name, email), statistics, 
+ * and provides navigation to different settings such as Edit Profile, Change Password, 
+ * Notifications, and Security. Also handles the user logout flow.
+ *
+ * @returns {React.ReactElement} The rendered Profile Screen.
+ */
 export default function ProfileScreen() {
     const { logout, user } = useAuth();
     const router = useRouter();
+    const [avatarUrl, setAvatarUrl] = useState<string | undefined>(user?.avatarUrl);
 
+    useEffect(() => {
+        if (user?.sub) {
+            getPublicProfile(user.sub).then((profile) => {
+                setAvatarUrl(profile.avatarUrl);
+            });
+        }
+    }, [user?.sub]);
+
+    /**
+     * Executes the logout flow, clearing the local session and redirecting
+     * the user back to the authentication screens.
+     */
     const handleLogout = async () => {
         await logout();
         router.replace('/(auth)');
     };
 
+    /**
+     * Callback handler for successful avatar uploads.
+     * Updates the local component state with the new remote avatar URL.
+     * 
+     * @param {string} newUrl - The URL of the newly uploaded avatar.
+     */
+    const handleAvatarUploadSuccess = (newUrl: string) => {
+        setAvatarUrl(newUrl);
+    };
+
     return (
         <ScreenLayout style={styles.container}>
             <View style={styles.header}>
-                <View style={styles.avatarContainer}>
-                    <Ionicons name="person" size={40} color={ZyncTheme.colors.background} />
-                </View>
+                <AvatarUpload
+                    currentAvatarUrl={avatarUrl}
+                    onUploadSuccess={handleAvatarUploadSuccess}
+                />
                 <ThemedText style={styles.name}>{user?.firstName || 'User'}</ThemedText>
                 <ThemedText style={styles.email}>{user?.email || 'email@example.com'}</ThemedText>
             </View>
@@ -45,8 +81,31 @@ export default function ProfileScreen() {
                 </View>
             </View>
 
+            <RoleSelector />
+
             <View style={styles.section}>
                 <ThemedText style={styles.sectionTitle}>SETTINGS</ThemedText>
+
+                <TouchableOpacity onPress={() => router.push('/profile/edit' as any)}>
+                    <CyberCard style={styles.menuItem}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Ionicons name="person-outline" size={24} color={ZyncTheme.colors.textSecondary} style={{ marginRight: 10 }} />
+                            <ThemedText>Edit Profile</ThemedText>
+                        </View>
+                        <Ionicons name="chevron-forward" size={20} color={ZyncTheme.colors.textSecondary} />
+                    </CyberCard>
+                </TouchableOpacity>
+
+                <TouchableOpacity onPress={() => router.push('/profile/change-password' as any)}>
+                    <CyberCard style={styles.menuItem}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Ionicons name="lock-closed-outline" size={24} color={ZyncTheme.colors.textSecondary} style={{ marginRight: 10 }} />
+                            <ThemedText>Change Password</ThemedText>
+                        </View>
+                        <Ionicons name="chevron-forward" size={20} color={ZyncTheme.colors.textSecondary} />
+                    </CyberCard>
+                </TouchableOpacity>
+
                 <CyberCard style={styles.menuItem}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <Ionicons name="notifications-outline" size={24} color={ZyncTheme.colors.textSecondary} style={{ marginRight: 10 }} />

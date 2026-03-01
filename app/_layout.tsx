@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
+import { RoleProvider } from '@/context/RoleContext';
 import { ZyncProvider } from '@/context/ZyncContext';
 import { AuthProvider } from '@/features/auth/context/AuthContext';
 import { CartProvider } from '@/features/wallet/context/CartContext';
@@ -38,6 +39,7 @@ function InitialLayout() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="(business)" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
         <Stack.Screen name="cart" options={{ presentation: 'modal', headerShown: false }} />
       </Stack>
@@ -50,11 +52,13 @@ export default function RootLayout() {
   return (
     <ZyncProvider>
       <AuthProvider>
-        <CartProvider>
-          <GestureHandlerRootView style={{ flex: 1 }}>
-            <InitialLayout />
-          </GestureHandlerRootView>
-        </CartProvider>
+        <RoleProvider>
+          <CartProvider>
+            <GestureHandlerRootView style={{ flex: 1 }}>
+              <InitialLayout />
+            </GestureHandlerRootView>
+          </CartProvider>
+        </RoleProvider>
       </AuthProvider>
     </ZyncProvider>
   );

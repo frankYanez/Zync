@@ -36,7 +36,7 @@ const getAuthHeaders = async () => {
 export const getChatMessages = async (eventId: string, otherUserId: string): Promise<Message[]> => {
     try {
         const headers = await getAuthHeaders();
-        const response = await axios.get(`${API_URL}/events/${eventId}/chats/${otherUserId}/messages`, headers);
+        const response = await axios.get(`${API_URL}/chats/${eventId}/private/${otherUserId}/messages`, headers);
 
         if (Array.isArray(response.data)) {
             return response.data;
@@ -59,7 +59,7 @@ export const getChatMessages = async (eventId: string, otherUserId: string): Pro
 export const getChats = async (eventId: string): Promise<any[]> => {
     try {
         const headers = await getAuthHeaders();
-        const response = await axios.get(`${API_URL}/events/${eventId}/chats`, headers);
+        const response = await axios.get(`${API_URL}/chats/${eventId}/conversations`, headers);
 
         if (Array.isArray(response.data)) return response.data;
         if (response.data && Array.isArray(response.data.chats)) return response.data.chats;
@@ -76,7 +76,7 @@ export const getChats = async (eventId: string): Promise<any[]> => {
 export const endChatEvent = async (eventId: string): Promise<any> => {
     const headers = await getAuthHeaders();
     // User requested POST for this endpoint
-    const response = await axios.post(`${API_URL}/events/${eventId}/end`, {}, headers);
+    const response = await axios.post(`${API_URL}/chats/${eventId}/cleanup`, {}, headers);
     return response.data;
 };
 
@@ -84,7 +84,7 @@ export const getEventMessages = async (eventId: string): Promise<Message[]> => {
     try {
         const headers = await getAuthHeaders();
         // Updated to match backend doc: /event-chat/messages
-        const response = await axios.get(`${API_URL}/events/${eventId}/event-chat/messages`, headers);
+        const response = await axios.get(`${API_URL}/chats/${eventId}/public/messages`, headers);
 
         if (Array.isArray(response.data)) {
             return response.data;
