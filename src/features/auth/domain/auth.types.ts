@@ -23,6 +23,7 @@ export interface User {
     avatarUrl?: string; // Newly added
     zyncPoints: number;
     sub: string;
+    roles?: string[];
     // Add other user fields as needed
 }
 

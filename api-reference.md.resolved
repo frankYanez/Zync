@@ -1,0 +1,403 @@
+# Zync API — Referencia de Endpoints
+
+**Base URL:** `http://localhost:3001`
+**Swagger interactivo:** `http://localhost:3001/api/docs`
+
+> Los endpoints marcados con 🔒 requieren `Authorization: Bearer <accessToken>` en el header.
+> Los endpoints marcados con 👑 requieren un rol específico además del JWT.
+
+---
+
+## 🔐 Auth — `/auth`
+
+### `POST /auth/register`
+Registra un nuevo usuario.
+
+**Body:**
+```json
+{
+  "email": "user@example.com",
+  "password": "min8chars",
+  "firstName": "John",
+  "lastName": "Doe"
+}
+```
+**Response `201`:**
+```json
+{ "createdAt": "2026-01-01T00:00:00.000Z" }
+```
+
+---
+
+### `POST /auth/login`
+Inicia sesión. Devuelve tokens de acceso y refresco.
+> Devuelve `403` si la cuenta está suspendida.
+
+**Body:**
+```json
+{ "email": "user@example.com", "password": "mypassword" }
+```
+**Response `200`:**
+```json
+{
+  "accessToken": "eyJ...",
+  "refreshToken": "eyJ...",
+  "user": { "id": "...", "email": "...", "roles": ["USER"] }
+}
+```
+
+---
+
+### `POST /auth/refresh`
+Renueva el `accessToken` usando el `refreshToken`.
+
+**Body:**
+```json
+{ "refreshToken": "eyJ..." }
+```
+**Response `200`:**
+```json
+{ "accessToken": "eyJ..." }
+```
+
+---
+
+### `GET /auth/me` 🔒
+Devuelve el perfil del usuario autenticado (desde el JWT, sin DB hit).
+
+**Response `200`:** Claims del token (id, email, roles).
+
+---
+
+### `POST /auth/forgot-password`
+Envía un email con código OTP para resetear contraseña.
+> Rate-limited: 3 req / 60s.
+
+**Body:**
+```json
+{ "email": "user@example.com" }
+```
+**Response `200`:**
+```json
+{ "success": true, "message": "If the email exists, a reset link has been sent" }
+```
+
+---
+
+### `POST /auth/reset-password`
+Resetea la contraseña usando el código OTP recibido por email.
+> Rate-limited: 5 req / 60s.
+
+**Body:**
+```json
+{
+  "email": "user@example.com",
+  "code": "876543",
+  "newPassword": "NewStrongPassword123!"
+}
+```
+**Response `200`:**
+```json
+{ "success": true, "message": "Password has been reset successfully" }
+```
+
+---
+
+## 📧 Email Verification — `/email`
+
+### `POST /email/request`
+Solicita verificación de email (envía OTP).
+
+**Body:**
+```json
+{ "email": "user@example.com", "locale": "es-AR" }
+```
+
+---
+
+### `POST /email/resend`
+Reenvía el OTP de verificación.
+
+**Body:** igual que `/email/request`.
+
+---
+
+### `POST /email/verify`
+Verifica el OTP recibido y marca el email como verificado.
+
+**Body:**
+```json
+{ "email": "user@example.com", "otp": "123456" }
+```
+
+---
+
+## 👤 Users — [/users](file:///home/gonza/backend-zync/src/presentation/di/modules/users)
+
+### `GET /users/:id/profile`
+Perfil **público** de un usuario. No requiere autenticación.
+
+**Response `200`:**
+```json
+{
+  "id": "...",
+  "firstName": "John",
+  "lastName": "Doe",
+  "roles": ["USER"],
+  "avatarUrl": "https://..."
+}
+```
+
+---
+
+### `PATCH /users/profile` 🔒
+Actualiza el perfil del usuario autenticado.
+
+**Body** (todos opcionales):
+```json
+{
+  "firstName": "John",
+  "lastName": "Doe",
+  "phone": "+5491112345678",
+  "nationality": "AR",
+  "city": "Buenos Aires",
+  "state": "CABA",
+  "country": "Argentina",
+  "avatarUrl": "https://...",
+  "birthDate": "1995-06-15",
+  "gender": "male"
+}
+```
+> `gender` valores sugeridos: `male` | `female` | `non-binary` | `prefer_not_to_say`
+
+**Response `200`:** [UserResponseDto](#userresponsedto)
+
+---
+
+### `POST /users/me/change-password` 🔒
+Cambia la contraseña estando logueado.
+
+**Body:**
+```json
+{
+  "oldPassword": "CurrentPassword123!",
+  "newPassword": "NewPassword456!"
+}
+```
+**Response `200`:** `{ "success": true }`
+> `401` si `oldPassword` es incorrecto. `400` si la nueva es igual a la anterior.
+
+---
+
+### `POST /users/me/avatar` 🔒
+Sube imagen de perfil. `multipart/form-data`, campo [file](file:///home/gonza/backend-zync/src/presentation/http/users.controller.ts#37-41).
+
+- Formatos: JPEG, PNG, WebP
+- Tamaño máximo: 5 MB
+
+**Response `200`:**
+```json
+{ "avatarUrl": "/uploads/avatars/uuid.jpg" }
+```
+
+---
+
+### `DELETE /users/me` 🔒
+Elimina la cuenta del usuario autenticado (soft-delete). Después de esto el login falla.
+
+**Response `200`:** `{ "success": true }`
+
+---
+
+### `PUT /users/push-token` 🔒
+Actualiza el push notification token del dispositivo.
+
+**Body:**
+```json
+{ "pushToken": "ExponentPushToken[xxx]" }
+```
+**Response `200`:** `{ "success": true }`
+
+---
+
+## 🎧 DJ Profile — `/users/me/dj-profile`
+
+### `POST /users/me/dj-profile` 🔒
+Crea o actualiza el perfil de DJ. Asigna el rol `DJ` al usuario.
+
+**Body:**
+```json
+{
+  "artistName": "DJ Gonza",
+  "musicGenre": "Techno",
+  "pricePerSong": 100.0
+}
+```
+**Response `200`:** `{ "message": "DJ Profile updated and role assigned" }`
+
+---
+
+## 🏢 Organizer Profile — `/users/me/organizer-profile`
+
+### `POST /users/me/organizer-profile` 🔒
+Crea o actualiza el perfil de Organizador. Asigna el rol `ORGANIZER`.
+
+**Body:**
+```json
+{ "organizationName": "Festivals Inc." }
+```
+**Response `200`:** `{ "message": "Organizer Profile updated and role assigned" }`
+
+---
+
+## 🎪 Events — `/events`
+
+### `GET /events`
+Lista todos los eventos (paginado).
+
+**Query params:**
+| Param | Tipo | Descripción |
+|-------|------|-------------|
+| `skip` | number | Offset |
+| `take` | number | Límite |
+
+---
+
+### `POST /events/:eventId/enter` 🔒
+Registra el ingreso del usuario a un evento.
+
+**Response `200`:** `{ "ok": true }`
+
+---
+
+### `POST /events/:eventId/leave` 🔒
+Registra la salida del usuario de un evento.
+
+**Response `200`:** `{ "ok": true }`
+
+---
+
+## 🏠 Venues — `/venues`
+
+### `POST /venues` 🔒 👑 `ORGANIZER`
+Crea un nuevo venue.
+
+**Body:**
+```json
+{
+  "name": "Club XYZ",
+  "description": "Un lugar increíble",
+  "address": "Av. Corrientes 1234, CABA"
+}
+```
+
+---
+
+### `GET /venues/my-venues` 🔒
+Devuelve los venues creados por el usuario autenticado.
+
+---
+
+## 💬 Chat — `/chats`
+
+> Todos los endpoints requieren 🔒 JWT.
+
+### `GET /chats/:eventId/private/:otherUserId/messages`
+Historial del chat privado 1:1 entre el usuario autenticado y `otherUserId`, dentro de un evento.
+
+---
+
+### `GET /chats/:eventId/conversations`
+Lista todas las conversaciones del usuario en un evento.
+
+---
+
+### `GET /chats/:eventId/public/messages`
+Historial del chat global del evento.
+
+---
+
+### `POST /chats/:eventId/cleanup`
+Finaliza el evento y limpia los datos de chat. *(Uso interno/admin)*
+
+---
+
+## 📸 Stories — `/stories`
+
+> Todos los endpoints requieren 🔒 JWT.
+
+### `POST /stories`
+Crea una historia vinculada a un evento. `multipart/form-data`.
+
+**Campos:**
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| [file](file:///home/gonza/backend-zync/src/presentation/http/users.controller.ts#37-41) | File | Imagen (max 5 MB) |
+| `eventId` | string | ID del evento |
+| `text` | string | Texto opcional |
+
+**Response `200`:** [StoryResponseDto](#storyresponsedto)
+
+---
+
+### `GET /stories/events/:eventId/stories`
+Lista todas las historias activas de un evento.
+
+---
+
+### `GET /stories/events/:eventId/users/:userId/stories`
+Lista las historias de un usuario específico en un evento.
+
+---
+
+## 📦 Tipos comunes
+
+### [UserResponseDto](file:///home/gonza/backend-zync/src/application/user/queries/dto/user-response.dto.ts#3-40)
+```typescript
+{
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  roles: string[];          // "USER" | "DJ" | "ORGANIZER"
+  phone: string | null;
+  birthDate: string | null; // ISO 8601
+  gender: string | null;
+  createdAt: string;        // ISO 8601
+  emailVerifiedAt: string | null;
+  avatarUrl: string | null;
+  isBanned: boolean;
+}
+```
+
+### `StoryResponseDto`
+```typescript
+{
+  id: string;
+  userId: string;
+  eventId: string;
+  mediaUrl: string;
+  text: string | null;
+  createdAt: string;
+  expiresAt: string;
+}
+```
+
+---
+
+## ⚡ WebSocket — Tiempo real
+
+> La app usa WebSockets (NestJS Gateway) para mensajería en tiempo real.
+
+**Eventos disponibles:**
+| Evento (emit) | Descripción |
+|--------------|-------------|
+| `sendMessage` | Envía mensaje privado a un usuario en el evento |
+| `sendEventMessage` | Envía mensaje al chat global del evento |
+
+| Evento (listen) | Descripción |
+|----------------|-------------|
+| `newMessage` | Recibe mensaje privado |
+| `newEventMessage` | Recibe mensaje del chat global |
+
+*Los detalles de payload del WebSocket se pueden consultar directamente en el código del Gateway.*

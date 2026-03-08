@@ -1,5 +1,6 @@
 import { ThemedText } from '@/components/themed-text';
 import { UserRole } from '@/context/RoleContext';
+import { useAuth } from '@/features/auth/context/AuthContext';
 import { useRoleManager } from '@/hooks/useRoleManager';
 import { ZyncTheme } from '@/shared/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +8,7 @@ import React, { useState } from 'react';
 import { ActivityIndicator, Modal, Platform, Pressable, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 export const RoleSelector = () => {
+    const { user } = useAuth();
     const { currentRole, isLoading, switchRole } = useRoleManager();
     const [modalVisible, setModalVisible] = useState(false);
 
@@ -24,13 +26,25 @@ export const RoleSelector = () => {
         await switchRole(role);
     };
 
+    // Calculate available roles based on backend JWT
+    // Always include 'user' (Cliente) as base
+    const availableRoles: UserRole[] = ['user'];
+    if (user?.roles?.includes('ORGANIZER') || user?.roles?.includes('BUSINESS')) {
+        availableRoles.push('business');
+    }
+    if (user?.roles?.includes('DJ')) {
+        availableRoles.push('dj');
+    }
+
+    const hasMultipleRoles = availableRoles.length > 1;
+
     return (
         <>
             <TouchableOpacity
                 style={styles.container}
-                onPress={() => !isLoading && setModalVisible(true)}
+                onPress={() => hasMultipleRoles && !isLoading && setModalVisible(true)}
                 activeOpacity={0.7}
-                disabled={isLoading}
+                disabled={isLoading || !hasMultipleRoles}
             >
                 <View style={styles.contentContainer}>
                     <View>
@@ -40,9 +54,9 @@ export const RoleSelector = () => {
 
                     {isLoading ? (
                         <ActivityIndicator size="small" color={ZyncTheme.colors.primary} />
-                    ) : (
+                    ) : hasMultipleRoles ? (
                         <Ionicons name="chevron-down" size={20} color={ZyncTheme.colors.textSecondary} />
-                    )}
+                    ) : null}
                 </View>
             </TouchableOpacity>
 
@@ -55,8 +69,7 @@ export const RoleSelector = () => {
                 <Pressable style={styles.modalOverlay} onPress={() => setModalVisible(false)}>
                     <View style={styles.modalContent}>
                         <ThemedText style={styles.modalTitle}>Select Role</ThemedText>
-
-                        {(['user', 'business', 'dj'] as UserRole[]).map((role) => (
+                        {availableRoles.map((role) => (
                             <TouchableOpacity
                                 key={role}
                                 style={[

@@ -14,6 +14,7 @@ interface AuthContextType {
     requestEmailVerification: (email: string) => Promise<void>;
     updateUser: (user: User) => void;
     updateBalance: (amount: number) => void;
+    checkUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
@@ -97,6 +98,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 requestEmailVerification,
                 updateUser,
                 updateBalance,
+                checkUser,
             }}
         >
             {children}
