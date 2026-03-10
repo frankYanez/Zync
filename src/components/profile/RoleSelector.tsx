@@ -12,6 +12,7 @@ export const RoleSelector = () => {
     const { currentRole, isLoading, switchRole } = useRoleManager();
     const [modalVisible, setModalVisible] = useState(false);
 
+
     const getRoleLabel = (role: UserRole) => {
         switch (role) {
             case 'user': return 'Cliente';

@@ -1,36 +1,8 @@
 import axios from 'axios';
-import { getToken } from '../../auth/services/auth.service';
+import { getAuthHeaders } from '../../auth/services/auth.service';
 import { Message } from '../domain/chat.types';
 
 const API_URL = 'http://44.222.141.70:3000';
-
-const getAuthHeaders = async () => {
-    const tokenRaw = await getToken();
-
-    console.log('ChatService tokenRaw type:', typeof tokenRaw);
-    console.log('ChatService tokenRaw preview:', String(tokenRaw).slice(0, 12), '...');
-
-    // soporta string o { token: string }
-    const jwt =
-        typeof tokenRaw === 'string'
-            ? tokenRaw
-            : (tokenRaw as any)?.token;
-
-    if (!jwt || typeof jwt !== 'string') {
-        throw new Error('ChatService: JWT inválido o vacío. Revisá getToken().');
-    }
-
-    // por si el token ya viene con "Bearer "
-    const cleanJwt = jwt.startsWith('Bearer ') ? jwt.replace('Bearer ', '') : jwt;
-
-    return {
-        headers: {
-            Authorization: `Bearer ${cleanJwt}`,
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-        },
-    };
-};
 
 //Historial del chat 1 a 1
 export const getChatMessages = async (eventId: string, otherUserId: string): Promise<Message[]> => {

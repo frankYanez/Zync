@@ -103,3 +103,22 @@ export const forgotPassword = async (email: string): Promise<void> => {
 export const resetPassword = async (email: string, code: string, newPassword: string): Promise<void> => {
     await axios.post(`${API_URL}/auth/reset-password`, { email, code, newPassword });
 };
+
+export const getAuthHeaders = async (isMultipart = false) => {
+    const tokenRaw = await getToken();
+    const jwt = typeof tokenRaw === 'string' ? tokenRaw : (tokenRaw as any)?.token;
+
+    if (!jwt || typeof jwt !== 'string') {
+        throw new Error('JWT inválido o vacío.');
+    }
+
+    const cleanJwt = jwt.startsWith('Bearer ') ? jwt.replace('Bearer ', '') : jwt;
+
+    return {
+        headers: {
+            Authorization: `Bearer ${cleanJwt}`,
+            Accept: 'application/json',
+            'Content-Type': isMultipart ? 'multipart/form-data' : 'application/json',
+        },
+    };
+};

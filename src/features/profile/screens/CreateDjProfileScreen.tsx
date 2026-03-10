@@ -12,7 +12,7 @@ import { updateDjProfile } from '../services/profile.service';
 
 export default function CreateDjProfileScreen() {
     const router = useRouter();
-    const { checkUser } = useAuth();
+    const { checkUser, user, updateUser } = useAuth();
 
     const [artistName, setArtistName] = useState('');
     const [musicGenre, setMusicGenre] = useState('');
@@ -33,18 +33,23 @@ export default function CreateDjProfileScreen() {
 
         setIsSubmitting(true);
         try {
+            const genresArray = musicGenre.split(',').map(g => g.trim()).filter(g => g.length > 0);
             await updateDjProfile({
                 artistName: artistName.trim(),
-                musicGenre: musicGenre.trim(),
+                genres: genresArray,
                 pricePerSong: priceNum,
             });
 
-            await checkUser();
+            // Update local user state immediately to reflect the new role
+            if (user && !user.roles?.includes('DJ')) {
+                updateUser({ ...user, roles: [...(user.roles || []), 'DJ'] });
+            }
+
             setIsSubmitting(false);
 
             Alert.alert(
                 'Success!',
-                'Your DJ profile has been created.',
+                'Your DJ profile has been created. Note: you may need to log out and log back in to fully apply permissions on the backend.',
                 [{ text: 'OK', onPress: () => router.back() }]
             );
         } catch (error: any) {

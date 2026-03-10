@@ -1,34 +1,7 @@
 import axios from 'axios';
-import { getToken } from '../../auth/services/auth.service';
+import { getAuthHeaders } from '../../auth/services/auth.service';
 
 const API_URL = 'http://44.222.141.70:3000';
-
-/**
- * Helper function to retrieve and format the authorization token for backend requests.
- * Parses the locally stored token and appends it to the Request headers.
- * 
- * @param {boolean} isMultipart - Flag indicating if the request body is `multipart/form-data`.
- * @returns {Promise<{headers: Record<string, string>}>} The configured Axios headers object.
- * @throws Will throw an error if the JWT is invalid or empty.
- */
-const getAuthHeaders = async (isMultipart = false) => {
-    const tokenRaw = await getToken();
-    const jwt = typeof tokenRaw === 'string' ? tokenRaw : (tokenRaw as any)?.token;
-
-    if (!jwt || typeof jwt !== 'string') {
-        throw new Error('ProfileService: JWT inválido o vacío.');
-    }
-
-    const cleanJwt = jwt.startsWith('Bearer ') ? jwt.replace('Bearer ', '') : jwt;
-
-    return {
-        headers: {
-            Authorization: `Bearer ${cleanJwt}`,
-            Accept: 'application/json',
-            'Content-Type': isMultipart ? 'multipart/form-data' : 'application/json',
-        },
-    };
-};
 
 /**
  * Fetches the public profile information for a given user ID.
