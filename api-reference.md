@@ -1,0 +1,843 @@
+# Zync API — Referencia para Frontend
+
+Base URL: `http://<HOST>:3000`
+Swagger interactivo: `http://<HOST>:3000/api/docs`
+
+Todos los endpoints que requieren autenticación esperan el header:
+```
+Authorization: Bearer <accessToken>
+```
+
+---
+
+## Flujo de registro
+
+El registro requiere verificar el email antes de crear la cuenta:
+
+```
+1. POST /email/request   → envía OTP al email
+2. POST /email/verify    → valida el OTP (devuelve confirmación)
+3. POST /auth/register   → crea la cuenta (requiere email ya verificado)
+```
+
+---
+
+## Email
+
+### `POST /email/request`
+Solicitar OTP de verificación.
+
+**Body:**
+```json
+{ "email": "gonza@mail.com", "locale": "es-AR" }
+```
+`locale` es opcional (default: `"es-AR"`).
+
+### `POST /email/resend`
+Reenviar OTP (mismo body que request).
+
+### `POST /email/verify`
+Verificar OTP recibido.
+
+**Body:**
+```json
+{ "email": "gonza@mail.com", "otp": "123456" }
+```
+
+---
+
+## Auth
+
+### `POST /auth/register`
+Crear cuenta (el email debe estar verificado primero).
+
+**Body:**
+```json
+{
+  "email": "gonza@mail.com",
+  "password": "mipass123",
+  "firstName": "Gonzalo",
+  "lastName": "García"
+}
+```
+**Response:**
+```json
+{ "createdAt": "2026-03-17T..." }
+```
+
+### `POST /auth/login`
+**Body:**
+```json
+{ "email": "gonza@mail.com", "password": "mipass123" }
+```
+**Response:**
+```json
+{
+  "accessToken": "eyJ...",
+  "refreshToken": "eyJ..."
+}
+```
+
+### `POST /auth/refresh`
+Renovar access token.
+**Body:**
+```json
+{ "refreshToken": "eyJ..." }
+```
+**Response:** mismo formato que login.
+
+### `GET /auth/me` 🔒
+Retorna el usuario autenticado del JWT.
+
+### `POST /auth/logout` 🔒
+Cerrar sesión e invalidar el refresh token en el servidor.
+
+**Body:**
+```json
+{ "refreshToken": "eyJ..." }
+```
+**Response:** `{ "success": true }`
+
+**Errores:**
+- `401 INVALID_REFRESH_TOKEN` — token no encontrado o ya revocado
+
+### `POST /auth/forgot-password`
+**Body:** `{ "email": "..." }`
+
+### `POST /auth/reset-password`
+**Body:** `{ "email": "...", "otp": "123456", "newPassword": "..." }`
+
+---
+
+## Users
+
+### `GET /users`
+Lista todos los usuarios (público).
+
+### `GET /users/:id/profile`
+Perfil público de un usuario.
+
+### `PATCH /users/profile` 🔒
+Actualizar nombre, apellido, etc.
+**Body:** `{ "firstName"?: "...", "lastName"?: "..." }`
+
+### `POST /users/me/avatar` 🔒
+Subir foto de perfil. `multipart/form-data`, campo `file` (JPEG/PNG/WebP, máx 5 MB).
+
+**Response:**
+```json
+{ "avatarUrl": "https://res.cloudinary.com/..." }
+```
+
+### `DELETE /users/me` 🔒
+Eliminar cuenta (soft-delete).
+
+### `POST /users/me/change-password` 🔒
+**Body:**
+```json
+{ "oldPassword": "...", "newPassword": "..." }
+```
+
+### `PUT /users/push-token` 🔒
+Registrar token push de Expo para notificaciones.
+**Body:** `{ "pushToken": "ExponentPushToken[...]" }`
+
+### `GET /users/me/preferences` 🔒
+Retorna preferencias del usuario.
+**Response:**
+```json
+{
+  "receiveEmailNotifications": true,
+  "receivePushNotifications": true,
+  "language": "es",
+  "themeMode": "system"
+}
+```
+
+### `PATCH /users/me/preferences` 🔒
+**Body (todos opcionales):**
+```json
+{
+  "receiveEmailNotifications": false,
+  "receivePushNotifications": true,
+  "language": "en",
+  "themeMode": "dark"
+}
+```
+`themeMode` válidos: `"light"`, `"dark"`, `"system"`
+
+---
+
+## DJ Profile
+
+Rutas bajo `/users/me/dj-profile` 🔒 (todas requieren auth)
+
+### `POST /users/me/dj-profile`
+Crear perfil DJ (asigna el rol `DJ` al usuario automáticamente).
+
+**Body:**
+```json
+{
+  "artistName": "DJ Gonza",
+  "genres": ["Techno", "House"],
+  "pricePerSong": 100.0,
+  "soundcloudUrl": "https://soundcloud.com/djgonza",
+  "spotifyUrl": "https://open.spotify.com/artist/...",
+  "instagramUrl": "https://instagram.com/djgonza"
+}
+```
+
+### `PATCH /users/me/dj-profile`
+Actualizar info del perfil DJ (todos los campos opcionales).
+
+**Body (todos opcionales):**
+```json
+{
+  "artistName": "...",
+  "genres": ["Techno"],
+  "pricePerSong": 150.0,
+  "bio": "Techno DJ de Buenos Aires, 10+ años.",
+  "city": "Buenos Aires",
+  "soundcloudUrl": "...",
+  "spotifyUrl": "...",
+  "instagramUrl": "..."
+}
+```
+
+### `PATCH /users/me/dj-profile/logo`
+Subir logo del DJ. `multipart/form-data`, campo `file`.
+**Response:** `{ "logoUrl": "https://..." }`
+
+### `PATCH /users/me/dj-profile/banner`
+Subir banner del DJ. `multipart/form-data`, campo `file`.
+**Response:** `{ "bannerUrl": "https://..." }`
+
+---
+
+## Organizer Profile
+
+### `POST /users/me/organizer-profile` 🔒
+Crear perfil organizador (asigna rol `ORGANIZER`).
+**Body:** `{ "companyName": "...", "contactEmail": "..." }`
+
+### `PATCH /users/me/organizer-profile` 🔒
+Actualizar perfil organizador (mismo body).
+
+---
+
+## Venues
+
+### `GET /venues`
+Lista todos los venues (público).
+
+### `GET /venues/my-venues` 🔒
+Venues del usuario autenticado.
+
+### `POST /venues` 🔒 (solo ORGANIZER)
+**Body:**
+```json
+{
+  "name": "Club Niceto",
+  "address": "Niceto Vega 5510, CABA",
+  "description": "Club de techno"
+}
+```
+
+> **Nota:** Las coordenadas (`latitude`, `longitude`, `radius`) del venue se configuran directamente en la base de datos o mediante admin. Se usan para el check-in automático por geolocalización.
+
+### `PATCH /venues/:venueId` 🔒 (solo el dueño)
+**Body:** igual que POST, todos opcionales.
+
+### `DELETE /venues/:venueId` 🔒 (solo el dueño)
+**Response:** `{ "ok": true }`
+
+---
+
+## Events
+
+### `GET /events`
+Lista eventos con paginación.
+
+**Query params:**
+- `skip` (number, opcional)
+- `take` (number, opcional)
+
+**Response:** array de eventos con venue incluido.
+
+### `GET /events/:eventId`
+Detalle de un evento.
+
+**Response:**
+```json
+{
+  "id": "uuid",
+  "name": "Noche Techno",
+  "startsAt": "2026-03-20T22:00:00Z",
+  "endsAt": "2026-03-21T05:00:00Z",
+  "isActive": true,
+  "imageUrl": "https://res.cloudinary.com/...",
+  "capacity": 300,
+  "organizerId": "uuid",
+  "venueId": "uuid",
+  "venue": { "id": "...", "name": "Club Niceto", "address": "..." }
+}
+```
+
+### `POST /events` 🔒 (solo ORGANIZER)
+Crear evento.
+
+**Body:**
+```json
+{
+  "name": "Noche Techno",
+  "startsAt": "2026-03-20T22:00:00.000Z",
+  "endsAt": "2026-03-21T05:00:00.000Z",
+  "venueId": "uuid-del-venue",
+  "imageUrl": "https://res.cloudinary.com/...",
+  "capacity": 300
+}
+```
+`venueId`, `imageUrl` y `capacity` son opcionales.
+
+### `POST /events/:eventId/enter` 🔒
+Ingresar manualmente a un evento. Si el evento tiene `capacity` definida y está lleno, retorna `403`.
+
+**Response:** `{ "ok": true }`
+
+### `POST /events/:eventId/leave` 🔒
+Salir manualmente de un evento.
+
+**Response:** `{ "ok": true }`
+
+### `GET /events/:eventId/lineup`
+Ver el lineup de DJs oficiales del evento.
+
+**Response:**
+```json
+[
+  {
+    "userId": "uuid",
+    "artistName": "DJ Gonza",
+    "genres": ["Techno", "House"],
+    "logoUrl": "https://...",
+    "bio": "...",
+    "city": "Buenos Aires",
+    "instagramUrl": "https://...",
+    "spotifyUrl": "https://...",
+    "soundcloudUrl": "https://...",
+    "assignedAt": "2026-03-18T..."
+  }
+]
+```
+
+### `POST /events/check-location` 🔒
+Check-in/out automático por geolocalización. Comparar posición del usuario con venues activos usando radio configurado (default 100 m).
+
+**Body:**
+```json
+{ "latitude": -34.6037, "longitude": -58.3816 }
+```
+
+**Response:**
+```json
+[
+  { "eventId": "uuid", "eventName": "Noche Techno", "action": "entered" },
+  { "eventId": "uuid", "eventName": "Otro Evento", "action": "none" }
+]
+```
+`action` puede ser `"entered"`, `"left"` o `"none"`.
+
+---
+
+## Promo Codes
+
+### `POST /events/:eventId/djs/:djProfileId/promo-codes` 🔒 (solo ORGANIZER)
+Crear código promocional para un DJ en un evento.
+
+**Body:**
+```json
+{
+  "type": "DRINK",
+  "discountType": "FREE",
+  "discountValue": null,
+  "description": "Trago gratis en la barra principal",
+  "maxUses": 100,
+  "expiresAt": "2026-04-01T05:00:00.000Z"
+}
+```
+
+- `type`: `"DRINK"` | `"ENTRY"` | `"MERCH"` | `"OTHER"`
+- `discountType`: `"PERCENTAGE"` | `"FIXED"` | `"FREE"`
+- `discountValue`: número si es PERCENTAGE o FIXED, `null` si es FREE
+- `expiresAt`: opcional
+
+### `GET /events/:eventId/djs/:djProfileId/promo-codes` 🔒 (solo ORGANIZER)
+Ver todos los códigos de un DJ en un evento.
+
+### `GET /dj/:djProfileId/promo-codes` 🔒 (solo el propio DJ)
+Ver mis códigos promocionales con stats de uso.
+
+### `POST /dj/promo-codes/:code/redeem` 🔒
+Canjear un código. Falla si: ya fue usado por este usuario, superó `maxUses`, el evento terminó, o venció (`expiresAt`).
+
+---
+
+## DJ
+
+### `GET /dj`
+Lista todos los perfiles DJ.
+
+**Query params:**
+- `genre` (string, opcional): filtrar por género musical
+
+### `GET /dj/:djProfileId`
+Obtener perfil público de un DJ por su `djProfileId` (UUID del DjProfile, no del usuario).
+
+**Response:** objeto con todos los campos del perfil DJ (artistName, genres, pricePerSong, bio, city, logoUrl, bannerUrl, spotifyUrl, soundcloudUrl, instagramUrl).
+
+**Errores:**
+- `404 DJ_PROFILE_NOT_FOUND`
+
+### `GET /dj/feed` 🔒
+Próximos eventos de los DJs que sigue el usuario autenticado.
+
+**Response:**
+```json
+[
+  {
+    "dj": {
+      "id": "uuid",
+      "artistName": "DJ Gonza",
+      "logoUrl": "https://...",
+      "userId": "uuid"
+    },
+    "event": {
+      "id": "uuid",
+      "name": "Noche Techno",
+      "imageUrl": "https://...",
+      "startsAt": "2026-03-20T22:00:00Z",
+      "endsAt": "2026-03-21T05:00:00Z",
+      "capacity": 300,
+      "venue": { "id": "uuid", "name": "Club Niceto", "address": "..." }
+    }
+  }
+]
+```
+
+### `GET /dj/:djProfileId/gigs`
+Próximos eventos de un DJ.
+
+### `POST /dj/:djProfileId/follow` 🔒
+Seguir a un DJ.
+
+### `DELETE /dj/:djProfileId/follow` 🔒
+Dejar de seguir a un DJ.
+
+### `POST /dj/:djProfileId/events/:eventId/lineup` 🔒 (solo ORGANIZER)
+Agregar un DJ al lineup de un evento.
+
+### `POST /dj/:djProfileId/events/:eventId/reviews` 🔒
+Dejar una reseña de un DJ. Solo disponible cuando el evento terminó (`isActive = false`) y el usuario asistió al evento. Una sola reseña por usuario por evento.
+
+**Body:**
+```json
+{
+  "score": 5,
+  "comment": "Tremendo set, mucha energía"
+}
+```
+- `score`: entero del 1 al 5 — requerido
+- `comment`: texto libre — opcional
+
+**Response:**
+```json
+{ "id": "uuid" }
+```
+
+**Errores posibles:**
+- `403 REVIEW_EVENT_STILL_ACTIVE` — el evento todavía no terminó
+- `403 REVIEW_USER_NOT_ATTENDEE` — el usuario no asistió al evento
+- `404 DJ_PROFILE_NOT_FOUND` — perfil DJ no encontrado
+- `404 EVENT_NOT_FOUND` — evento no encontrado
+- `409 REVIEW_ALREADY_EXISTS` — ya dejaste una reseña para este DJ en este evento
+
+### `GET /dj/:djProfileId/reviews`
+Obtener todas las reseñas de un DJ con su promedio y total.
+
+**Response:**
+```json
+{
+  "stats": {
+    "averageScore": 4.7,
+    "totalReviews": 143
+  },
+  "reviews": [
+    {
+      "id": "uuid",
+      "eventId": "uuid",
+      "userId": "uuid",
+      "score": 5,
+      "comment": "Tremendo set",
+      "createdAt": "2026-03-17T..."
+    }
+  ]
+}
+```
+
+---
+
+## Venue Products
+
+### `GET /venues/:venueId/products`
+Listar productos disponibles del venue (público).
+
+**Response:**
+```json
+[
+  {
+    "id": "uuid",
+    "venueId": "uuid",
+    "name": "Gin Tonic",
+    "description": "Hendrick's con agua tónica",
+    "price": "1200.00",
+    "imageUrl": "https://...",
+    "category": "Tragos",
+    "isAvailable": true,
+    "createdAt": "2026-03-19T...",
+    "updatedAt": "2026-03-19T..."
+  }
+]
+```
+
+### `POST /venues/:venueId/products` 🔒 (solo el dueño del venue)
+Crear un producto en el menú del venue.
+
+**Body:**
+```json
+{
+  "name": "Gin Tonic",
+  "description": "Hendrick's con agua tónica",
+  "price": 1200,
+  "imageUrl": "https://...",
+  "category": "Tragos"
+}
+```
+- `description`, `imageUrl`, `category` son opcionales.
+
+**Errores:**
+- `403 NOT_VENUE_OWNER` — no sos el dueño
+- `404 VENUE_NOT_FOUND` — venue no encontrado
+
+### `PATCH /venues/:venueId/products/:productId` 🔒 (solo el dueño)
+Actualizar un producto. Todos los campos son opcionales.
+
+**Body:** igual que POST + `"isAvailable": false` para pausar el producto.
+
+**Errores:**
+- `403 NOT_VENUE_OWNER`
+- `404 VENUE_PRODUCT_NOT_FOUND`
+
+### `DELETE /venues/:venueId/products/:productId` 🔒 (solo el dueño)
+Eliminar un producto del menú.
+
+**Response:** `{ "ok": true }`
+
+**Errores:**
+- `403 NOT_VENUE_OWNER`
+- `404 VENUE_PRODUCT_NOT_FOUND`
+
+---
+
+## Orders
+
+### `POST /orders` 🔒
+Crear una orden (checkout del carrito).
+
+**Body:**
+```json
+{
+  "venueId": "uuid",
+  "eventId": "uuid",
+  "items": [
+    { "productId": "uuid", "quantity": 2 },
+    { "productId": "uuid", "quantity": 1 }
+  ],
+  "promoCode": "PROMO123",
+  "useZyncPoints": false
+}
+```
+- `eventId`, `promoCode`, `useZyncPoints` son opcionales.
+- Si `useZyncPoints: true` y el usuario no tiene puntos suficientes, retorna `400 INSUFFICIENT_ZYNC_POINTS`.
+- El usuario gana 1 Zync Point por cada $1 del total pagado.
+
+**Response:** objeto de la orden creada con sus items y productos.
+
+**Errores:**
+- `400 VENUE_PRODUCT_NOT_AVAILABLE` — producto no disponible
+- `400 INSUFFICIENT_ZYNC_POINTS` — puntos insuficientes
+- `404 VENUE_PRODUCT_NOT_FOUND` — producto no encontrado
+
+### `GET /orders/me` 🔒
+Mis órdenes ordenadas por fecha descendente, con items y productos incluidos.
+
+### `GET /orders/:orderId` 🔒
+Detalle de una orden. Solo retorna la orden si pertenece al usuario autenticado.
+
+**Errores:**
+- `404 ORDER_NOT_FOUND`
+
+---
+
+## Stories
+
+### `POST /stories` 🔒
+Crear historia en un evento. `multipart/form-data`.
+
+**Campos:**
+- `file`: imagen (JPEG/PNG/WebP, máx 5 MB) — requerido
+- `eventId`: UUID del evento — requerido
+- `text`: texto opcional
+
+**Response:**
+```json
+{
+  "id": "uuid",
+  "userId": "uuid",
+  "eventId": "uuid",
+  "mediaUrl": "https://...",
+  "text": "Disfrutando el evento 🔥",
+  "createdAt": "2026-03-17T..."
+}
+```
+
+### `GET /stories/events/:eventId/stories` 🔒
+Ver todas las historias de un evento.
+
+### `GET /stories/events/:eventId/users/:userId/stories` 🔒
+Ver historias de un usuario específico en un evento.
+
+---
+
+## Chat (REST)
+
+Los mensajes se envían en tiempo real vía WebSocket. Estos endpoints sirven para cargar historial.
+
+### `GET /chats/:eventId/public/messages` 🔒
+Historial del chat grupal del evento.
+
+**Response:**
+```json
+{
+  "eventId": "uuid",
+  "messages": [
+    {
+      "id": "uuid",
+      "userId": "uuid",
+      "content": "Hola!",
+      "sentAt": "2026-03-17T..."
+    }
+  ]
+}
+```
+
+### `GET /chats/:eventId/private/:otherUserId/messages` 🔒
+Historial de chat privado con otro usuario dentro de un evento.
+
+### `GET /chats/:eventId/conversations` 🔒
+Lista de conversaciones privadas del usuario en un evento.
+
+### `POST /chats/:eventId/cleanup` 🔒 (solo ORGANIZER)
+Finalizar evento y limpiar datos.
+
+---
+
+## WebSocket (Socket.IO)
+
+Conectar a `ws://<HOST>:3000` con:
+```
+?token=<accessToken>
+```
+
+### Eventos cliente → servidor
+
+| Evento | Payload | Descripción |
+|--------|---------|-------------|
+| `event:join` | `{ eventId }` | Unirse a la sala del evento |
+| `event:leave` | `{ eventId }` | Salir de la sala del evento |
+| `chat:send_public` | `{ eventId, content }` | Mensaje al chat grupal |
+| `chat:send_private` | `{ eventId, toUserId, content }` | Mensaje privado |
+| `presence:get_list` | `{ eventId }` | Pedir lista de presentes |
+| `chat:typing` | `{ eventId, toUserId }` | Indicar que estás escribiendo a un usuario |
+| `chat:mark_delivered` | `{ messageId }` | Marcar mensaje como entregado |
+| `chat:mark_seen` | `{ messageId }` | Marcar mensaje como visto |
+
+### Eventos servidor → cliente
+
+| Evento | Payload | Descripción |
+|--------|---------|-------------|
+| `chat:public_message` | `{ id, userId, content, sentAt }` | Nuevo mensaje grupal |
+| `chat:private_message` | `{ id, fromUserId, content, sentAt }` | Nuevo mensaje privado |
+| `presence:list` | `[{ userId, ... }]` | Lista de usuarios presentes |
+| `presence:joined` | `{ userId }` | Usuario entró al evento |
+| `presence:left` | `{ userId }` | Usuario salió del evento |
+| `chat:typing_status` | `{ fromUserId, eventId }` | El otro usuario está escribiendo |
+
+---
+
+## Roles del sistema
+
+| Rol | Descripción |
+|-----|-------------|
+| `USER` | Usuario base (default al registrarse) |
+| `DJ` | Se asigna al crear un DJ profile |
+| `ORGANIZER` | Se asigna al crear un organizer profile |
+| `STAFF` | Staff de un evento (asignado por organizador) |
+
+Un usuario puede tener múltiples roles simultáneamente.
+
+---
+
+## Formato de errores
+
+Todos los errores siguen el mismo esquema JSON:
+
+```json
+{
+  "statusCode": 404,
+  "error": "Not Found",
+  "message": "DJ profile not found",
+  "errorCode": "DJ_PROFILE_NOT_FOUND",
+  "timestamp": "2026-03-17T12:00:00.000Z"
+}
+```
+
+El campo `error` es siempre el nombre HTTP estándar del status code (`"Bad Request"`, `"Unauthorized"`, `"Forbidden"`, `"Not Found"`, `"Conflict"`, `"Gone"`, `"Too Many Requests"`).
+El campo `errorCode` es el identificador de máquina — usalo en el frontend para distinguir errores del mismo status.
+
+Los errores de validación incluyen un array `errors` en lugar de `message` y devuelven **todos los campos inválidos de una vez**:
+
+```json
+{
+  "statusCode": 400,
+  "error": "Validation Error",
+  "message": "Validation error",
+  "errors": [
+    { "field": "email", "message": "email must be an email" },
+    { "field": "password", "message": "password should not be empty" }
+  ],
+  "timestamp": "2026-03-17T12:00:00.000Z"
+}
+```
+
+Los errores 500 incluyen un `requestId` para poder correlacionarlos con los logs del servidor:
+
+```json
+{
+  "statusCode": 500,
+  "error": "Internal Server Error",
+  "message": "An unexpected error occurred",
+  "requestId": "a1b2c3d4-...",
+  "timestamp": "2026-03-17T12:00:00.000Z"
+}
+```
+
+---
+
+## Códigos de error (`errorCode`)
+
+El campo `errorCode` permite al frontend identificar el error de forma programática sin depender del texto del mensaje.
+
+### Autenticación y usuarios
+
+| `errorCode` | Status | Descripción |
+|-------------|--------|-------------|
+| `USER_ALREADY_EXISTS` | 409 | Email ya registrado |
+| `EMAIL_NOT_VERIFIED` | 403 | Email no verificado antes del registro |
+| `INVALID_CREDENTIALS` | 401 | Email o contraseña incorrectos |
+| `ACCOUNT_DELETED` | 410 | La cuenta fue eliminada |
+| `ACCOUNT_BANNED` | 403 | La cuenta está suspendida |
+| `USER_NOT_FOUND` | 404 | Usuario no encontrado |
+| `INVALID_PASSWORD` | 401 | Contraseña actual incorrecta |
+| `SAME_PASSWORD` | 400 | La nueva contraseña es igual a la actual |
+| `INVALID_REFRESH_TOKEN` | 401 | Refresh token inválido o revocado |
+| `PASSWORD_RESET_NOT_FOUND` | 400 | No hay solicitud de reset activa para ese email |
+| `RESET_CODE_EXPIRED` | 410 | El código de reset expiró |
+| `INVALID_RESET_CODE` | 400 | Código de reset incorrecto |
+
+### Email
+
+| `errorCode` | Status | Descripción |
+|-------------|--------|-------------|
+| `COOLDOWN_ACTIVE` | 429 | Debe esperar antes de pedir otro OTP |
+| `MAX_ATTEMPTS_REACHED` | 429 | Demasiados intentos fallidos de verificación |
+
+### Eventos
+
+| `errorCode` | Status | Descripción |
+|-------------|--------|-------------|
+| `EVENT_NOT_FOUND` | 404 | Evento no encontrado |
+| `EVENT_NOT_ACTIVE` | 400 | El evento no está activo |
+| `EVENT_FULL` | 403 | El evento alcanzó su capacidad máxima |
+| `INVALID_EVENT_DATES` | 400 | Fechas del evento inválidas (endDate <= startDate) |
+| `USER_NOT_EVENT_PARTICIPANT` | 403 | El usuario no participó en el evento |
+
+### DJ y perfil
+
+| `errorCode` | Status | Descripción |
+|-------------|--------|-------------|
+| `DJ_PROFILE_NOT_FOUND` | 404 | Perfil de DJ no encontrado |
+| `DJ_ALREADY_IN_LINEUP` | 409 | El DJ ya está en el lineup del evento |
+
+### Reviews
+
+| `errorCode` | Status | Descripción |
+|-------------|--------|-------------|
+| `REVIEW_ALREADY_EXISTS` | 409 | Ya dejaste una reseña para este DJ en este evento |
+| `REVIEW_EVENT_STILL_ACTIVE` | 403 | El evento todavía no terminó |
+| `REVIEW_USER_NOT_ATTENDEE` | 403 | El usuario no asistió al evento |
+
+### Promo codes
+
+| `errorCode` | Status | Descripción |
+|-------------|--------|-------------|
+| `PROMO_CODE_NOT_FOUND` | 404 | Código promocional no encontrado |
+| `PROMO_CODE_EXPIRED` | 410 | El código promocional expiró |
+| `PROMO_CODE_USAGE_LIMIT` | 410 | El código alcanzó su límite de usos |
+| `PROMO_CODE_ALREADY_REDEEMED` | 409 | El usuario ya canjeó este código |
+| `PROMO_CODE_ACCESS_FORBIDDEN` | 403 | Sin permisos para ver estadísticas de este código |
+
+### Venues y productos
+
+| `errorCode` | Status | Descripción |
+|-------------|--------|-------------|
+| `VENUE_NOT_FOUND` | 404 | Venue no encontrado |
+| `NOT_VENUE_OWNER` | 403 | El usuario no es dueño del venue |
+| `VENUE_PRODUCT_NOT_FOUND` | 404 | Producto del venue no encontrado |
+| `VENUE_PRODUCT_NOT_AVAILABLE` | 400 | Producto no disponible para pedidos |
+
+### Órdenes
+
+| `errorCode` | Status | Descripción |
+|-------------|--------|-------------|
+| `ORDER_NOT_FOUND` | 404 | Orden no encontrada |
+| `INSUFFICIENT_ZYNC_POINTS` | 400 | El usuario no tiene suficientes Zync Points |
+
+### Chat
+
+| `errorCode` | Status | Descripción |
+|-------------|--------|-------------|
+| `EMPTY_MESSAGE_CONTENT` | 400 | El contenido del mensaje está vacío |
+
+---
+
+## HTTP status codes
+
+| Status | Descripción |
+|--------|-------------|
+| `400` | Validación o regla de negocio fallida |
+| `401` | No autenticado / credenciales inválidas |
+| `403` | Sin permisos para realizar la acción |
+| `404` | Recurso no encontrado |
+| `409` | Conflicto (recurso ya existe o ya fue procesado) |
+| `410` | Recurso expirado o eliminado |
+| `429` | Rate limit superado |

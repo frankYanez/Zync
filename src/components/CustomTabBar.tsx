@@ -1,4 +1,5 @@
 
+import { useRole } from '@/context/RoleContext';
 import { ZyncTheme } from '@/shared/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
@@ -6,14 +7,25 @@ import React from 'react';
 import { Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { ThemedText } from './themed-text';
 
+const DJ_ONLY_TABS = ['requests', 'dj/promo-codes'];
+const BUSINESS_ONLY_TABS = ['products', 'scanner'];
+const ALWAYS_HIDDEN_TABS = ['dj/gigs', 'events/lineup', 'config'];
+
 export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
+    const { currentRole } = useRole();
+
     return (
         <View style={styles.container}>
             {state.routes.map((route, index) => {
                 const { options } = descriptors[route.key];
                 const isFocused = state.index === index;
 
-                // Skip if specific screens shouldn't be in tab bar (if needed)
+                // Hide auxiliary screens never meant for the tab bar
+                if (ALWAYS_HIDDEN_TABS.includes(route.name)) return null;
+                // Hide DJ-only tabs when role is not DJ
+                if (DJ_ONLY_TABS.includes(route.name) && currentRole !== 'dj') return null;
+                // Hide Business-only tabs when role is not business
+                if (BUSINESS_ONLY_TABS.includes(route.name) && currentRole !== 'business') return null;
 
                 const onPress = () => {
                     const event = navigation.emit({
@@ -37,8 +49,13 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
                 let iconName: keyof typeof Ionicons.glyphMap = 'home';
                 if (route.name === 'index') iconName = isFocused ? 'home' : 'home-outline';
                 if (route.name === 'wallet') iconName = isFocused ? 'wallet' : 'wallet-outline';
-                if (route.name === 'scanner') iconName = 'scan'; // different handling
+                if (route.name === 'scanner') iconName = 'qr-code';
                 if (route.name === 'beats') iconName = isFocused ? 'musical-notes' : 'musical-notes-outline';
+                // Canciones: solicitudes de canciones del DJ
+                if (route.name === 'requests') iconName = isFocused ? 'musical-notes' : 'musical-notes-outline';
+                if (route.name === 'products') iconName = isFocused ? 'cube' : 'cube-outline';
+                // Descuentos: códigos promocionales del DJ
+                if (route.name === 'dj/promo-codes') iconName = isFocused ? 'pricetag' : 'pricetag-outline';
                 if (route.name === 'profile') iconName = isFocused ? 'person' : 'person-outline';
 
                 const isScanner = route.name === 'scanner';
