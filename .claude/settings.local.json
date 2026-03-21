@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(find . -not -path */node_modules/* -not -path */.git/* -not -path */.expo/* -type d)",
+      "Bash(grep -E '\"\"expo-image\"\"' package.json)",
+      "Bash(grep -r \"GroupChatScreen\\\\|/chat\" /c/Users/frank/Downloads/Zync-mobile/src/features/dashboard --include=*.ts*)",
+      "Bash(grep -r \"push.*chat\\\\|navigate.*chat\" /c/Users/frank/Downloads/Zync-mobile/src --include=*.ts*)",
+      "WebFetch(domain:100.31.134.251)"
+    ]
+  }
+}

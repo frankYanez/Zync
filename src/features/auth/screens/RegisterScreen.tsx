@@ -19,11 +19,6 @@ export default function RegisterScreen() {
     const [lastName, setLastName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [nationality, setNationality] = useState('');
-    const [phone, setPhone] = useState('');
-    const [city, setCity] = useState('');
-    const [state, setState] = useState('');
-    const [country, setCountry] = useState('');
 
     const [loading, setLoading] = useState(false);
 
@@ -53,7 +48,7 @@ export default function RegisterScreen() {
 
     // Step 1: Request Verification Code
     const handleRegisterStep1 = async () => {
-        if (!firstName || !lastName || !email || !password || !phone || !nationality || !city || !country) {
+        if (!firstName || !lastName || !email || !password) {
             Alert.alert('Error', 'Please fill in all required fields');
             return;
         }
@@ -96,12 +91,7 @@ export default function RegisterScreen() {
                 email,
                 password,
                 firstName,
-                lastName,
-                nationality,
-                phone,
-                city,
-                state: state || 'N/A',
-                country
+                lastName
             });
 
             setIsModalVisible(false);
@@ -184,53 +174,6 @@ export default function RegisterScreen() {
                                 onChangeText={setPassword}
                             />
 
-                            <View style={styles.row}>
-                                <NeonInput
-                                    label="PHONE"
-                                    icon="call"
-                                    placeholder="+1 234..."
-                                    value={phone}
-                                    onChangeText={setPhone}
-                                    keyboardType="phone-pad"
-                                    containerStyle={{ flex: 1, marginRight: 8 }}
-                                />
-                                <NeonInput
-                                    label="NATIONALITY"
-                                    icon="flag"
-                                    placeholder="AR"
-                                    value={nationality}
-                                    onChangeText={setNationality}
-                                    containerStyle={{ flex: 1, marginLeft: 8 }}
-                                />
-                            </View>
-
-                            <View style={styles.row}>
-                                <NeonInput
-                                    label="CITY"
-                                    icon="location"
-                                    placeholder="Night City"
-                                    value={city}
-                                    onChangeText={setCity}
-                                    containerStyle={{ flex: 1, marginRight: 8 }}
-                                />
-                                <NeonInput
-                                    label="STATE"
-                                    placeholder="District 1"
-                                    value={state}
-                                    onChangeText={setState}
-                                    containerStyle={{ flex: 1, marginLeft: 8 }}
-                                />
-                            </View>
-
-                            <NeonInput
-                                label="COUNTRY"
-                                icon="globe"
-                                placeholder="Global"
-                                value={country}
-                                onChangeText={setCountry}
-                            />
-
-
                             <NeonButton
                                 title="REGISTER"
                                 onPress={handleRegisterStep1}
@@ -276,7 +219,7 @@ export default function RegisterScreen() {
                             }}
                             keyboardType="number-pad"
                             maxLength={6}
-                            style={{ textAlign: 'center', letterSpacing: 5, fontSize: 24 }}
+                            style={{ textAlign: 'center', letterSpacing: 5, fontSize: 24, width: "100%" }}
                             containerStyle={{ marginBottom: 20 }}
                         />
 

@@ -1,0 +1,71 @@
+SOCKET 
+handleConnection: autentica el socket, registra la conexión y une al usuario a su room 
+privada user:{userId}. 
+handleDisconnect: elimina el socket del registro activo del usuario. 
+join-event: conecta al usuario al evento, registra presencia online y notifica al resto de 
+los participantes. 
+leave-event: desconecta al usuario del evento, elimina presencia y notifica la salida. 
+presence:who: devuelve la lista de usuarios online dentro del evento. 
+send-event-message: envía un mensaje global visible para todos los usuarios del evento. 
+send-message: envía un mensaje privado 1 a 1 dentro del evento. 
+typing: notifica al destinatario que el usuario está escribiendo (evento transitorio, no 
+persistente). 
+message-delivered: marca el mensaje como recibido por el destinatario. 
+message-seen: marca el mensaje como visto por el destinatario. 
+EVENTOS DE SOCKET EMITIDOS POR EL SERVIDOR 
+event-message 
+Mensaje del chat global del evento, emitido a todos los usuarios conectados al evento 
+(incluye al emisor). 
+new-message 
+Mensaje privado 1 a 1; se emite al destinatario y como eco al emisor (self: true). 
+presence:update 
+Notifica en tiempo real cuando un usuario entra o sale del evento. 
+presence:list 
+Devuelve el snapshot de usuarios actualmente online dentro del evento. 
+typing 
+Indica que un usuario está escribiendo un mensaje privado dentro del evento. 
+exception 
+Notifica errores de autenticación, permisos o validaciones del socket. 
+joined-event 
+Confirmación de que el usuario se unió correctamente al evento. 
+left-event 
+Confirmación de que el usuario salió correctamente del evento. 
+ENDPOINTS 
+GET /events/:eventId/chats/:otherUserId/messages 
+Obtiene el historial del chat privado 1 a 1 entre el usuario autenticado y otro usuario dentro 
+del evento. 
+GET /events/:eventId/chats 
+Devuelve la lista de conversaciones del usuario dentro del evento, incluyendo el último 
+mensaje de cada chat. 
+POST /events/:eventId/end 
+Finaliza el evento y ejecuta la limpieza de todos los datos asociados al chat 
+(conversaciones y mensajes). 
+GET /events/:eventId/event-chat/messages 
+Obtiene el historial completo del chat global del evento. 
+SOCKET 
+ESCRIBIENDO….  
+socket.emit('typing', { 
+eventId: 'event-123', 
+toUserId: 'user-456', 
+}); 
+socket.on('typing', ({ fromUserId }) => { 
+console.log(`${fromUserId} está escribiendo`); 
+}); 
+RECIBIDO 
+socket.on('new-message', (message) => { 
+// avisar al backend que llegó al dispositivo 
+socket.emit('message-delivered', { 
+messageId: message.id, 
+}); 
+}); 
+VISTO 
+const markAsSeen = (messageId) => { 
+socket.emit('message-seen', { 
+messageId, 
+}); 
+}; 
+messages.forEach((msg) => { 
+if (!msg.seenAt && msg.fromUserId !== myUserId) { 
+socket.emit('message-seen', { messageId: msg.id }); 
+} 
+});

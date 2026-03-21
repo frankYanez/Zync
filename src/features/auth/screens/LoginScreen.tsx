@@ -26,7 +26,7 @@ export default function AuthScreen() {
         Keyboard.dismiss();
 
         try {
-            await login({ email, password });
+            await login({ email: email.trim(), password });
             // Navigation is handled by auth state or we can do it here explicitly
             // router.replace('/(tabs)');
         } catch (error: any) {
@@ -133,6 +133,7 @@ const styles = StyleSheet.create({
         letterSpacing: 2,
         marginBottom: ZyncTheme.spacing.xs,
         textTransform: 'uppercase',
+        color: ZyncTheme.colors.primary,
     },
     subtitle: {
         color: ZyncTheme.colors.textSecondary,

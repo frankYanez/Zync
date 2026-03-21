@@ -1,5 +1,6 @@
 import { LoginUserDto, RegisterDto, User } from '@/features/auth/domain/auth.types';
 import * as authService from '@/features/auth/services/auth.service';
+import { disconnectSocket } from '@/features/chat/services/socket.service';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 interface AuthContextType {
@@ -14,6 +15,8 @@ interface AuthContextType {
     requestEmailVerification: (email: string) => Promise<void>;
     updateUser: (user: User) => void;
     updateBalance: (amount: number) => void;
+    checkUser: () => Promise<void>;
+    refreshSession: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
@@ -29,6 +32,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const checkUser = async () => {
         try {
             const user = await authService.checkAuth();
+
+            console.log(user, "user en checkuser");
+
             setUser(user);
         } catch (e) {
             console.error(e);
@@ -39,9 +45,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const login = async (loginDto: LoginUserDto) => {
         const response = await authService.login(loginDto);
-
-        console.log(response);
-
         setUser(response.user);
         return true;
     };
@@ -69,13 +72,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     const logout = async () => {
+        disconnectSocket();
         await authService.logout();
         setUser(null);
     };
 
     const updateUser = (updatedUser: User) => {
         setUser(updatedUser);
-    }
+    };
+
+    // Refresh JWT using the stored refresh token, then reload user from /auth/me.
+    // Call this after role-changing operations (e.g. creating a DJ profile) so
+    // the new role is reflected in the JWT and in user.roles.
+    const refreshSession = async () => {
+        try {
+            const storedRefresh = await authService.getRefreshToken();
+            if (storedRefresh) {
+                await authService.refreshToken(storedRefresh);
+            }
+            // Reload user from /auth/me (now backed by the fresh JWT)
+            await checkUser();
+        } catch {
+            // If refresh fails just reload whatever /auth/me returns
+            await checkUser();
+        }
+    };
 
     const updateBalance = (amount: number) => {
         if (user) {
@@ -97,6 +118,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 requestEmailVerification,
                 updateUser,
                 updateBalance,
+                checkUser,
+                refreshSession,
             }}
         >
             {children}

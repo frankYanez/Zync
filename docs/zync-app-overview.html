@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Zync Mobile — Documentación de la App</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+
+    :root {
+      --neon: #CCFF00;
+      --bg: #0a0a0a;
+      --card: #161616;
+      --border: #2a2a2a;
+      --text: #FFFFFF;
+      --text-secondary: #A0A0A0;
+      --error: #FF0055;
+      --success: #CCFF00;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      padding: 0;
+    }
+
+    /* ── Cover Page ─────────────────────────────────────────── */
+    .cover {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      background: radial-gradient(ellipse at 50% 40%, rgba(204,255,0,0.08) 0%, transparent 70%), var(--bg);
+      padding: 60px 40px;
+      page-break-after: always;
+    }
+    .cover-logo {
+      width: 90px; height: 90px;
+      background: var(--neon);
+      border-radius: 24px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 42px; font-weight: 800;
+      color: #000;
+      margin-bottom: 32px;
+      box-shadow: 0 0 40px rgba(204,255,0,0.4);
+    }
+    .cover h1 {
+      font-size: 56px; font-weight: 800;
+      letter-spacing: -2px;
+      background: linear-gradient(135deg, #fff 40%, var(--neon));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 16px;
+    }
+    .cover .tagline {
+      font-size: 20px; color: var(--text-secondary);
+      max-width: 520px; margin: 0 auto 48px;
+    }
+    .cover-meta {
+      display: flex; gap: 32px; justify-content: center; flex-wrap: wrap;
+    }
+    .cover-badge {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 12px 24px;
+      font-size: 13px; color: var(--text-secondary);
+    }
+    .cover-badge strong { color: var(--neon); display: block; font-size: 16px; margin-bottom: 2px; }
+
+    /* ── Layout ─────────────────────────────────────────────── */
+    .container { max-width: 900px; margin: 0 auto; padding: 60px 48px; }
+
+    /* ── TOC ────────────────────────────────────────────────── */
+    .toc-section { page-break-after: always; }
+    .toc { list-style: none; }
+    .toc li { border-bottom: 1px solid var(--border); }
+    .toc a {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 14px 0; color: var(--text); text-decoration: none;
+      font-size: 15px; transition: color .2s;
+    }
+    .toc a:hover { color: var(--neon); }
+    .toc a span { color: var(--text-secondary); font-size: 13px; }
+    .toc-group { margin-bottom: 0; }
+    .toc-group-title {
+      font-size: 11px; font-weight: 700; letter-spacing: 2px;
+      color: var(--neon); text-transform: uppercase;
+      padding: 20px 0 4px;
+    }
+    .toc li.sub a { padding-left: 20px; font-size: 14px; color: var(--text-secondary); }
+    .toc li.sub a:hover { color: var(--text); }
+
+    /* ── Section headings ───────────────────────────────────── */
+    .section-header {
+      display: flex; align-items: center; gap: 16px;
+      margin-bottom: 32px;
+    }
+    .section-number {
+      width: 44px; height: 44px; min-width: 44px;
+      background: var(--neon); color: #000;
+      border-radius: 12px; display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 16px;
+    }
+    h2 { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
+    h3 {
+      font-size: 18px; font-weight: 700;
+      color: var(--neon); margin: 40px 0 12px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    h3::before { content: ''; display: inline-block; width: 4px; height: 18px; background: var(--neon); border-radius: 2px; }
+    h4 { font-size: 15px; font-weight: 600; margin: 24px 0 8px; color: #fff; }
+    p { margin-bottom: 14px; color: var(--text-secondary); font-size: 15px; }
+    .section { margin-bottom: 80px; }
+    .page-break { page-break-before: always; }
+
+    /* ── Cards / Feature boxes ─────────────────────────────── */
+    .feature-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0;
+    }
+    @media (max-width: 600px) { .feature-grid { grid-template-columns: 1fr; } }
+    .feature-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 20px;
+    }
+    .feature-card .fc-icon { font-size: 28px; margin-bottom: 10px; }
+    .feature-card h4 { margin: 0 0 8px; font-size: 15px; color: #fff; }
+    .feature-card p { font-size: 13px; margin: 0; }
+
+    /* ── Role cards ─────────────────────────────────────────── */
+    .role-cards { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin: 20px 0; }
+    @media (max-width: 700px) { .role-cards { grid-template-columns: 1fr; } }
+    .role-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 20px; text-align: center;
+    }
+    .role-card .role-icon { font-size: 36px; margin-bottom: 12px; }
+    .role-card h4 { font-size: 16px; margin: 0 0 10px; color: var(--neon); }
+    .role-card ul { list-style: none; text-align: left; }
+    .role-card ul li { font-size: 13px; color: var(--text-secondary); padding: 4px 0; }
+    .role-card ul li::before { content: '· '; color: var(--neon); }
+
+    /* ── Lists ──────────────────────────────────────────────── */
+    ul.checklist { list-style: none; margin: 10px 0 20px; }
+    ul.checklist li {
+      padding: 6px 0; font-size: 14px; color: var(--text-secondary);
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      display: flex; gap: 10px; align-items: flex-start;
+    }
+    ul.checklist li::before { content: '✓'; color: var(--neon); font-weight: 700; flex-shrink: 0; }
+
+    /* ── Screen cards ───────────────────────────────────────── */
+    .screen-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 24px; margin-bottom: 16px;
+    }
+    .screen-card .screen-title {
+      font-size: 16px; font-weight: 700; margin-bottom: 12px; color: #fff;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .screen-card .screen-path {
+      font-family: 'JetBrains Mono', monospace; font-size: 11px;
+      color: var(--text-secondary); background: rgba(255,255,255,0.05);
+      padding: 2px 8px; border-radius: 6px;
+    }
+
+    /* ── API table ──────────────────────────────────────────── */
+    table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; font-size: 14px; }
+    th {
+      text-align: left; padding: 10px 14px;
+      background: rgba(204,255,0,0.08); color: var(--neon);
+      font-size: 12px; letter-spacing: 1px; text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+    }
+    td { padding: 10px 14px; border-bottom: 1px solid var(--border); color: var(--text-secondary); }
+    td:first-child { color: #fff; font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+    tr:last-child td { border-bottom: none; }
+
+    /* ── Tag chips ──────────────────────────────────────────── */
+    .tags { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 20px; }
+    .tag {
+      font-size: 12px; font-weight: 600; padding: 4px 12px;
+      border-radius: 999px; border: 1px solid;
+    }
+    .tag-neon { background: rgba(204,255,0,0.1); border-color: rgba(204,255,0,0.3); color: var(--neon); }
+    .tag-gray { background: rgba(255,255,255,0.05); border-color: var(--border); color: var(--text-secondary); }
+    .tag-red  { background: rgba(255,0,85,0.1); border-color: rgba(255,0,85,0.3); color: #FF6699; }
+
+    /* ── Code inline ────────────────────────────────────────── */
+    code {
+      font-family: 'JetBrains Mono', monospace; font-size: 12px;
+      background: rgba(255,255,255,0.07); padding: 2px 7px; border-radius: 5px; color: var(--neon);
+    }
+
+    /* ── Flow diagram ───────────────────────────────────────── */
+    .flow {
+      display: flex; align-items: center; gap: 0; flex-wrap: wrap;
+      margin: 16px 0 24px;
+    }
+    .flow-step {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 10px 16px; font-size: 13px; font-weight: 600;
+    }
+    .flow-arrow { color: var(--neon); font-size: 18px; padding: 0 8px; }
+
+    /* ── Status badge ───────────────────────────────────────── */
+    .badge {
+      display: inline-block; font-size: 11px; font-weight: 700;
+      padding: 2px 10px; border-radius: 999px; text-transform: uppercase; letter-spacing: 1px;
+    }
+    .badge-done { background: rgba(204,255,0,0.15); color: var(--neon); }
+    .badge-wip  { background: rgba(255,165,0,0.15); color: orange; }
+    .badge-stub { background: rgba(255,255,255,0.08); color: var(--text-secondary); }
+
+    /* ── Divider ────────────────────────────────────────────── */
+    .divider { border: none; border-top: 1px solid var(--border); margin: 48px 0; }
+
+    /* ── Print ──────────────────────────────────────────────── */
+    @media print {
+      body { background: #fff; color: #111; }
+      .cover { background: #fff; }
+      .cover h1 { -webkit-text-fill-color: #111; }
+      .cover-logo { background: #CCFF00; }
+      .cover-badge { border-color: #ddd; }
+      .feature-card, .screen-card, .role-card { border-color: #ddd; background: #fafafa; }
+      h3 { color: #333; }
+      h3::before { background: #CCFF00; }
+      td, p, ul.checklist li { color: #444; }
+      code { background: #f0f0f0; color: #333; }
+      .tag-neon { color: #667700; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════
+     COVER PAGE
+══════════════════════════════════════════════════ -->
+<div class="cover">
+  <div class="cover-logo">Z</div>
+  <h1>Zync Mobile</h1>
+  <p class="tagline">Plataforma de entretenimiento nocturno multi-rol para asistentes, DJs y negocios</p>
+  <div class="cover-meta">
+    <div class="cover-badge"><strong>React Native 0.81.5</strong>Tecnología</div>
+    <div class="cover-badge"><strong>Expo SDK 54</strong>Framework</div>
+    <div class="cover-badge"><strong>3 Roles</strong>User · DJ · Business</div>
+    <div class="cover-badge"><strong>Marzo 2026</strong>Versión del documento</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     TABLE OF CONTENTS
+══════════════════════════════════════════════════ -->
+<div class="container toc-section">
+  <div class="section-header">
+    <div class="section-number">☰</div>
+    <h2>Contenido</h2>
+  </div>
+
+  <div class="toc-group-title">General</div>
+  <ul class="toc">
+    <li><a href="#s1">1. Resumen de la aplicación <span>→</span></a></li>
+    <li><a href="#s2">2. Roles de usuario <span>→</span></a></li>
+    <li><a href="#s3">3. Stack tecnológico <span>→</span></a></li>
+  </ul>
+
+  <div class="toc-group-title">Funcionalidades</div>
+  <ul class="toc">
+    <li><a href="#s4">4. Autenticación y cuentas <span>→</span></a></li>
+    <li><a href="#s5">5. Pantallas del usuario (Asistente) <span>→</span></a></li>
+    <li><a href="#s6">6. Pantallas del DJ <span>→</span></a></li>
+    <li><a href="#s7">7. Pantallas del negocio (Business) <span>→</span></a></li>
+    <li><a href="#s8">8. Chat en tiempo real <span>→</span></a></li>
+    <li><a href="#s9">9. Carrito y pagos <span>→</span></a></li>
+    <li><a href="#s10">10. Perfil y edición <span>→</span></a></li>
+  </ul>
+
+  <div class="toc-group-title">Arquitectura</div>
+  <ul class="toc">
+    <li><a href="#s11">11. Estructura de navegación <span>→</span></a></li>
+    <li><a href="#s12">12. Integraciones externas <span>→</span></a></li>
+    <li><a href="#s13">13. API y servicios <span>→</span></a></li>
+    <li><a href="#s14">14. Sistema de diseño <span>→</span></a></li>
+    <li><a href="#s15">15. Estado de implementación <span>→</span></a></li>
+  </ul>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 1 — RESUMEN
+══════════════════════════════════════════════════ -->
+<div class="container page-break" id="s1">
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">1</div>
+      <h2>Resumen de la aplicación</h2>
+    </div>
+
+    <p>
+      <strong style="color:#fff">Zync</strong> es una plataforma móvil orientada al entretenimiento nocturno que conecta a tres tipos de participantes en un mismo ecosistema: asistentes a eventos, DJs y dueños de negocios/venues. La aplicación permite gestionar pedidos en bar, solicitar canciones a DJs, chatear en tiempo real dentro del evento y administrar códigos promocionales, gigs y lineups.
+    </p>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="fc-icon">🎵</div>
+        <h4>Solicitud de canciones</h4>
+        <p>Los asistentes buscan canciones en Spotify y las solicitan al DJ en tiempo real, con precio por canción definido por el propio artista.</p>
+      </div>
+      <div class="feature-card">
+        <div class="fc-icon">💬</div>
+        <h4>Chat en tiempo real</h4>
+        <p>Chat grupal del evento y chat 1-a-1 entre usuarios. Indicadores de escritura, estado de entrega y visto.</p>
+      </div>
+      <div class="feature-card">
+        <div class="fc-icon">🛒</div>
+        <h4>Pedidos y pagos</h4>
+        <p>Carrito de compra, códigos promo y sistema de puntos Zync redimibles como saldo ($1 = 1 punto).</p>
+      </div>
+      <div class="feature-card">
+        <div class="fc-icon">🎭</div>
+        <h4>Multi-rol</h4>
+        <p>Un solo usuario puede ser asistente, DJ y organizador simultáneamente, cambiando de rol desde el perfil.</p>
+      </div>
+      <div class="feature-card">
+        <div class="fc-icon">📱</div>
+        <h4>QR Code</h4>
+        <p>Escáner QR para pagos en venue y check-in de asistentes en los eventos.</p>
+      </div>
+      <div class="feature-card">
+        <div class="fc-icon">🎟️</div>
+        <h4>Gestión de eventos</h4>
+        <p>Creación de lineups, asignación de DJs a eventos, historias de eventos y presencia en tiempo real.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 2 — ROLES
+══════════════════════════════════════════════════ -->
+<div class="container" id="s2">
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">2</div>
+      <h2>Roles de usuario</h2>
+    </div>
+
+    <p>Cada usuario puede tener uno o más roles activos. El rol activo determina qué navegación y funcionalidades ve.</p>
+
+    <div class="role-cards">
+      <div class="role-card">
+        <div class="role-icon">🙋</div>
+        <h4>User (Asistente)</h4>
+        <ul>
+          <li>Feed principal del evento</li>
+          <li>Solicitar canciones al DJ</li>
+          <li>Carrito de pedidos en bar</li>
+          <li>Chat grupal del evento</li>
+          <li>Billetera y Zync Points</li>
+          <li>Scanner QR para pagar</li>
+        </ul>
+      </div>
+      <div class="role-card">
+        <div class="role-icon">🎧</div>
+        <h4>DJ (Artista)</h4>
+        <ul>
+          <li>Ver solicitudes de canciones</li>
+          <li>Gestionar códigos promo</li>
+          <li>Ver gigs confirmados</li>
+          <li>Editar perfil artístico</li>
+          <li>Banner, logo, redes sociales</li>
+          <li>Perfil público visible</li>
+        </ul>
+      </div>
+      <div class="role-card">
+        <div class="role-icon">🏢</div>
+        <h4>Business (Venue)</h4>
+        <ul>
+          <li>Gestionar productos/menú</li>
+          <li>Scanner QR entrada/pedidos</li>
+          <li>Crear lineups de eventos</li>
+          <li>Asignar DJs a eventos</li>
+          <li>Administrar venues</li>
+          <li>Ver solicitudes del evento</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>Cambio de rol</h3>
+    <p>El componente <code>RoleSelector</code> en la pantalla de perfil permite al usuario cambiar su rol activo instantáneamente. Para activar el rol DJ, primero debe crear su perfil de artista. Para el rol business, debe crear su perfil de organizador.</p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 3 — STACK
+══════════════════════════════════════════════════ -->
+<div class="container page-break" id="s3">
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">3</div>
+      <h2>Stack tecnológico</h2>
+    </div>
+
+    <table>
+      <tr><th>Categoría</th><th>Tecnología</th><th>Uso</th></tr>
+      <tr><td>React Native 0.81.5</td><td>Framework móvil</td><td>Base de la app, nueva arquitectura habilitada</td></tr>
+      <tr><td>Expo SDK 54</td><td>Toolchain</td><td>Bundling, splash screen, secure store, router</td></tr>
+      <tr><td>Expo Router</td><td>Navegación</td><td>File-based routing, typed routes habilitados</td></tr>
+      <tr><td>TypeScript</td><td>Lenguaje</td><td>Strict mode, alias <code>@/*</code> → <code>./src/*</code></td></tr>
+      <tr><td>Axios</td><td>HTTP client</td><td>Todas las llamadas REST al backend</td></tr>
+      <tr><td>Socket.io client</td><td>WebSocket</td><td>Chat en tiempo real y presencia</td></tr>
+      <tr><td>expo-secure-store</td><td>Almacenamiento</td><td>JWT tokens en móvil (localStorage en web)</td></tr>
+      <tr><td>expo-image-picker</td><td>Media</td><td>Subida de avatar, banner y logo</td></tr>
+      <tr><td>Reanimated + Moti</td><td>Animaciones</td><td>Animaciones de UI y transiciones</td></tr>
+      <tr><td>React Compiler</td><td>Optimización</td><td>Memoización automática habilitada</td></tr>
+      <tr><td>Spotify Web API</td><td>Música</td><td>Búsqueda de canciones con client credentials</td></tr>
+    </table>
+
+    <h3>Backend</h3>
+    <p>API REST + WebSocket en <code>http://44.222.141.70:3000</code>. Autenticación JWT con Bearer token. El token se almacena en <code>expo-secure-store</code> (móvil) o <code>localStorage</code> (web) con caché en memoria para evitar lecturas repetidas.</p>
+
+    <h3>Gestión de estado</h3>
+    <p>Solo Context API de React, sin Redux ni Zustand. Cuatro contextos globales:</p>
+    <ul class="checklist">
+      <li><strong style="color:#fff">AuthContext</strong> — estado de autenticación, usuario, tokens, balance</li>
+      <li><strong style="color:#fff">RoleContext</strong> — rol activo, cambio de rol</li>
+      <li><strong style="color:#fff">ZyncContext</strong> — establecimiento/venue activo seleccionado</li>
+      <li><strong style="color:#fff">CartContext</strong> — carrito, cantidades, checkout, órdenes activas</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 4 — AUTENTICACIÓN
+══════════════════════════════════════════════════ -->
+<div class="container" id="s4">
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">4</div>
+      <h2>Autenticación y cuentas</h2>
+    </div>
+
+    <h3>Flujo de registro</h3>
+    <div class="flow">
+      <div class="flow-step">Datos personales</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">Envío email OTP</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">Verificar código 6 dígitos</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">Cuenta activa</div>
+    </div>
+
+    <div class="screen-card">
+      <div class="screen-title">Login <span class="screen-path">app/(auth)/login.tsx</span></div>
+      <ul class="checklist">
+        <li>Formulario email + contraseña con validación</li>
+        <li>Alertas de error en credenciales incorrectas</li>
+        <li>Enlace a pantalla de registro</li>
+        <li>Recuperación de contraseña disponible</li>
+      </ul>
+    </div>
+
+    <div class="screen-card">
+      <div class="screen-title">Registro <span class="screen-path">app/(auth)/register.tsx</span></div>
+      <ul class="checklist">
+        <li>Campos: Nombre, Apellido, Email, Contraseña</li>
+        <li>Envío automático del código OTP por email</li>
+        <li>Modal de verificación con temporizador de 10 minutos</li>
+        <li>Reenvío de código disponible</li>
+        <li>Keyboard avoiding view en iOS</li>
+      </ul>
+    </div>
+
+    <div class="screen-card">
+      <div class="screen-title">Verificar email <span class="screen-path">app/(auth)/verify.tsx</span></div>
+      <ul class="checklist">
+        <li>Pantalla independiente para verificar email post-registro</li>
+        <li>Input de 6 dígitos con validación</li>
+        <li>Opción de reenviar código</li>
+        <li>Redirige al login al completar</li>
+      </ul>
+    </div>
+
+    <h3>Seguridad</h3>
+    <ul class="checklist">
+      <li>JWT Bearer token en todas las peticiones autenticadas vía <code>getAuthHeaders()</code></li>
+      <li>Tokens almacenados en Secure Storage (encriptado en móvil)</li>
+      <li>Caché en memoria para evitar lecturas repetidas a disco</li>
+      <li>Refresh token disponible via <code>refreshToken()</code></li>
+      <li>Cambio de contraseña con validación del password actual</li>
+      <li>Ruta protegida <code>useProtectedRoute</code> redirige usuarios no autenticados</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 5 — PANTALLAS USUARIO
+══════════════════════════════════════════════════ -->
+<div class="container page-break" id="s5">
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">5</div>
+      <h2>Pantallas del usuario (Asistente)</h2>
+    </div>
+    <p>El rol <strong style="color:#fff">user</strong> tiene 5 tabs en <code>app/(tabs)/</code>.</p>
+
+    <div class="screen-card">
+      <div class="screen-title">🏠 Home / Feed principal <span class="screen-path">app/(tabs)/index.tsx</span></div>
+      <ul class="checklist">
+        <li>Selector de club/venue activo con indicador live/offline</li>
+        <li>Banner de órdenes activas con contador de pedidos pendientes</li>
+        <li>Sección "Live DJ" cuando hay un DJ transmitiendo en el venue</li>
+        <li>Botón de chat con el DJ (se activa solo si el DJ está en vivo)</li>
+        <li>Carrusel de promociones activas del venue</li>
+        <li>Botón principal de QR Scanner con efecto pulse animado</li>
+        <li>Carrusel de acceso rápido a otras secciones</li>
+        <li>Modal de detalle de orden activa</li>
+      </ul>
+    </div>
+
+    <div class="screen-card">
+      <div class="screen-title">💳 Wallet / Billetera <span class="screen-path">app/(tabs)/wallet.tsx</span></div>
+      <ul class="checklist">
+        <li>Saldo total del usuario en pantalla grande</li>
+        <li>Badge con Zync Points acumulados</li>
+        <li>Carrusel de tarjetas de pago (Visa / Mastercard) con número y expiración</li>
+        <li>Botón para agregar nueva tarjeta</li>
+        <li>Botones de recarga rápida: $10, $50, $100</li>
+        <li>Input de monto personalizado para recargas</li>
+        <li>Alias del usuario formato <code>Nombre@zync</code></li>
+        <li>Bottom sheet para agregar métodos de pago</li>
+      </ul>
+    </div>
+
+    <div class="screen-card">
+      <div class="screen-title">📷 Scanner QR <span class="screen-path">app/(tabs)/scanner.tsx</span></div>
+      <ul class="checklist">
+        <li>Interfaz de escaneo QR con guías de encuadre animadas</li>
+        <li>Instrucción visual para pagar/canjear</li>
+        <li>Integración con procesamiento de pagos (en implementación)</li>
+      </ul>
+    </div>
+
+    <div class="screen-card">
+      <div class="screen-title">🎵 Beats / Solicitud de canciones <span class="screen-path">app/(tabs)/beats.tsx</span></div>
+      <ul class="checklist">
+        <li>Búsqueda de canciones en Spotify con debounce de 500ms</li>
+        <li>Resultado con artwork del álbum, título y artista</li>
+        <li>Botón <strong>"PEDIR $250"</strong> por canción solicitada</li>
+        <li>Validación de saldo antes de permitir la solicitud</li>
+        <li>Estados de la solicitud: Pendiente → Confirmando → Completado</li>
+        <li>Banner "PLAYING NEXT" cuando hay solicitud activa</li>
+        <li>Fondo animado con notas musicales pulsantes</li>
+      </ul>
+    </div>
+
+    <div class="screen-card">
+      <div class="screen-title">👤 Perfil (User) <span class="screen-path">app/(tabs)/profile.tsx</span></div>
+      <ul class="checklist">
+        <li>Avatar con opción de carga/cambio de foto</li>
+        <li>Estadísticas: número de órdenes, total gastado, nivel (Gold/Silver/Platinum)</li>
+        <li>Selector de rol para cambiar a DJ o Business</li>
+        <li>Accesos rápidos: Editar perfil, Cambiar contraseña, Notificaciones, Métodos de pago, Seguridad</li>
+        <li>Botones "Convertirme en DJ" y "Convertirme en Organizador" si no tiene esos roles</li>
+        <li>Botón de cierre de sesión</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 6 — PANTALLAS DJ
+══════════════════════════════════════════════════ -->
+<div class="container" id="s6">
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">6</div>
+      <h2>Pantallas del DJ</h2>
+    </div>
+    <p>Cuando el rol activo es <strong style="color:#fff">dj</strong>, el tab bar de <code>app/(business)/</code> muestra las tabs específicas del artista.</p>
+
+    <div class="screen-card">
+      <div class="screen-title">🎧 Perfil DJ <span class="screen-path">app/(business)/profile.tsx</span></div>
+      <ul class="checklist">
+        <li>Banner full-width con overlay gradiente y botón de edición</li>
+        <li>Foto de perfil (logo) circular superpuesta al banner con cámara para cambiarla</li>
+        <li>Estadísticas: número de gigs, precio por canción</li>
+        <li>Nombre artístico, géneros musicales como chips, ciudad</li>
+        <li>Bio en texto y links sociales (Spotify, SoundCloud, Instagram) con colores de marca</li>
+        <li>Menú: Ver perfil público, Editar perfil DJ, Mis Gigs, Códigos Promo</li>
+      </ul>
+    </div>
+
+    <div class="screen-card">
+      <div class="screen-title">🎤 Solicitudes de canciones <span class="screen-path">app/(business)/requests.tsx</span></div>
+      <ul class="checklist">
+        <li>Lista de solicitudes recibidas de los asistentes</li>
+        <li>Por cada solicitud: título, artista, nombre del usuario, tiempo transcurrido y estado</li>
+        <li>Cabecera con contador de pendientes y total</li>
+        <li>Estados: PENDING (naranja) y COMPLETED (verde)</li>
+        <li>Estado vacío cuando no hay solicitudes</li>
+      </ul>
+    </div>
+
+    <div class="screen-card">
+      <div class="screen-title">🎟️ Mis Gigs <span class="screen-path">app/(business)/dj/gigs.tsx</span></div>
+      <ul class="checklist">
+        <li>Lista de actuaciones confirmadas del DJ</li>
+        <li>Por cada gig: nombre del evento, fecha formateada y rango de horario</li>
+        <li>Botón de refresh manual</li>
+        <li>Estado vacío: "Aún no tienes gigs confirmados"</li>
+        <li>Conectado al hook <code>useDjGigs()</code></li>
+      </ul>
+    </div>
+
+    <div class="screen-card">
+      <div class="screen-title">🏷️ Códigos Promocionales <span class="screen-path">app/(business)/dj/promo-codes.tsx</span></div>
+      <ul class="checklist">
+        <li>Lista de códigos generados con código (uppercase), evento, fecha y conteo de uso</li>
+        <li>Botón "+" para generar nuevo código</li>
+        <li>Modal selector de evento para asociar el código</li>
+        <li>Alertas de confirmación en éxito/error</li>
+        <li>Conectado al hook <code>useDjPromoCodes()</code></li>
+      </ul>
+    </div>
+
+    <div class="screen-card">
+      <div class="screen-title">🌐 Perfil público del DJ <span class="screen-path">app/dj/[id].tsx</span></div>
+      <ul class="checklist">
+        <li>Visible para cualquier usuario (no requiere ser DJ)</li>
+        <li>Avatar, nombre artístico, géneros conectados con "·"</li>
+        <li>Botón Follow / Following (requiere auth)</li>
+        <li>Links a Spotify e Instagram</li>
+        <li>Lista de próximos gigs con fecha, horario y botón "Tickets"</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 7 — PANTALLAS BUSINESS
+══════════════════════════════════════════════════ -->
+<div class="container page-break" id="s7">
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">7</div>
+      <h2>Pantallas del negocio (Business)</h2>
+    </div>
+
+    <div class="screen-card">
+      <div class="screen-title">📋 Gestión de Lineup <span class="screen-path">app/(business)/events/lineup.tsx</span></div>
+      <ul class="checklist">
+        <li>Selector horizontal de eventos activos con highlight neon</li>
+        <li>Lista de DJs disponibles con nombre, géneros y botón "Agregar"</li>
+        <li>Asigna DJ al evento seleccionado via API</li>
+        <li>Estado deshabilitado si no hay evento seleccionado</li>
+        <li>Alertas de éxito/error y estados de carga</li>
+      </ul>
+    </div>
+
+    <div class="screen-card">
+      <div class="screen-title">🛍️ Productos <span class="screen-path">app/(business)/products.tsx</span></div>
+      <ul class="checklist">
+        <li>Pantalla de gestión de inventario/menú del venue</li>
+        <li>Estructura base implementada, contenido en desarrollo</li>
+      </ul>
+    </div>
+
+    <div class="screen-card">
+      <div class="screen-title">📷 Scanner (Business) <span class="screen-path">app/(business)/scanner.tsx</span></div>
+      <ul class="checklist">
+        <li>Escáner QR para operaciones del venue</li>
+        <li>Check-in y redención de compras</li>
+        <li>Estructura base implementada</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 8 — CHAT
+══════════════════════════════════════════════════ -->
+<div class="container" id="s8">
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">8</div>
+      <h2>Chat en tiempo real</h2>
+    </div>
+    <p>El sistema de chat usa <strong style="color:#fff">Socket.io</strong> para mensajería en tiempo real. Hay dos modalidades: chat grupal del evento y chat privado 1-a-1.</p>
+
+    <div class="screen-card">
+      <div class="screen-title">💬 Chat grupal del evento <span class="screen-path">src/features/chat/screens/GroupChatScreen.tsx</span></div>
+      <ul class="checklist">
+        <li>Header con título "CHAT GENERAL", número de usuarios online y estado de conexión</li>
+        <li>Carrusel de historias del evento en la parte superior</li>
+        <li>Carrusel de usuarios conectados con sus avatares</li>
+        <li>Historial completo de mensajes del evento</li>
+        <li>Burbujas propias (gradiente neon) y ajenas (dark glass con avatar y nombre)</li>
+        <li>Timestamp en cada mensaje</li>
+        <li>Indicador de escritura animado cuando alguien escribe</li>
+        <li>Iconos de estado del mensaje: enviado / entregado / visto</li>
+        <li>Auto-scroll al último mensaje</li>
+        <li>Marca mensajes como "vistos" automáticamente</li>
+        <li>Input con blur + botón de envío (deshabilitado si no hay conexión)</li>
+      </ul>
+    </div>
+
+    <div class="screen-card">
+      <div class="screen-title">🔒 Chat privado 1-a-1 <span class="screen-path">src/features/chat/screens/SingleChatScreen.tsx</span></div>
+      <ul class="checklist">
+        <li>Header con avatar y nombre del otro usuario + indicador online/offline</li>
+        <li>Misma estructura de burbujas y estados que el chat grupal</li>
+        <li>Indicador de escritura específico del otro usuario</li>
+        <li>Fondo con imagen y overlay gradiente</li>
+        <li>Historial completo de conversación</li>
+      </ul>
+    </div>
+
+    <div class="screen-card">
+      <div class="screen-title">👥 Usuarios conectados <span class="screen-path">src/features/chat/screens/ConnectedUsersScreen.tsx</span></div>
+      <ul class="checklist">
+        <li>Lista de todos los usuarios activos en el evento</li>
+        <li>Avatar, nombre y badge "En línea" con punto verde</li>
+        <li>Tap en usuario inicia chat privado con él</li>
+      </ul>
+    </div>
+
+    <h3>Eventos Socket.io</h3>
+    <table>
+      <tr><th>Dirección</th><th>Evento</th><th>Propósito</th></tr>
+      <tr><td>emit</td><td>join-event / leave-event</td><td>Unirse/salir de la sala del evento</td></tr>
+      <tr><td>emit</td><td>send-message</td><td>Enviar mensaje privado</td></tr>
+      <tr><td>emit</td><td>send-event-message</td><td>Enviar mensaje al chat grupal</td></tr>
+      <tr><td>on</td><td>new-message / event-message</td><td>Recibir mensajes</td></tr>
+      <tr><td>emit/on</td><td>typing / onTyping</td><td>Indicadores de escritura</td></tr>
+      <tr><td>on</td><td>message-delivered / message-seen</td><td>Confirmaciones de entrega y lectura</td></tr>
+      <tr><td>emit</td><td>presence:who</td><td>Solicitar lista de usuarios online</td></tr>
+      <tr><td>on</td><td>presence:list / presence:update</td><td>Recibir datos de presencia</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 9 — CARRITO Y PAGOS
+══════════════════════════════════════════════════ -->
+<div class="container page-break" id="s9">
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">9</div>
+      <h2>Carrito y pagos</h2>
+    </div>
+
+    <div class="screen-card">
+      <div class="screen-title">🛒 Cart Screen <span class="screen-path">src/features/wallet/screens/CartScreen.tsx</span></div>
+      <ul class="checklist">
+        <li>Lista de ítems con imagen, nombre, precio y controles de cantidad (+/–)</li>
+        <li>Eliminación individual o vaciado total del carrito</li>
+        <li>Sección de código promocional con input y botón "Aplicar"</li>
+        <li>Toggle para usar Zync Points (1 punto = $1 de descuento)</li>
+        <li>Resumen: subtotal, descuento aplicado y total</li>
+        <li>Botón PAY con monto final</li>
+        <li>Estado de procesamiento con spinner</li>
+        <li>Estado de éxito con ✓, mensaje y <code>TicketCard</code> con ID de orden</li>
+        <li>Estado de fallo con mensaje y opción de reintentar</li>
+        <li>Animaciones de entrada escalonadas con Moti</li>
+      </ul>
+    </div>
+
+    <h3>Sistema de Zync Points</h3>
+    <ul class="checklist">
+      <li>Los usuarios acumulan puntos con cada compra</li>
+      <li>1 punto equivale a $1 de descuento al hacer checkout</li>
+      <li>Saldo de puntos visible en Wallet y Perfil</li>
+      <li>Toggle en carrito para activar/desactivar uso de puntos</li>
+    </ul>
+
+    <h3>Códigos Promocionales</h3>
+    <ul class="checklist">
+      <li>Los DJs generan códigos asociados a un evento específico</li>
+      <li>El asistente ingresa el código en el carrito</li>
+      <li>El sistema redime el código via <code>redeemPromoCode(code)</code></li>
+      <li>El contador de uso del código se incrementa en cada redención</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 10 — PERFIL
+══════════════════════════════════════════════════ -->
+<div class="container" id="s10">
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">10</div>
+      <h2>Perfil y edición</h2>
+    </div>
+
+    <div class="screen-card">
+      <div class="screen-title">✏️ Editar perfil <span class="screen-path">app/profile/edit.tsx</span></div>
+      <ul class="checklist">
+        <li>Campos expandibles/colapsables: Nombre, Apellido, Teléfono, Ciudad, País</li>
+        <li>Botones Guardar/Cancelar por cada campo individual</li>
+        <li>PATCH al endpoint <code>/users/me/profile</code></li>
+        <li>Sincronización inmediata con AuthContext</li>
+      </ul>
+    </div>
+
+    <div class="screen-card">
+      <div class="screen-title">🔑 Cambiar contraseña <span class="screen-path">app/profile/change-password.tsx</span></div>
+      <ul class="checklist">
+        <li>Campos: contraseña actual, nueva contraseña y confirmación</li>
+        <li>Validación: campos requeridos y coincidencia de nueva contraseña</li>
+        <li>Alertas de éxito/error</li>
+      </ul>
+    </div>
+
+    <div class="screen-card">
+      <div class="screen-title">🎧 Crear perfil DJ <span class="screen-path">app/profile/create-dj.tsx</span></div>
+      <ul class="checklist">
+        <li>Campos: Nombre artístico, Géneros musicales, Precio por canción</li>
+        <li>Crea el perfil DJ via <code>updateDjProfile()</code></li>
+        <li>Actualiza los roles del usuario en AuthContext inmediatamente</li>
+        <li>Alerta para re-login y obtener permisos completos</li>
+      </ul>
+    </div>
+
+    <div class="screen-card">
+      <div class="screen-title">🖼️ Editar perfil DJ <span class="screen-path">app/profile/edit-dj.tsx</span></div>
+      <ul class="checklist">
+        <li>Carga y edición de imagen de banner (16:9) y logo (1:1) con <code>expo-image-picker</code></li>
+        <li>Campos: Nombre artístico, Géneros, Precio, Ciudad, Bio</li>
+        <li>Links sociales: Spotify, SoundCloud, Instagram</li>
+        <li>Subida separada de imágenes via FormData (<code>uploadDjLogo</code>, <code>uploadDjBanner</code>)</li>
+        <li>Carga el perfil existente al abrir la pantalla</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 11 — NAVEGACIÓN
+══════════════════════════════════════════════════ -->
+<div class="container page-break" id="s11">
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">11</div>
+      <h2>Estructura de navegación</h2>
+    </div>
+
+    <p>La app usa <strong style="color:#fff">Expo Router</strong> (file-based routing). El root stack renderiza condicionalmente el grupo correcto según el rol activo, controlado por <code>useProtectedRoute</code>.</p>
+
+    <table>
+      <tr><th>Grupo</th><th>Ruta</th><th>Acceso</th></tr>
+      <tr><td>(auth)</td><td>login, register, verify</td><td>No autenticado</td></tr>
+      <tr><td>(tabs)</td><td>Home, Wallet, Scanner, Beats, Profile</td><td>Rol: user</td></tr>
+      <tr><td>(business)</td><td>Home, Profile + tabs por rol</td><td>Rol: dj o business</td></tr>
+      <tr><td>chat/</td><td>index, [id], connected-users</td><td>Autenticado</td></tr>
+      <tr><td>profile/</td><td>edit, change-password, create-dj, edit-dj, create-organizer</td><td>Autenticado</td></tr>
+      <tr><td>dj/</td><td>[id] (perfil público)</td><td>Autenticado</td></tr>
+    </table>
+
+    <h3>Orden de providers en root layout</h3>
+    <div class="flow" style="flex-direction:column; align-items:flex-start; gap:4px;">
+      <div class="flow-step" style="width:220px">ZyncProvider</div>
+      <div class="flow-arrow" style="padding:0 0 0 24px">↓</div>
+      <div class="flow-step" style="width:220px; margin-left:20px">AuthProvider</div>
+      <div class="flow-arrow" style="padding:0 0 0 44px">↓</div>
+      <div class="flow-step" style="width:220px; margin-left:40px">RoleProvider</div>
+      <div class="flow-arrow" style="padding:0 0 0 64px">↓</div>
+      <div class="flow-step" style="width:220px; margin-left:60px">CartProvider</div>
+      <div class="flow-arrow" style="padding:0 0 0 84px">↓</div>
+      <div class="flow-step" style="width:220px; margin-left:80px">Stack Navigation</div>
+    </div>
+
+    <h3>CustomTabBar</h3>
+    <p>El componente <code>src/components/CustomTabBar.tsx</code> renderiza los tabs del grupo <code>(business)</code> de forma dinámica según <code>currentRole</code>. El tab Scanner tiene un estilo especial elevado con color neon.</p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 12 — INTEGRACIONES
+══════════════════════════════════════════════════ -->
+<div class="container" id="s12">
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">12</div>
+      <h2>Integraciones externas</h2>
+    </div>
+
+    <h3>Spotify Web API</h3>
+    <p>Usada en la pantalla <strong>Beats</strong> para buscar canciones que los asistentes pueden solicitar al DJ.</p>
+    <ul class="checklist">
+      <li>Flujo Client Credentials OAuth (sin login del usuario)</li>
+      <li>Token cacheado con expiración automática</li>
+      <li>Endpoint: <code>GET /search?q={query}&type=track</code></li>
+      <li>Retorna: título, artista, URL del artwork del álbum, ID de track</li>
+      <li>Credenciales almacenadas en <code>.env</code> (<code>CLIENT_ID</code>, <code>CLIENT_SECRET</code>)</li>
+    </ul>
+
+    <h3>Socket.io (Backend propio)</h3>
+    <ul class="checklist">
+      <li>Conexión autenticada via JWT en el campo <code>auth</code> del handshake</li>
+      <li>Salas por evento (<code>join-event</code> con eventId)</li>
+      <li>Mensajería grupal y privada en tiempo real</li>
+      <li>Sistema de presencia con lista de usuarios online</li>
+      <li>Confirmaciones de entrega y lectura</li>
+    </ul>
+
+    <h3>expo-image-picker</h3>
+    <ul class="checklist">
+      <li>Selección de imágenes de galería o cámara</li>
+      <li>Usado para avatar de usuario, logo DJ y banner DJ</li>
+      <li>Subida como <code>FormData</code> multipart al backend</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 13 — API Y SERVICIOS
+══════════════════════════════════════════════════ -->
+<div class="container page-break" id="s13">
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">13</div>
+      <h2>API y servicios</h2>
+    </div>
+    <p>Base URL: <code>http://44.222.141.70:3000</code> · Todos los servicios están en <code>src/features/*/services/</code></p>
+
+    <h3>Auth Service</h3>
+    <table>
+      <tr><th>Función</th><th>Descripción</th></tr>
+      <tr><td>login(dto)</td><td>Autenticación email/contraseña → JWT</td></tr>
+      <tr><td>register(dto)</td><td>Crear nueva cuenta</td></tr>
+      <tr><td>verifyEmail(email, otp)</td><td>Verificar código de 6 dígitos</td></tr>
+      <tr><td>resendVerification(email)</td><td>Reenviar código OTP</td></tr>
+      <tr><td>logout()</td><td>Limpiar tokens y sesión</td></tr>
+      <tr><td>refreshToken(token)</td><td>Renovar JWT expirado</td></tr>
+      <tr><td>getMe()</td><td>Obtener datos del usuario autenticado</td></tr>
+      <tr><td>getAuthHeaders(isMultipart?)</td><td>Headers con Bearer token para peticiones</td></tr>
+    </table>
+
+    <h3>DJ Service</h3>
+    <table>
+      <tr><th>Función</th><th>Descripción</th></tr>
+      <tr><td>getDjById(id)</td><td>Perfil público de un DJ específico</td></tr>
+      <tr><td>getMyDjProfile(userId)</td><td>Perfil DJ del usuario actual</td></tr>
+      <tr><td>getDjGigs(djId)</td><td>Gigs del DJ</td></tr>
+      <tr><td>getDjs()</td><td>Todos los DJs (para lineups)</td></tr>
+      <tr><td>addDjToLineup(djId, eventId)</td><td>Asignar DJ a un evento</td></tr>
+      <tr><td>followDj(id) / unfollowDj(id)</td><td>Seguir / dejar de seguir DJ</td></tr>
+      <tr><td>getPromoCodes(djId)</td><td>Códigos promo del DJ</td></tr>
+      <tr><td>createPromoCode(eventId)</td><td>Generar nuevo código para un evento</td></tr>
+      <tr><td>redeemPromoCode(code)</td><td>Canjear código en el carrito</td></tr>
+    </table>
+
+    <h3>Profile Service</h3>
+    <table>
+      <tr><th>Función</th><th>Descripción</th></tr>
+      <tr><td>updateProfile(data)</td><td>Actualizar datos básicos del usuario</td></tr>
+      <tr><td>changePassword(data)</td><td>Cambiar contraseña</td></tr>
+      <tr><td>uploadAvatar(formData)</td><td>Subir foto de perfil</td></tr>
+      <tr><td>updateDjProfile(data)</td><td>Crear / actualizar perfil DJ</td></tr>
+      <tr><td>uploadDjLogo(formData)</td><td>Subir logo del DJ</td></tr>
+      <tr><td>uploadDjBanner(formData)</td><td>Subir banner del DJ</td></tr>
+      <tr><td>updateOrganizerProfile(data)</td><td>Crear / actualizar perfil organizador</td></tr>
+    </table>
+
+    <h3>Otros servicios</h3>
+    <table>
+      <tr><th>Servicio</th><th>Funciones disponibles</th></tr>
+      <tr><td>Event Service</td><td>getEvents(), getEventById(id)</td></tr>
+      <tr><td>Chat Service</td><td>getChatMessages(), getChats(), getEventMessages(), enterEvent(), leaveEvent()</td></tr>
+      <tr><td>Story Service</td><td>createStory(formData), getEventStories(eventId), getUserStoriesInEvent(eventId, userId)</td></tr>
+      <tr><td>Venue Service</td><td>createVenue(data), getMyVenues()</td></tr>
+      <tr><td>Spotify Service</td><td>searchTracks(query) → SpotifyTrack[]</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 14 — DESIGN SYSTEM
+══════════════════════════════════════════════════ -->
+<div class="container" id="s14">
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">14</div>
+      <h2>Sistema de diseño</h2>
+    </div>
+    <p>Estética cyberpunk/neon. Tema centralizado en <code>src/shared/constants/theme.ts</code> como <code>ZyncTheme</code>.</p>
+
+    <h3>Paleta de colores</h3>
+    <div class="feature-grid">
+      <div class="feature-card" style="border-color: rgba(204,255,0,0.3);">
+        <div style="width:32px;height:32px;background:#CCFF00;border-radius:8px;margin-bottom:8px;"></div>
+        <h4 style="color:#CCFF00">#CCFF00 — Primary</h4>
+        <p>Lima eléctrico neon. Acento principal, CTAs, bordes activos.</p>
+      </div>
+      <div class="feature-card">
+        <div style="width:32px;height:32px;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:8px;margin-bottom:8px;"></div>
+        <h4>#0a0a0a — Background</h4>
+        <p>Negro profundo. Fondo base de todas las pantallas.</p>
+      </div>
+      <div class="feature-card">
+        <div style="width:32px;height:32px;background:#161616;border-radius:8px;margin-bottom:8px;"></div>
+        <h4>#161616 — Card</h4>
+        <p>Negro ligeramente más claro. Tarjetas y contenedores.</p>
+      </div>
+      <div class="feature-card" style="border-color: rgba(255,0,85,0.3);">
+        <div style="width:32px;height:32px;background:#FF0055;border-radius:8px;margin-bottom:8px;"></div>
+        <h4 style="color:#FF6699">#FF0055 — Error</h4>
+        <p>Rojo neon. Mensajes de error y alertas críticas.</p>
+      </div>
+    </div>
+
+    <h3>Componentes compartidos</h3>
+    <div class="tags">
+      <span class="tag tag-neon">NeonButton</span>
+      <span class="tag tag-neon">NeonInput</span>
+      <span class="tag tag-neon">NeonModal</span>
+      <span class="tag tag-gray">ScreenLayout</span>
+      <span class="tag tag-gray">CustomTabBar</span>
+      <span class="tag tag-gray">CyberCard</span>
+      <span class="tag tag-gray">ZyncLoader</span>
+      <span class="tag tag-gray">RoleSelector</span>
+      <span class="tag tag-gray">AvatarUpload</span>
+      <span class="tag tag-gray">TicketCard</span>
+      <span class="tag tag-gray">TypingIndicator</span>
+      <span class="tag tag-gray">EventStoriesCarousel</span>
+      <span class="tag tag-gray">ConnectedUsersCarousel</span>
+      <span class="tag tag-gray">PromotionsCarousel</span>
+      <span class="tag tag-gray">LiveOrderBanner</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 15 — ESTADO DE IMPLEMENTACIÓN
+══════════════════════════════════════════════════ -->
+<div class="container page-break" id="s15">
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">15</div>
+      <h2>Estado de implementación</h2>
+    </div>
+
+    <table>
+      <tr><th>Funcionalidad</th><th>Estado</th></tr>
+      <tr><td>Registro / Login / Verificación email</td><td><span class="badge badge-done">Completo</span></td></tr>
+      <tr><td>Gestión de token JWT + SecureStore</td><td><span class="badge badge-done">Completo</span></td></tr>
+      <tr><td>Chat grupal del evento (Socket.io)</td><td><span class="badge badge-done">Completo</span></td></tr>
+      <tr><td>Chat privado 1-a-1 (Socket.io)</td><td><span class="badge badge-done">Completo</span></td></tr>
+      <tr><td>Presencia y usuarios online</td><td><span class="badge badge-done">Completo</span></td></tr>
+      <tr><td>Perfil DJ completo (banner, logo, bio, redes)</td><td><span class="badge badge-done">Completo</span></td></tr>
+      <tr><td>Gigs del DJ</td><td><span class="badge badge-done">Completo</span></td></tr>
+      <tr><td>Códigos promocionales (generar / canjear)</td><td><span class="badge badge-done">Completo</span></td></tr>
+      <tr><td>Gestión de lineup (asignar DJs a eventos)</td><td><span class="badge badge-done">Completo</span></td></tr>
+      <tr><td>Solicitud de canciones (Beats + Spotify)</td><td><span class="badge badge-done">Completo</span></td></tr>
+      <tr><td>Búsqueda Spotify (debounce, artwork)</td><td><span class="badge badge-done">Completo</span></td></tr>
+      <tr><td>Editar perfil de usuario</td><td><span class="badge badge-done">Completo</span></td></tr>
+      <tr><td>Cambio de contraseña</td><td><span class="badge badge-done">Completo</span></td></tr>
+      <tr><td>Subida de imágenes (avatar, logo, banner)</td><td><span class="badge badge-done">Completo</span></td></tr>
+      <tr><td>Carrito de compra</td><td><span class="badge badge-done">Completo</span></td></tr>
+      <tr><td>Zync Points (acumular y canjear)</td><td><span class="badge badge-done">Completo</span></td></tr>
+      <tr><td>Wallet (tarjetas, recargas)</td><td><span class="badge badge-wip">En progreso</span></td></tr>
+      <tr><td>Scanner QR (pagos)</td><td><span class="badge badge-wip">En progreso</span></td></tr>
+      <tr><td>Historias de evento</td><td><span class="badge badge-wip">En progreso</span></td></tr>
+      <tr><td>Gestión de productos del venue</td><td><span class="badge badge-stub">Stub</span></td></tr>
+      <tr><td>Dashboard del negocio</td><td><span class="badge badge-stub">Stub</span></td></tr>
+      <tr><td>Perfil del organizador</td><td><span class="badge badge-stub">Stub</span></td></tr>
+      <tr><td>Notificaciones push</td><td><span class="badge badge-stub">Stub</span></td></tr>
+    </table>
+
+    <div class="tags" style="margin-top:24px;">
+      <span class="tag tag-neon">✓ Completo — funcionalidad conectada al backend</span>
+      <span class="tag tag-gray" style="color:orange;border-color:rgba(255,165,0,0.3);background:rgba(255,165,0,0.1);">En progreso — UI implementada, integración parcial</span>
+      <span class="tag tag-gray">Stub — pantalla base, pendiente de desarrollo</span>
+    </div>
+  </div>
+</div>
+
+<!-- Footer -->
+<div class="container" style="border-top:1px solid var(--border); padding-top:32px; padding-bottom:48px; display:flex; justify-content:space-between; align-items:center; color:var(--text-secondary); font-size:13px;">
+  <span>Zync Mobile — Documentación interna</span>
+  <span>Generado Marzo 2026</span>
+</div>
+
+</body>
+</html>
