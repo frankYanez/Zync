@@ -1,14 +1,13 @@
 
 import { NeonModal } from '@/components/NeonModal';
 import { ScreenLayout } from '@/components/ScreenLayout';
+import { VideoBackground } from '@/components/VideoBackground';
 
 import { ThemedText } from '@/components/themed-text';
 import { useZync } from '@/context/ZyncContext';
 import { useCart } from '@/features/wallet/context/CartContext';
 import { ZyncTheme } from '@/shared/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
-import { ResizeMode, Video } from 'expo-av';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { MotiView } from 'moti';
 import React, { useState } from 'react';
@@ -31,26 +30,7 @@ export default function HomeScreen() {
 
   return (
     <ScreenLayout noPadding>
-
-
-      {/* VIDEO BACKGROUND */}
-      {hasLiveDj && currentEstablishment?.video ? (
-        <View style={StyleSheet.absoluteFill}>
-          <Video
-            source={{ uri: currentEstablishment.video }}
-            style={StyleSheet.absoluteFill}
-            resizeMode={ResizeMode.COVER}
-            shouldPlay
-            isLooping
-            isMuted
-          />
-          <LinearGradient
-            colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.8)', '#000']}
-            style={StyleSheet.absoluteFill}
-          />
-        </View>
-      ) : null}
-
+      <VideoBackground videoUri={hasLiveDj ? currentEstablishment?.video : null}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
 
         {/* HEADER: Club Name & Status */}
@@ -130,6 +110,7 @@ export default function HomeScreen() {
         <QuickAccessCarousel />
 
       </ScrollView>
+      </VideoBackground>
 
       <NeonModal
         visible={modalVisible}

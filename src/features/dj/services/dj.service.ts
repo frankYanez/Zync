@@ -28,7 +28,9 @@ export const getMyDjProfile = async (userId: string): Promise<DjProfile | null> 
     try {
         const djs = await getDjs();
         const myProfile = djs.find(dj => dj.userId === userId);
-        return myProfile || null;
+        if (!myProfile) return null;
+        // Fetch full profile to get logoUrl, bannerUrl and all fields
+        return await getDjById(myProfile.id);
     } catch (error) {
         console.error("Error fetching my DJ profile:", error);
         return null;
