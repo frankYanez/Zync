@@ -51,7 +51,7 @@ export default function BusinessTabLayout() {
 
             {/* PRODUCTOS - gestión de productos, solo visible para Business */}
             <Tabs.Screen
-                name="products"
+                name="products/index"
                 options={{
                     title: 'Productos',
                     href: isBusiness ? '/(business)/products' : null,
@@ -88,9 +88,24 @@ export default function BusinessTabLayout() {
                 }}
             />
 
+            {/* EVENTOS - solo visible para Business/Organizer */}
+            <Tabs.Screen
+                name="events/index"
+                options={{
+                    title: 'Eventos',
+                    href: isBusiness ? '/(business)/events' : null,
+                    tabBarIcon: ({ color }) => <Ionicons name="calendar" size={24} color={color} />,
+                }}
+            />
+
             {/* PANTALLAS AUXILIARES - ocultas del tab bar */}
             <Tabs.Screen name="dj/gigs" options={{ href: null }} />
             <Tabs.Screen name="events/lineup" options={{ href: null }} />
+            <Tabs.Screen name="events/create" options={{ href: null }} />
+            <Tabs.Screen name="events/[id]" options={{ href: null }} />
+            <Tabs.Screen name="products/create" options={{ href: null }} />
+            <Tabs.Screen name="products/[id]" options={{ href: null }} />
+            <Tabs.Screen name="products/create-venue" options={{ href: null }} />
             <Tabs.Screen name="config" options={{ href: null }} />
         </Tabs>
     );

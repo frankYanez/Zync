@@ -9,7 +9,7 @@ import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
-type ProfileField = 'firstName' | 'lastName' | 'phone' | 'city' | 'country';
+type ProfileField = 'firstName' | 'lastName' | 'phone' | 'city' | 'state' | 'country' | 'nationality';
 
 /**
  * Screen component that allows the authenticated user to edit their profile fields individually.
@@ -33,7 +33,9 @@ export default function EditProfileScreen() {
         lastName: '',
         phone: '',
         city: '',
+        state: '',
         country: '',
+        nationality: '',
     });
 
     const [expandedField, setExpandedField] = useState<ProfileField | null>(null);
@@ -53,7 +55,9 @@ export default function EditProfileScreen() {
                     lastName: profile.lastName || '',
                     phone: profile.phone || '',
                     city: profile.city || '',
+                    state: profile.state || '',
                     country: profile.country || '',
+                    nationality: profile.nationality || '',
                 });
             } catch (e) {
                 console.log("Error loading profile details for edit: ", e);
@@ -209,11 +213,13 @@ export default function EditProfileScreen() {
                     style={{ flex: 1 }}
                 >
                     <ScrollView contentContainerStyle={styles.scrollContent}>
-                        {renderField('firstName', 'First Name', 'Enter your first name')}
-                        {renderField('lastName', 'Last Name', 'Enter your last name')}
-                        {renderField('phone', 'Phone Number', 'Enter your phone number')}
-                        {renderField('city', 'City', 'Enter your city')}
-                        {renderField('country', 'Country', 'Enter your country')}
+                        {renderField('firstName', 'Nombre', 'Ingresá tu nombre')}
+                        {renderField('lastName', 'Apellido', 'Ingresá tu apellido')}
+                        {renderField('phone', 'Teléfono', 'Ingresá tu número de teléfono')}
+                        {renderField('city', 'Ciudad', 'Ingresá tu ciudad')}
+                        {renderField('state', 'Provincia / Estado', 'Ingresá tu provincia o estado')}
+                        {renderField('country', 'País', 'Ingresá tu país')}
+                        {renderField('nationality', 'Nacionalidad', 'Ingresá tu nacionalidad')}
                     </ScrollView>
                 </KeyboardAvoidingView>
             )}

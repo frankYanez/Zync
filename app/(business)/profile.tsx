@@ -4,6 +4,7 @@ import { ScreenLayout } from '@/components/ScreenLayout';
 import { ThemedText } from '@/components/themed-text';
 import { DjReviewsResponse } from '@/features/dj/domain/dj.types';
 import { getDjReviews } from '@/features/dj/services/dj.service';
+import { getOrganizerProfile } from '@/features/profile/services/profile.service';
 import { useDjGigs } from '@/hooks/useDjGigs';
 import { useDjProfile } from '@/hooks/useDjProfile';
 import { useRoleManager } from '@/hooks/useRoleManager';
@@ -21,6 +22,16 @@ import {
     View,
 } from 'react-native';
 
+interface OrganizerProfile {
+    organizationName?: string;
+    description?: string;
+    address?: string;
+    websiteUrl?: string;
+    contactEmail?: string;
+    logoUrl?: string;
+    bannerUrl?: string;
+}
+
 type ActiveTab = 'gigs' | 'reviews';
 
 export default function BusinessProfileScreen() {
@@ -32,6 +43,7 @@ export default function BusinessProfileScreen() {
 
     const [activeTab, setActiveTab] = useState<ActiveTab>('gigs');
     const [reviewsData, setReviewsData] = useState<DjReviewsResponse | null>(null);
+    const [organizerProfile, setOrganizerProfile] = useState<OrganizerProfile | null>(null);
 
     useEffect(() => {
         if (!djProfile?.id) return;
@@ -39,6 +51,13 @@ export default function BusinessProfileScreen() {
             .then(setReviewsData)
             .catch(() => {});
     }, [djProfile?.id]);
+
+    useEffect(() => {
+        if (currentRole !== 'business') return;
+        getOrganizerProfile()
+            .then(setOrganizerProfile)
+            .catch(() => {});
+    }, [currentRole]);
 
     const renderStars = (score: number, size = 14) =>
         Array.from({ length: 5 }, (_, i) => {
@@ -349,13 +368,67 @@ export default function BusinessProfileScreen() {
     }
 
     // ─── Vista Business ───────────────────────────────────────────────────────
+    const orgEditButton = (
+        <TouchableOpacity
+            style={styles.floatingBtn}
+            onPress={() => router.push('/profile/edit-organizer' as any)}
+        >
+            <Ionicons name="create-outline" size={20} color="#fff" />
+        </TouchableOpacity>
+    );
+
+    const orgBannerPills = (
+        <>
+            <TouchableOpacity
+                style={[styles.bannerPill, { top: Platform.OS === 'ios' ? 52 : 32, right: 16 }]}
+                onPress={() => router.push('/profile/edit-organizer' as any)}
+            >
+                <Ionicons name="create-outline" size={14} color="#fff" />
+                <ThemedText style={styles.bannerPillText}>Editar</ThemedText>
+            </TouchableOpacity>
+        </>
+    );
+
     return (
         <ScreenLayout style={{ flex: 1 }} noPadding>
             <CollapsingProfileHeader
                 variant="business"
-                title="Mi Negocio"
+                title={organizerProfile?.organizationName ?? 'Mi Negocio'}
+                avatarUri={organizerProfile?.logoUrl}
+                bannerUri={organizerProfile?.bannerUrl}
+                onAvatarPress={() => router.push('/profile/edit-organizer' as any)}
+                rightAction={orgEditButton}
+                bannerOverlay={orgBannerPills}
             >
-                <ThemedText style={styles.metaText}>Detalles no configurados</ThemedText>
+                {/* Description / meta */}
+                {organizerProfile?.description ? (
+                    <ThemedText style={styles.orgDescription}>{organizerProfile.description}</ThemedText>
+                ) : null}
+
+                <View style={styles.metaRow}>
+                    {organizerProfile?.address ? (
+                        <View style={styles.metaChip}>
+                            <Ionicons name="location-sharp" size={13} color={ZyncTheme.colors.textSecondary} />
+                            <ThemedText style={styles.metaText}>{organizerProfile.address}</ThemedText>
+                        </View>
+                    ) : null}
+                    {organizerProfile?.contactEmail ? (
+                        <View style={styles.metaChip}>
+                            <Ionicons name="mail-outline" size={13} color={ZyncTheme.colors.textSecondary} />
+                            <ThemedText style={styles.metaText}>{organizerProfile.contactEmail}</ThemedText>
+                        </View>
+                    ) : null}
+                </View>
+
+                {/* Edit button */}
+                <TouchableOpacity
+                    style={styles.orgEditBtn}
+                    onPress={() => router.push('/profile/edit-organizer' as any)}
+                    activeOpacity={0.8}
+                >
+                    <Ionicons name="create-outline" size={16} color="#00D4FF" />
+                    <ThemedText style={styles.orgEditBtnText}>Editar perfil</ThemedText>
+                </TouchableOpacity>
 
                 <View style={styles.settingsSection}>
                     <ThemedText style={styles.settingsTitle}>AJUSTES NEGOCIO</ThemedText>
@@ -373,15 +446,25 @@ export default function BusinessProfileScreen() {
                         <Ionicons name="chevron-forward" size={18} color={ZyncTheme.colors.textSecondary} />
                     </TouchableOpacity>
 
-                    <View style={styles.menuItem}>
+                    <TouchableOpacity
+                        style={styles.menuItem}
+                        onPress={() => router.push('/profile/edit-organizer' as any)}
+                    >
                         <View style={styles.menuItemLeft}>
                             <View style={[styles.menuIcon, { backgroundColor: 'rgba(251,191,36,0.15)' }]}>
                                 <Ionicons name="information-circle-outline" size={18} color="#FBB724" />
                             </View>
-                            <ThemedText style={styles.menuLabel}>Detalles del negocio</ThemedText>
+                            <View>
+                                <ThemedText style={styles.menuLabel}>Detalles del negocio</ThemedText>
+                                {organizerProfile?.organizationName ? (
+                                    <ThemedText style={styles.menuSub}>{organizerProfile.organizationName}</ThemedText>
+                                ) : (
+                                    <ThemedText style={styles.menuSub}>No configurado</ThemedText>
+                                )}
+                            </View>
                         </View>
                         <Ionicons name="chevron-forward" size={18} color={ZyncTheme.colors.textSecondary} />
-                    </View>
+                    </TouchableOpacity>
 
                     <View style={styles.menuItem}>
                         <View style={styles.menuItemLeft}>
@@ -606,4 +689,26 @@ const styles = StyleSheet.create({
     menuLabel: { fontSize: 15, color: '#fff', fontWeight: '500' },
     menuSub: { fontSize: 12, color: ZyncTheme.colors.textSecondary, marginTop: 2 },
     roleSelectorContainer: { width: '100%', marginTop: 16 },
+    orgDescription: {
+        fontSize: 14,
+        color: ZyncTheme.colors.textSecondary,
+        textAlign: 'center',
+        lineHeight: 22,
+        marginBottom: 16,
+        maxWidth: 340,
+    },
+    orgEditBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        borderWidth: 1,
+        borderColor: '#00D4FF',
+        paddingVertical: 12,
+        paddingHorizontal: 28,
+        borderRadius: 999,
+        minWidth: 130,
+        justifyContent: 'center',
+        marginBottom: 8,
+    },
+    orgEditBtnText: { fontSize: 14, fontWeight: '700', color: '#00D4FF' },
 });

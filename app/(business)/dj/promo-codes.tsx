@@ -14,6 +14,7 @@ import {
     FlatList,
     Modal,
     ScrollView,
+    Share,
     StyleSheet,
     TouchableOpacity,
     View,
@@ -46,6 +47,10 @@ export default function DjPromoCodesScreen() {
         }
     };
 
+    const handleShare = (code: string) => {
+        Share.share({ message: `Usá el código ${code} en Zync para obtener descuentos 🎉` });
+    };
+
     const renderPromoItem = ({ item }: { item: PromoCode }) => (
         <View style={styles.promoCard}>
             <View style={styles.promoInfo}>
@@ -55,9 +60,14 @@ export default function DjPromoCodesScreen() {
                     Creado: {new Date(item.createdAt).toLocaleDateString('es-ES')}
                 </ThemedText>
             </View>
-            <View style={styles.statsBadge}>
-                <ThemedText style={styles.statsValue}>{item.usedCount}</ThemedText>
-                <ThemedText style={styles.statsLabel}>Usos</ThemedText>
+            <View style={styles.promoRight}>
+                <View style={styles.statsBadge}>
+                    <ThemedText style={styles.statsValue}>{item.usedCount}</ThemedText>
+                    <ThemedText style={styles.statsLabel}>Usos</ThemedText>
+                </View>
+                <TouchableOpacity style={styles.shareBtn} onPress={() => handleShare(item.code)}>
+                    <Ionicons name="share-outline" size={18} color={ZyncTheme.colors.primary} />
+                </TouchableOpacity>
             </View>
         </View>
     );
@@ -220,12 +230,22 @@ const styles = StyleSheet.create({
         marginTop: 2,
         opacity: 0.7,
     },
+    promoRight: {
+        alignItems: 'center',
+        gap: 8,
+    },
     statsBadge: {
         alignItems: 'center',
         backgroundColor: 'rgba(255,255,255,0.05)',
         padding: 10,
         borderRadius: 10,
         minWidth: 64,
+    },
+    shareBtn: {
+        padding: 6,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: ZyncTheme.colors.primary,
     },
     statsValue: {
         fontSize: 20,

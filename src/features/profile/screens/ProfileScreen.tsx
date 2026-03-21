@@ -6,6 +6,7 @@ import { ThemedText } from '@/components/themed-text';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { AvatarUpload } from '@/features/profile/components/AvatarUpload';
 import { getPublicProfile } from '@/features/profile/services/profile.service';
+import { getMyOrders } from '@/features/wallet/services/order.service';
 import { ZyncTheme } from '@/shared/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -17,6 +18,7 @@ export default function ProfileScreen() {
     const router = useRouter();
     const [avatarUrl, setAvatarUrl] = useState<string | undefined>(user?.avatarUrl);
     const [showAvatarUpload, setShowAvatarUpload] = useState(false);
+    const [orderCount, setOrderCount] = useState<number | null>(null);
 
     useEffect(() => {
         if (user?.sub) {
@@ -25,6 +27,12 @@ export default function ProfileScreen() {
             });
         }
     }, [user?.sub]);
+
+    useEffect(() => {
+        getMyOrders()
+            .then(orders => setOrderCount(orders.length))
+            .catch(() => {});
+    }, []);
 
     const handleLogout = async () => {
         await logout();
@@ -44,10 +52,10 @@ export default function ProfileScreen() {
 
                 {/* Stats */}
                 <View style={styles.statsRow}>
-                    <View style={styles.stat}>
-                        <ThemedText style={styles.statValue}>12</ThemedText>
-                        <ThemedText style={styles.statLabel}>Orders</ThemedText>
-                    </View>
+                    <TouchableOpacity style={styles.stat} onPress={() => router.push('/orders' as any)}>
+                        <ThemedText style={styles.statValue}>{orderCount ?? '—'}</ThemedText>
+                        <ThemedText style={styles.statLabel}>Pedidos</ThemedText>
+                    </TouchableOpacity>
                     <View style={styles.statDivider} />
                     <View style={styles.stat}>
                         <ThemedText style={styles.statValue}>$15k</ThemedText>
@@ -86,29 +94,35 @@ export default function ProfileScreen() {
                         </CyberCard>
                     </TouchableOpacity>
 
-                    <CyberCard style={styles.menuItem}>
-                        <View style={styles.menuItemLeft}>
-                            <Ionicons name="notifications-outline" size={24} color={ZyncTheme.colors.textSecondary} />
-                            <ThemedText>Notifications</ThemedText>
-                        </View>
-                        <Ionicons name="chevron-forward" size={20} color={ZyncTheme.colors.textSecondary} />
-                    </CyberCard>
+                    <TouchableOpacity onPress={() => router.push('/profile/notifications' as any)}>
+                        <CyberCard style={styles.menuItem}>
+                            <View style={styles.menuItemLeft}>
+                                <Ionicons name="notifications-outline" size={24} color={ZyncTheme.colors.textSecondary} />
+                                <ThemedText>Notificaciones</ThemedText>
+                            </View>
+                            <Ionicons name="chevron-forward" size={20} color={ZyncTheme.colors.textSecondary} />
+                        </CyberCard>
+                    </TouchableOpacity>
 
-                    <CyberCard style={styles.menuItem}>
-                        <View style={styles.menuItemLeft}>
-                            <Ionicons name="card-outline" size={24} color={ZyncTheme.colors.textSecondary} />
-                            <ThemedText>Payment Methods</ThemedText>
-                        </View>
-                        <Ionicons name="chevron-forward" size={20} color={ZyncTheme.colors.textSecondary} />
-                    </CyberCard>
+                    <TouchableOpacity onPress={() => router.push('/profile/payment-methods' as any)}>
+                        <CyberCard style={styles.menuItem}>
+                            <View style={styles.menuItemLeft}>
+                                <Ionicons name="card-outline" size={24} color={ZyncTheme.colors.textSecondary} />
+                                <ThemedText>Métodos de pago</ThemedText>
+                            </View>
+                            <Ionicons name="chevron-forward" size={20} color={ZyncTheme.colors.textSecondary} />
+                        </CyberCard>
+                    </TouchableOpacity>
 
-                    <CyberCard style={styles.menuItem}>
-                        <View style={styles.menuItemLeft}>
-                            <Ionicons name="shield-checkmark-outline" size={24} color={ZyncTheme.colors.textSecondary} />
-                            <ThemedText>Security</ThemedText>
-                        </View>
-                        <Ionicons name="chevron-forward" size={20} color={ZyncTheme.colors.textSecondary} />
-                    </CyberCard>
+                    <TouchableOpacity onPress={() => router.push('/profile/security' as any)}>
+                        <CyberCard style={styles.menuItem}>
+                            <View style={styles.menuItemLeft}>
+                                <Ionicons name="shield-checkmark-outline" size={24} color={ZyncTheme.colors.textSecondary} />
+                                <ThemedText>Seguridad</ThemedText>
+                            </View>
+                            <Ionicons name="chevron-forward" size={20} color={ZyncTheme.colors.textSecondary} />
+                        </CyberCard>
+                    </TouchableOpacity>
 
                     {/* Upgrades */}
                     {(!user?.roles?.includes('DJ') || !user?.roles?.includes('ORGANIZER')) && (

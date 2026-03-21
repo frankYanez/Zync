@@ -59,9 +59,33 @@ export const updateDjProfile = async (djData: any) => {
     return response.data;
 };
 
+export const getOrganizerProfile = async () => {
+    const config = await getAuthHeaders();
+    const response = await axios.get(`${API_URL}/users/me/organizer-profile`, config);
+    return response.data;
+};
+
 export const updateOrganizerProfile = async (organizerData: any) => {
     const config = await getAuthHeaders();
     const response = await axios.post(`${API_URL}/users/me/organizer-profile`, organizerData, config);
+    return response.data;
+};
+
+export const patchOrganizerProfile = async (data: any) => {
+    const config = await getAuthHeaders();
+    const response = await axios.patch(`${API_URL}/users/me/organizer-profile`, data, config);
+    return response.data;
+};
+
+export const uploadOrganizerLogo = async (formData: FormData) => {
+    const config = await getAuthHeaders(true);
+    const response = await axios.patch(`${API_URL}/users/me/organizer-profile/logo`, formData, config);
+    return response.data;
+};
+
+export const uploadOrganizerBanner = async (formData: FormData) => {
+    const config = await getAuthHeaders(true);
+    const response = await axios.patch(`${API_URL}/users/me/organizer-profile/banner`, formData, config);
     return response.data;
 };
 
