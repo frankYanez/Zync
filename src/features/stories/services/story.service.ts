@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { getAuthHeaders } from '../../auth/services/auth.service';
 
-const API_URL = 'http://44.222.141.70:3000';
+const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 export const createStory = async (formData: FormData) => {
     const config = await getAuthHeaders(true);

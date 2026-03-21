@@ -8,12 +8,13 @@ import { ThemedText } from '@/components/themed-text';
 
 import { NeonButton } from '@/components/NeonButton';
 import { ZyncLoader } from '@/components/ZyncLoader';
+import { redeemPromoCode } from '@/features/dj/services/dj.service';
 import { ZyncTheme } from '@/shared/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { MotiScrollView, MotiView } from 'moti';
 import React, { useState } from 'react';
-import { Image, StyleSheet, Switch, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, StyleSheet, Switch, TextInput, TouchableOpacity, View } from 'react-native';
 
 type PaymentStatus = 'idle' | 'processing' | 'success' | 'failed';
 
@@ -24,6 +25,25 @@ export default function CartScreen() {
     const [usePoints, setUsePoints] = useState(false);
     const [status, setStatus] = useState<PaymentStatus>('idle');
     const [orderId, setOrderId] = useState<string>('');
+    const [promoCode, setPromoCode] = useState('');
+    const [isRedeeming, setIsRedeeming] = useState(false);
+    const [appliedPromo, setAppliedPromo] = useState<string | null>(null);
+
+    const handleRedeem = async () => {
+        if (!promoCode.trim()) return;
+        setIsRedeeming(true);
+        try {
+            const result = await redeemPromoCode(promoCode.trim());
+            setAppliedPromo(result.code);
+            Alert.alert("Success!", `Promo code "${result.code}" applied!`);
+            setPromoCode('');
+        } catch (error: any) {
+            console.error("Redeem error:", error);
+            Alert.alert("Error", "Invalid or expired promo code.");
+        } finally {
+            setIsRedeeming(false);
+        }
+    };
 
     const userPoints = user?.zyncPoints || 0;
 
@@ -205,6 +225,38 @@ export default function CartScreen() {
                     <View style={styles.summaryRow}>
                         <ThemedText style={styles.summaryLabel}>Subtotal</ThemedText>
                         <ThemedText style={styles.summaryValue}>${totalAmount.toLocaleString()}</ThemedText>
+                    </View>
+
+                    {/* Promo Code Redemption */}
+                    <View style={styles.promoSection}>
+                        <ThemedText style={styles.promoTitle}>Promo Code</ThemedText>
+                        <View style={styles.promoInputRow}>
+                            <TextInput
+                                style={styles.promoInput}
+                                placeholder="Enter code (DJ, Event...)"
+                                placeholderTextColor="#666"
+                                value={promoCode}
+                                onChangeText={setPromoCode}
+                                autoCapitalize="characters"
+                            />
+                            <TouchableOpacity
+                                style={[styles.redeemButton, !promoCode.trim() && styles.redeemButtonDisabled]}
+                                onPress={handleRedeem}
+                                disabled={isRedeeming || !promoCode.trim()}
+                            >
+                                {isRedeeming ? (
+                                    <ActivityIndicator size="small" color="black" />
+                                ) : (
+                                    <ThemedText style={styles.redeemText}>Apply</ThemedText>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                        {appliedPromo && (
+                            <View style={styles.appliedBadge}>
+                                <Ionicons name="checkmark-circle" size={14} color={ZyncTheme.colors.primary} />
+                                <ThemedText style={styles.appliedText}>Code {appliedPromo} applied</ThemedText>
+                            </View>
+                        )}
                     </View>
 
                     {/* Points Redemption */}
@@ -500,5 +552,60 @@ const styles = StyleSheet.create({
         width: '100%',
         alignItems: 'center',
         zIndex: 1,
+    },
+    promoSection: {
+        marginBottom: 16,
+    },
+    promoTitle: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#888',
+        marginBottom: 8,
+    },
+    promoInputRow: {
+        flexDirection: 'row',
+        gap: 10,
+    },
+    promoInput: {
+        flex: 1,
+        height: 44,
+        backgroundColor: '#1a1a1a',
+        borderRadius: 12,
+        paddingHorizontal: 12,
+        color: 'white',
+        borderWidth: 1,
+        borderColor: '#333',
+    },
+    redeemButton: {
+        backgroundColor: ZyncTheme.colors.primary,
+        paddingHorizontal: 16,
+        height: 44,
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    redeemButtonDisabled: {
+        opacity: 0.5,
+        backgroundColor: '#333',
+    },
+    redeemText: {
+        color: 'black',
+        fontWeight: 'bold',
+    },
+    appliedBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        marginTop: 8,
+        backgroundColor: 'rgba(204, 255, 0, 0.1)',
+        alignSelf: 'flex-start',
+        paddingVertical: 4,
+        paddingHorizontal: 8,
+        borderRadius: 6,
+    },
+    appliedText: {
+        fontSize: 12,
+        color: ZyncTheme.colors.primary,
+        fontWeight: '600',
     },
 });

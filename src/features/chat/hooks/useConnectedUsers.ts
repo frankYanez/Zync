@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { connectSocket, getOnlineUsers, joinEvent, offSocket, onJoinedEvent, onOnlineUsersList, onPresenceUpdate } from '../services/socket.service';
+import { connectSocket, getOnlineUsers, joinEvent, offSocket, onOnlineUsersList, onPresenceUpdate } from '../services/socket.service';
 
 export interface ConnectedUser {
     id: string;
@@ -67,40 +67,29 @@ export const useConnectedUsers = (eventId: string) => {
             }
         };
 
-        const handleJoinedEvent = () => {
-            if (!isMounted) return;
-            hasJoinedRef.current = true;
-            // console.log('Successfully joined event via useConnectedUsers');
-            // Now it's safe to ask who is online
-            getOnlineUsers(eventId);
-        };
-
         const init = async () => {
             setLoading(true);
             await connectSocket();
             if (!isMounted) return;
 
-            // Register Listeners with specific callbacks
             onOnlineUsersList(handleOnlineUsers);
             onPresenceUpdate(handlePresenceUpdate);
-            onJoinedEvent(handleJoinedEvent);
 
-            // Join the event
-            // console.log('useConnectedUsers: Joining event:', eventId);
-            joinEvent(eventId);
-
-            // Backup mechanism: in case we are already joined or event doesn't fire 'joined-event' for re-joins
-
+            // joinEvent callback fires once the emit goes out (connected or deferred)
+            joinEvent(eventId, () => {
+                if (isMounted) {
+                    hasJoinedRef.current = true;
+                    getOnlineUsers(eventId);
+                }
+            });
         };
 
         init();
 
         return () => {
             isMounted = false;
-            // Cleanup specific listeners
             offSocket('presence:update', handlePresenceUpdate);
             offSocket('presence:list', handleOnlineUsers);
-            offSocket('joined-event', handleJoinedEvent);
         };
     }, [eventId]);
 

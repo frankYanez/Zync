@@ -12,7 +12,7 @@ import { updateDjProfile } from '../services/profile.service';
 
 export default function CreateDjProfileScreen() {
     const router = useRouter();
-    const { checkUser, user, updateUser } = useAuth();
+    const { refreshSession } = useAuth();
 
     const [artistName, setArtistName] = useState('');
     const [musicGenre, setMusicGenre] = useState('');
@@ -40,18 +40,12 @@ export default function CreateDjProfileScreen() {
                 pricePerSong: priceNum,
             });
 
-            // Update local user state immediately to reflect the new role
-            if (user && !user.roles?.includes('DJ')) {
-                updateUser({ ...user, roles: [...(user.roles || []), 'DJ'] });
-            }
+            // Refresh the JWT so it includes the new DJ role assigned by the backend,
+            // then reload /auth/me to update user.roles in the context.
+            await refreshSession();
 
             setIsSubmitting(false);
-
-            Alert.alert(
-                'Success!',
-                'Your DJ profile has been created. Note: you may need to log out and log back in to fully apply permissions on the backend.',
-                [{ text: 'OK', onPress: () => router.back() }]
-            );
+            router.back();
         } catch (error: any) {
             setIsSubmitting(false);
 

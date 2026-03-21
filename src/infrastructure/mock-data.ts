@@ -32,6 +32,7 @@ export interface Establishment {
     theme: 'cyber' | 'retro' | 'industrial';
     video: string;
     rating: number;
+    eventId?: string;
     currentDj?: {
         name: string;
         genre: string;

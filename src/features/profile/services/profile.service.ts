@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { getAuthHeaders } from '../../auth/services/auth.service';
 
-const API_URL = 'http://44.222.141.70:3000';
+const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 /**
  * Fetches the public profile information for a given user ID.
@@ -54,11 +54,31 @@ export const updatePushToken = async (pushToken: string) => {
 export const updateDjProfile = async (djData: any) => {
     const config = await getAuthHeaders();
     const response = await axios.post(`${API_URL}/users/me/dj-profile`, djData, config);
+    console.log(response.data, 'response updateDjProfile');
+
     return response.data;
 };
 
 export const updateOrganizerProfile = async (organizerData: any) => {
     const config = await getAuthHeaders();
     const response = await axios.post(`${API_URL}/users/me/organizer-profile`, organizerData, config);
+    return response.data;
+};
+
+export const patchDjProfile = async (djData: any) => {
+    const config = await getAuthHeaders();
+    const response = await axios.patch(`${API_URL}/users/me/dj-profile`, djData, config);
+    return response.data;
+};
+
+export const uploadDjLogo = async (formData: FormData) => {
+    const config = await getAuthHeaders(true);
+    const response = await axios.patch(`${API_URL}/users/me/dj-profile/logo`, formData, config);
+    return response.data;
+};
+
+export const uploadDjBanner = async (formData: FormData) => {
+    const config = await getAuthHeaders(true);
+    const response = await axios.patch(`${API_URL}/users/me/dj-profile/banner`, formData, config);
     return response.data;
 };

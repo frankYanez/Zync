@@ -2,7 +2,7 @@ import axios from 'axios';
 import { getAuthHeaders } from '../../auth/services/auth.service';
 import { Message } from '../domain/chat.types';
 
-const API_URL = 'http://44.222.141.70:3000';
+const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 //Historial del chat 1 a 1
 export const getChatMessages = async (eventId: string, otherUserId: string): Promise<Message[]> => {

@@ -80,7 +80,7 @@ Each feature follows: `screens/`, `services/`, `domain/` (types), `context/`, `h
 
 ### API Integration
 
-- **Base URL:** `EXPO_PUBLIC_API_URL=http://44.222.141.70:3000` (from `.env`)
+- **Base URL:** `EXPO_PUBLIC_API_URL=http://100.31.134.251:3000` (from `.env`)
 - **HTTP client:** Axios; all authenticated requests use `getAuthHeaders()` from `src/features/auth/services/auth.service.ts`
 - **Token storage:** `expo-secure-store` on mobile, `localStorage` on web; cached in-memory to avoid repeated reads
 - **Real-time:** Socket.io client in `src/features/chat/services/socket.service.ts`, authenticated via JWT in `auth` field

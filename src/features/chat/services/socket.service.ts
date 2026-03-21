@@ -1,38 +1,43 @@
 import { io, Socket } from 'socket.io-client';
 import { getToken } from '../../auth/services/auth.service';
 
-const SOCKET_URL = 'http://44.222.141.70:3000';
+const SOCKET_URL = process.env.EXPO_PUBLIC_API_URL;
 
 let socket: Socket | null = null;
 
 export const connectSocket = async () => {
     if (socket?.connected) return;
 
-    const token = await getToken();
-
-    if (!token) {
-        // console.error('SocketService: No token found for connection');
+    // Socket exists but disconnected — reconnect the same instance to avoid
+    // creating a duplicate where listeners live on the old socket.
+    if (socket) {
+        socket.connect();
         return;
     }
 
+    const token = await getToken();
+    if (!token) {
+        console.warn('SocketService: No token, cannot connect');
+        return;
+    }
+
+    // API expects the token as a query param: ws://host:3000?token=<jwt>
     socket = io(SOCKET_URL, {
         transports: ['websocket'],
-        auth: {
-            token: token
-        },
-        autoConnect: true
+        query: { token },
+        autoConnect: true,
     });
 
     socket.on('connect', () => {
-        // console.log('Socket connected:', socket?.id);
+        console.log('Socket connected:', socket?.id);
     });
 
-    socket.on('disconnect', () => {
-        console.log('Socket disconnected');
+    socket.on('disconnect', (reason) => {
+        console.log('Socket disconnected:', reason);
     });
 
     socket.on('connect_error', (err) => {
-        console.warn('Socket connection error:', err);
+        console.warn('Socket connection error:', err.message);
     });
 };
 
@@ -43,10 +48,12 @@ export const disconnectSocket = () => {
     }
 };
 
-// PASO 5: Unirse al evento
-export const joinEvent = (eventId: string) => {
+// Join event room. Calls onJoined once the emit actually goes out
+// (either immediately if connected, or after the connect fires).
+export const joinEvent = (eventId: string, onJoined?: () => void) => {
     const emitJoin = () => {
-        socket?.emit('join-event', { eventId });
+        socket?.emit('event:join', { eventId });
+        onJoined?.();
     };
 
     if (socket?.connected) {
@@ -56,103 +63,83 @@ export const joinEvent = (eventId: string) => {
     }
 };
 
-// Listener for joined confirmation
-export const onJoinedEvent = (callback: () => void) => {
-    socket?.on('joined-event', callback);
+export const leaveEvent = (eventId: string) => {
+    socket?.emit('event:leave', { eventId });
 };
 
-// PASO 6: Enviar mensaje
-export const sendMessage = (payload: { eventId: string; toUserId: string; content: string }) => {
-    // console.log('SocketService: Emitting send-message', payload);
-    socket?.emit('send-message', payload);
-};
-
-// PASO 6.5: Enviar mensaje grupal (evento)
+// Group chat
 export const sendEventMessage = (payload: { eventId: string; content: string }) => {
-    // console.log('SocketService: Emitting send-event-message', payload);
-    socket?.emit('send-event-message', payload);
-};
-
-// PASO 7: Recibir mensajes
-export const onNewMessage = (callback: (message: any) => void) => {
-    // console.log('SocketService: Registering new-message listener');
-    socket?.on('new-message', callback);
+    socket?.emit('chat:send_public', payload);
 };
 
 export const onEventMessage = (callback: (message: any) => void) => {
-    // console.log('SocketService: Registering event-message listener');
-    socket?.on('event-message', callback);
+    socket?.on('chat:public_message', callback);
 };
 
-// PASO 9: Salir del evento
-export const leaveEvent = (eventId: string) => {
-    socket?.emit('leave-event', { eventId });
+// Private chat
+export const sendMessage = (payload: { eventId: string; toUserId: string; content: string }) => {
+    socket?.emit('chat:send_private', payload);
 };
 
-export const onUserJoined = (callback: (user: any) => void) => {
-    socket?.on('user-joined', callback);
+export const onNewMessage = (callback: (message: any) => void) => {
+    socket?.on('chat:private_message', callback);
 };
 
-export const onUserLeft = (callback: (data: { userId: string } | string) => void) => {
-    socket?.on('user-left', callback);
-};
-
-// --- SIGNALING EVENTS ---
-
-// TYPING
-// TYPING
+// Typing
 export const sendTyping = (eventId: string, toUserId?: string) => {
-    // Backend Doc Example: socket.emit('typing', { eventId: '...', toUserId: '...' });
-    // Note: If toUserId is missing (Group Chat), we still emit { eventId }.
     const payload = toUserId ? { eventId, toUserId } : { eventId };
-    // console.log('SocketService: Emitting typing', payload);
-    socket?.emit('typing', payload);
+    socket?.emit('chat:typing', payload);
 };
 
-export const onTyping = (callback: (data: { fromUserId: string }) => void) => {
-    // Backend Doc Example: socket.on('typing', ({ fromUserId }) => { ... });
-    socket?.on('typing', callback);
+export const onTyping = (callback: (data: { fromUserId: string; eventId: string }) => void) => {
+    socket?.on('chat:typing_status', callback);
 };
 
-// MESSAGE DELIVERED
+// Delivery / seen receipts
 export const sendMessageDelivered = (messageId: string) => {
-    socket?.emit('message-delivered', { messageId });
+    socket?.emit('chat:mark_delivered', { messageId });
 };
 
-export const onMessageDelivered = (callback: (data: { messageId: string, userId: string, at: string }) => void) => {
-    socket?.on('message-delivered', callback); // Check if backend returns userId and timestamp
-};
-
-// MESSAGE SEEN
 export const sendMessageSeen = (messageId: string) => {
-    socket?.emit('message-seen', { messageId });
+    socket?.emit('chat:mark_seen', { messageId });
 };
 
-export const onMessageSeen = (callback: (data: { messageId: string, userId: string, at: string }) => void) => {
+export const onMessageDelivered = (callback: (data: { messageId: string; userId: string; at: string }) => void) => {
+    socket?.on('message-delivered', callback);
+};
+
+export const onMessageSeen = (callback: (data: { messageId: string; userId: string; at: string }) => void) => {
     socket?.on('message-seen', callback);
 };
 
-// PRESENCE
+// Presence
 export const getOnlineUsers = (eventId: string) => {
-    socket?.emit('presence:who', { eventId });
+    socket?.emit('presence:get_list', { eventId });
 };
 
 export const onOnlineUsersList = (callback: (users: any[]) => void) => {
-
     socket?.on('presence:list', callback);
-    // socket?.on('presence:who', callback); // Possible echo/response
 };
 
-export const onPresenceUpdate = (callback: (data: { type: 'join' | 'leave'; user?: any; userId?: string }) => void) => {
-    socket?.on('presence:update', callback);
+export const onPresenceUpdate = (callback: (data: { userId: string; online: boolean; user?: any }) => void) => {
+    socket?.on('presence:joined', (data) => callback({ ...data, online: true }));
+    socket?.on('presence:left', (data) => callback({ ...data, online: false }));
 };
 
-// Cleanup listeners
-// Cleanup listeners
+// Cleanup a specific listener
 export const offSocket = (event: string, callback?: any) => {
+    // Map logical event names to the real server event names
+    const eventMap: Record<string, string> = {
+        'event-message':      'chat:public_message',
+        'new-message':        'chat:private_message',
+        'typing':             'chat:typing_status',
+        'joined-event':       'joined-event', // not used anymore but kept for safety
+    };
+    const realEvent = eventMap[event] ?? event;
+
     if (callback) {
-        socket?.off(event, callback);
+        socket?.off(realEvent, callback);
     } else {
-        socket?.off(event);
+        socket?.off(realEvent);
     }
 };

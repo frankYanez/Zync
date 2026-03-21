@@ -2,13 +2,13 @@ import { CyberCard } from '@/components/CyberCard';
 import { NeonInput } from '@/components/NeonInput';
 import { ThemedText } from '@/components/themed-text';
 import { useZync } from '@/context/ZyncContext';
-import { MOCK_ESTABLISHMENTS } from '@/infrastructure/mock-data';
+import { getEvents } from '@/features/dashboard/services/event.service';
+import { Establishment } from '@/infrastructure/mock-data';
 import { ZyncTheme } from '@/shared/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
-import { ResizeMode, Video } from 'expo-av';
 import { MotiView } from 'moti';
-import React, { useState } from 'react';
-import { Dimensions, FlatList, Modal, Pressable, StyleSheet, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Dimensions, FlatList, Image, Modal, Pressable, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 const { height, width } = Dimensions.get('window');
 
@@ -21,22 +21,49 @@ export function NeonModal({ visible, onClose }: NeonModalProps) {
     const { setEstablishment } = useZync();
     const [search, setSearch] = useState('');
     const [activeId, setActiveId] = useState<string | null>(null);
+    const [events, setEvents] = useState<Establishment[]>([]);
+    const [loading, setLoading] = useState(false);
 
-    const filteredEstablishments = MOCK_ESTABLISHMENTS.filter(e =>
+    useEffect(() => {
+        if (!visible) return;
+        setLoading(true);
+        getEvents(0, 20)
+            .then((data) => {
+                const raw = Array.isArray(data) ? data : data?.data ?? [];
+                const mapped: Establishment[] = raw.map((event: any) => ({
+                    id: event.id,
+                    eventId: event.id,
+                    name: event.venue?.name ?? event.name,
+                    location: event.venue?.address ?? '',
+                    image: event.imageUrl ?? '',
+                    video: '',
+                    rating: 0,
+                    currentDj: event.isActive ? {
+                        name: event.name,
+                        genre: '',
+                        startTime: event.startsAt ?? '',
+                        endTime: event.endsAt ?? '',
+                        isLive: true,
+                    } : undefined,
+                }));
+                setEvents(mapped);
+            })
+            .catch(() => setEvents([]))
+            .finally(() => setLoading(false));
+    }, [visible]);
+
+    const filtered = events.filter(e =>
         e.name.toLowerCase().includes(search.toLowerCase()) ||
         e.location.toLowerCase().includes(search.toLowerCase())
     );
 
-    const handleSelect = (id: string) => {
-        setActiveId(id);
-    };
+    const handleSelect = (id: string) => setActiveId(id);
 
     const handleConfirm = () => {
-        const selected = MOCK_ESTABLISHMENTS.find(e => e.id === activeId);
+        const selected = events.find(e => e.id === activeId);
         if (selected) {
             setEstablishment(selected);
             onClose();
-            // Optional: reset state after closing
             setTimeout(() => {
                 setActiveId(null);
                 setSearch('');
@@ -44,43 +71,36 @@ export function NeonModal({ visible, onClose }: NeonModalProps) {
         }
     };
 
-    const handleCancel = () => {
-        setActiveId(null);
-    };
+    const handleCancel = () => setActiveId(null);
 
-    const renderItem = ({ item }: { item: typeof MOCK_ESTABLISHMENTS[0] }) => {
+    const renderItem = ({ item }: { item: Establishment }) => {
         const isActive = activeId === item.id;
         return (
             <TouchableOpacity onPress={() => handleSelect(item.id)} activeOpacity={0.5}>
-                <CyberCard
-                    style={[styles.card, isActive && styles.activeCard]}
-
-                >
+                <CyberCard style={[styles.card, isActive && styles.activeCard]}>
                     <View style={styles.cardContent}>
-                        <Video
-                            source={{ uri: item.video }}
-                            style={styles.cardVideo}
-                            resizeMode={ResizeMode.COVER}
-                            shouldPlay={true}
-                            isLooping
-                            isMuted
-                        />
+                        {item.image ? (
+                            <Image source={{ uri: item.image }} style={styles.cardImage} resizeMode="cover" />
+                        ) : (
+                            <View style={[styles.cardImage, { backgroundColor: '#1a1a1a' }]} />
+                        )}
                         <View style={styles.cardOverlay}>
                             <View style={styles.cardHeader}>
                                 <ThemedText style={styles.cardName}>{item.name}</ThemedText>
-                                {item.rating && (
-                                    <View style={styles.ratingBadge}>
-                                        <Ionicons name="star" size={12} color="black" />
-                                        <ThemedText style={styles.ratingText}>{item.rating}</ThemedText>
+                                {item.currentDj?.isLive && (
+                                    <View style={styles.liveBadge}>
+                                        <View style={styles.liveDot} />
+                                        <ThemedText style={styles.liveText}>LIVE</ThemedText>
                                     </View>
                                 )}
                             </View>
                             <View style={styles.cardFooter}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                    <Ionicons name="location-sharp" size={14} color={ZyncTheme.colors.primary} />
-                                    <ThemedText style={styles.cardLocation}>{item.location}</ThemedText>
-                                </View>
-                                <ThemedText style={styles.cardDistance}>{item.distance}</ThemedText>
+                                {item.location ? (
+                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        <Ionicons name="location-sharp" size={14} color={ZyncTheme.colors.primary} />
+                                        <ThemedText style={styles.cardLocation}>{item.location}</ThemedText>
+                                    </View>
+                                ) : null}
                             </View>
                         </View>
                         {isActive && <View style={styles.activeBorder} />}
@@ -90,7 +110,7 @@ export function NeonModal({ visible, onClose }: NeonModalProps) {
         );
     };
 
-    const selectedEstablishment = MOCK_ESTABLISHMENTS.find(e => e.id === activeId);
+    const selectedEvent = events.find(e => e.id === activeId);
 
     if (!visible) return null;
 
@@ -101,26 +121,16 @@ export function NeonModal({ visible, onClose }: NeonModalProps) {
                     <View style={styles.backdrop} />
                 </Pressable>
 
-                {/* Pulsing Halo Effect - only show if not selecting */}
                 {!activeId && (
-                    <>
-                        <MotiView
-                            from={{ opacity: 0.2, scale: 1, }}
-                            animate={{ opacity: 0, scale: 1.1 }}
-                            transition={{
-                                type: 'timing',
-                                duration: 3000,
-                                // delay: 500,
-                                loop: true,
-                                repeatReverse: true,
-                            }}
-                            style={styles.halo}
-                        />
-                    </>
+                    <MotiView
+                        from={{ opacity: 0.2, scale: 1 }}
+                        animate={{ opacity: 0, scale: 1.1 }}
+                        transition={{ type: 'timing', duration: 3000, loop: true, repeatReverse: true }}
+                        style={styles.halo}
+                    />
                 )}
 
                 <View style={styles.modalContent}>
-                    {/* Main List View */}
                     <View style={styles.header}>
                         <ThemedText style={styles.title}>SELECT LOCATION</ThemedText>
                         <TouchableOpacity onPress={onClose} style={styles.closeButton}>
@@ -136,16 +146,24 @@ export function NeonModal({ visible, onClose }: NeonModalProps) {
                         containerStyle={styles.searchContainer}
                     />
 
-                    <FlatList
-                        data={filteredEstablishments}
-                        renderItem={renderItem}
-                        keyExtractor={item => item.id}
-                        contentContainerStyle={styles.list}
-                        showsVerticalScrollIndicator={false}
-                    />
+                    {loading ? (
+                        <ActivityIndicator color={ZyncTheme.colors.primary} style={{ marginVertical: 40 }} />
+                    ) : (
+                        <FlatList
+                            data={filtered}
+                            renderItem={renderItem}
+                            keyExtractor={item => item.id}
+                            contentContainerStyle={styles.list}
+                            showsVerticalScrollIndicator={false}
+                            ListEmptyComponent={
+                                <ThemedText style={{ color: ZyncTheme.colors.textSecondary, textAlign: 'center', marginTop: 20 }}>
+                                    No events found
+                                </ThemedText>
+                            }
+                        />
+                    )}
 
-                    {/* Selection Overlay */}
-                    {activeId && selectedEstablishment && (
+                    {activeId && selectedEvent && (
                         <MotiView
                             from={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
@@ -155,22 +173,23 @@ export function NeonModal({ visible, onClose }: NeonModalProps) {
                                 { backgroundColor: 'black', padding: ZyncTheme.spacing.m, borderRadius: ZyncTheme.borderRadius.l, justifyContent: 'center', alignItems: 'center' }
                             ]}
                         >
-                            <Video
-                                source={{ uri: selectedEstablishment.video }}
-                                style={StyleSheet.absoluteFill}
-                                resizeMode={ResizeMode.COVER}
-                                shouldPlay={true}
-                                isLooping
-                                isMuted
-                            />
+                            {selectedEvent.image ? (
+                                <Image
+                                    source={{ uri: selectedEvent.image }}
+                                    style={StyleSheet.absoluteFillObject}
+                                    resizeMode="cover"
+                                />
+                            ) : null}
                             <View style={{ ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.7)' }} />
 
                             <ThemedText style={{ fontSize: 32, fontWeight: '900', color: 'white', marginBottom: 8, textAlign: 'center', paddingTop: 16 }}>
-                                {selectedEstablishment.name}
+                                {selectedEvent.name}
                             </ThemedText>
-                            <ThemedText style={{ fontSize: 16, color: '#ccc', marginBottom: 40, textAlign: 'center' }}>
-                                {selectedEstablishment.location}
-                            </ThemedText>
+                            {selectedEvent.location ? (
+                                <ThemedText style={{ fontSize: 16, color: '#ccc', marginBottom: 40, textAlign: 'center' }}>
+                                    {selectedEvent.location}
+                                </ThemedText>
+                            ) : null}
 
                             <TouchableOpacity
                                 onPress={handleConfirm}
@@ -181,7 +200,7 @@ export function NeonModal({ visible, onClose }: NeonModalProps) {
                                     borderRadius: 30,
                                     marginBottom: 16,
                                     width: '100%',
-                                    alignItems: 'center'
+                                    alignItems: 'center',
                                 }}
                             >
                                 <ThemedText style={{ color: 'black', fontWeight: '900', fontSize: 18 }}>CONFIRM SELECTION</ThemedText>
@@ -201,8 +220,8 @@ export function NeonModal({ visible, onClose }: NeonModalProps) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        justifyContent: 'center', // Center vertically
-        alignItems: 'center',     // Center horizontally
+        justifyContent: 'center',
+        alignItems: 'center',
         backgroundColor: 'rgba(0,0,0,0.5)',
     },
     backdrop: {
@@ -227,11 +246,10 @@ const styles = StyleSheet.create({
     halo: {
         position: 'absolute',
         width: width * 0.9,
-        height: height * 0.7, // Match modal size roughly (or purely strictly visual)
+        height: height * 0.7,
         borderRadius: ZyncTheme.borderRadius.l,
-        backgroundColor: ZyncTheme.colors.primary, // Glow color
-        zIndex: 1, // Behind modal
-        // opacity: 0.5,
+        backgroundColor: ZyncTheme.colors.primary,
+        zIndex: 1,
     },
     header: {
         flexDirection: 'row',
@@ -259,7 +277,7 @@ const styles = StyleSheet.create({
         paddingBottom: 20,
     },
     card: {
-        height: 140, // Slightly smaller for dense list
+        height: 140,
         overflow: 'hidden',
         borderWidth: 0,
     },
@@ -269,7 +287,7 @@ const styles = StyleSheet.create({
     cardContent: {
         flex: 1,
     },
-    cardVideo: {
+    cardImage: {
         ...StyleSheet.absoluteFillObject,
         backgroundColor: '#111',
     },
@@ -285,26 +303,36 @@ const styles = StyleSheet.create({
         alignItems: 'flex-start',
     },
     cardName: {
-        fontSize: 18, // Slightly smaller
+        fontSize: 18,
         fontWeight: 'bold',
         color: 'white',
         textShadowColor: 'black',
         textShadowOffset: { width: 1, height: 1 },
         textShadowRadius: 5,
+        flex: 1,
     },
-    ratingBadge: {
+    liveBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: ZyncTheme.colors.primary,
-        paddingHorizontal: 6,
-        paddingVertical: 2,
-        borderRadius: 8,
-        gap: 2,
+        backgroundColor: 'rgba(204,255,0,0.15)',
+        borderWidth: 1,
+        borderColor: ZyncTheme.colors.primary,
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 10,
+        marginLeft: 8,
     },
-    ratingText: {
-        color: 'black',
-        fontWeight: 'bold',
+    liveDot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: ZyncTheme.colors.primary,
+        marginRight: 4,
+    },
+    liveText: {
+        color: ZyncTheme.colors.primary,
         fontSize: 10,
+        fontWeight: 'bold',
     },
     cardFooter: {
         gap: 2,
@@ -315,16 +343,10 @@ const styles = StyleSheet.create({
         marginLeft: 4,
         fontWeight: '600',
     },
-    cardDistance: {
-        color: ZyncTheme.colors.primary,
-        fontSize: 10,
-        fontWeight: 'bold',
-        alignSelf: 'flex-end',
-    },
     activeBorder: {
         ...StyleSheet.absoluteFillObject,
         borderWidth: 2,
         borderColor: ZyncTheme.colors.primary,
         borderRadius: 16,
-    }
+    },
 });

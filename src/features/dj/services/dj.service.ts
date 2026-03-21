@@ -2,7 +2,7 @@ import axios from 'axios';
 import { getAuthHeaders } from '../../auth/services/auth.service';
 import { DjProfile, DjReviewsResponse, Gig, PromoCode } from '../domain/dj.types';
 
-const API_URL = 'http://44.222.141.70:3000';
+const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 // 1. GET /dj - Query params: genre
 export const getDjs = async (genre?: string): Promise<DjProfile[]> => {

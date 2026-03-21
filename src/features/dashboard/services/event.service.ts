@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'http://44.222.141.70:3000';
+const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 export const getEvents = async (skip: number = 0, take: number = 10) => {
     // This endpoint may not require auth, but if it does, use getAuthHeaders. Assume it's public initially or pass auth just in case.

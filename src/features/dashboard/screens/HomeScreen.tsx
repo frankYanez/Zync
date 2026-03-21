@@ -26,6 +26,7 @@ export default function HomeScreen() {
   const [orderModalVisible, setOrderModalVisible] = useState(false);
 
   const hasLiveDj = currentEstablishment?.currentDj?.isLive;
+  const currentEventId = currentEstablishment?.eventId ?? null;
 
 
   return (
@@ -70,10 +71,10 @@ export default function HomeScreen() {
             )}
 
             {/* CHAT BUTTON */}
-            {hasLiveDj && (
+            {hasLiveDj && currentEventId && (
               <TouchableOpacity
                 style={styles.iconButton}
-                onPress={() => router.push('/chat-test')}
+                onPress={() => router.push({ pathname: '/chat-test', params: { eventId: currentEventId } })}
               >
                 <Ionicons name="chatbubbles-outline" size={20} color={ZyncTheme.colors.primary} />
               </TouchableOpacity>

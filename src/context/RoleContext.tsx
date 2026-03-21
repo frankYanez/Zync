@@ -28,13 +28,9 @@ export const RoleProvider: React.FC<RoleProviderProps> = ({ children }) => {
 
     const switchRole = async (role: UserRole) => {
         if (role === currentRole) return;
-
         setIsLoading(true);
-
         // Simulate API call latency
-        // TODO: Replace timeout with actual API call to /api/users/switch-role
-        await new Promise(resolve => setTimeout(resolve, 2000));
-
+        await new Promise(resolve => setTimeout(resolve, 1000));
         setCurrentRole(role);
         setIsLoading(false);
     };

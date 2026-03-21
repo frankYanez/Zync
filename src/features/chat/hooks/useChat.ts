@@ -4,12 +4,10 @@ import { Message } from '../domain/chat.types';
 import { enterEvent, getChatMessages, getEventMessages, leaveEventApi } from '../services/chat.service';
 import {
     connectSocket,
-    disconnectSocket,
     joinEvent,
     leaveEvent,
     offSocket,
     onEventMessage,
-    onJoinedEvent,
     onMessageDelivered,
     onMessageSeen,
     onNewMessage,
@@ -134,9 +132,6 @@ export const useChat = (eventId: string, currentUserId: string, otherUserId?: st
             await connectSocket();
             if (!isMounted) return;
 
-            // console.log('useChat: Socket connected, registered listeners');
-            onJoinedEvent(handleJoinedEvent);
-            onJoinedEvent(handleJoinedEvent);
             if (otherUserId) {
                 // console.log('useChat: Listening for private messages');
                 onNewMessage(handleNewMessage);
@@ -166,8 +161,11 @@ export const useChat = (eventId: string, currentUserId: string, otherUserId?: st
                 // console.log('useChat: Entering event API', eventId);
                 await enterEvent(eventId);
 
-                // console.log('useChat: Joining event socket', eventId);
-                joinEvent(eventId);
+                // Unirse al evento. isJoined se activa en el callback
+                // porque el servidor no envía confirmación 'joined-event'.
+                joinEvent(eventId, () => {
+                    if (isMounted) setIsJoined(true);
+                });
                 if (isMounted) setLoading(false);
             }
         };
@@ -178,8 +176,6 @@ export const useChat = (eventId: string, currentUserId: string, otherUserId?: st
 
         return () => {
             isMounted = false;
-            // Clean up listeners with specific callbacks
-            offSocket('joined-event', handleJoinedEvent);
             offSocket('new-message', handleNewMessage);
             offSocket('event-message', handleNewMessage);
             offSocket('typing', handleTyping);
@@ -188,7 +184,9 @@ export const useChat = (eventId: string, currentUserId: string, otherUserId?: st
 
             leaveEvent(eventId); // Socket leave
             leaveEventApi(eventId); // API leave
-            disconnectSocket();
+            // No llamar disconnectSocket() aquí: el socket es un singleton compartido
+            // entre useChat y useConnectedUsers. Desconectarlo aquí mataría los listeners
+            // del otro hook. El socket se desconecta al hacer logout.
         };
     }, [eventId, otherUserId, currentUserId]);
 

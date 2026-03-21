@@ -4,7 +4,7 @@ import { ZyncTheme } from '@/shared/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React from 'react';
 import { FlatList, Image, ImageBackground, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,10 +14,7 @@ import { TypingIndicator } from '../components/TypingIndicator';
 
 
 export const GroupChatScreen = () => {
-    // const { eventId } = useLocalSearchParams<{ eventId: string }>();\
-    // const { eventId } = useLocalSearchParams<{ eventId: string }>();\
-    // const otherUserId = '19a04f82-79ff-49c6-b4d7-7c61ee5893b4'; // Removed as it is unused in Group Chat
-    const eventId = '8aac60c1-351b-4289-a152-88a017de32bd';
+    const { eventId } = useLocalSearchParams<{ eventId: string }>();
     const insets = useSafeAreaInsets();
     const router = useRouter();
     const { user, isLoading: authLoading } = useAuth();

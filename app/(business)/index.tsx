@@ -1,5 +1,7 @@
 import { ScreenLayout } from '@/components/ScreenLayout';
 import { ThemedText } from '@/components/themed-text';
+import DjHomeScreen from '@/features/dj/screens/DjHomeScreen';
+import { useRoleManager } from '@/hooks/useRoleManager';
 import { ZyncTheme } from '@/shared/constants/theme';
 import { StyleSheet, View } from 'react-native';
 
@@ -37,4 +39,12 @@ const styles = StyleSheet.create({
     }
 });
 
-export default function SummaryScreen() { return <PlaceholderScreen title="Resumen Screen" />; }
+export default function BusinessHomeIndex() {
+    const { currentRole } = useRoleManager();
+
+    if (currentRole === 'dj') {
+        return <DjHomeScreen />;
+    }
+
+    return <PlaceholderScreen title="Resumen Screen" />;
+}

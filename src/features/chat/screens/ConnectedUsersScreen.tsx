@@ -1,14 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React from 'react';
 import { FlatList, Image, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useConnectedUsers } from '../hooks/useConnectedUsers';
 
 export const ConnectedUsersScreen = () => {
     const router = useRouter();
-    // const { eventId } = useLocalSearchParams<{ eventId: string }>();
-
-    const eventId = '68164919-88df-4a63-b9b3-6d4fc793a8c2';
+    const { eventId } = useLocalSearchParams<{ eventId: string }>();
 
     const { users } = useConnectedUsers(eventId);
 
