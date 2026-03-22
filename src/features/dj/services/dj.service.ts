@@ -28,7 +28,9 @@ export const getMyDjProfile = async (userId: string): Promise<DjProfile | null> 
     try {
         const djs = await getDjs();
         const myProfile = djs.find(dj => dj.userId === userId);
-        return myProfile || null;
+        if (!myProfile) return null;
+        // Fetch full profile to get logoUrl, bannerUrl and all fields
+        return await getDjById(myProfile.id);
     } catch (error) {
         console.error("Error fetching my DJ profile:", error);
         return null;
@@ -89,6 +91,34 @@ export const generatePromoCode = async (djProfileId: string, eventId: string): P
 export const getDjPromoCodes = async (djProfileId: string): Promise<PromoCode[]> => {
     const headers = await getAuthHeaders();
     const response = await axios.get(`${API_URL}/dj/${djProfileId}/promo-codes`, headers);
+    return response.data;
+};
+
+// Organizer: GET /events/:eventId/promo-codes
+export const getEventPromoCodes = async (eventId: string): Promise<PromoCode[]> => {
+    const headers = await getAuthHeaders();
+    const response = await axios.get(`${API_URL}/events/${eventId}/promo-codes`, headers);
+    return response.data;
+};
+
+// Organizer: POST /events/:eventId/djs/:djProfileId/promo-codes
+export const createOrganizerPromoCode = async (
+    eventId: string,
+    djProfileId: string,
+): Promise<PromoCode> => {
+    const headers = await getAuthHeaders();
+    const djProfile = await getDjById(djProfileId);
+    const artistName = (djProfile?.artistName ?? 'DJ')
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, '')
+        .substring(0, 8);
+    const randomChars = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const customCode = `${artistName}_ZYNC_${randomChars}`;
+    const response = await axios.post(
+        `${API_URL}/events/${eventId}/djs/${djProfileId}/promo-codes`,
+        { code: customCode },
+        headers,
+    );
     return response.data;
 };
 

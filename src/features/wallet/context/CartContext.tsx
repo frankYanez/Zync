@@ -1,3 +1,4 @@
+import { createOrder } from '@/features/wallet/services/order.service';
 import { Product } from '@/infrastructure/mock-data';
 import React, { createContext, useContext, useMemo, useState } from 'react';
 
@@ -23,7 +24,7 @@ interface CartContextType {
     clearCart: () => void;
     totalAmount: number;
     totalItems: number;
-    checkout: () => Promise<{ success: boolean; orderId?: string; error?: string }>;
+    checkout: (params?: { establishmentId?: string; promoCode?: string; usePoints?: boolean }) => Promise<{ success: boolean; orderId?: string; error?: string }>;
     activeOrders: ActiveOrder[];
 }
 
@@ -77,31 +78,35 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         return items.reduce((toal, item) => toal + item.quantity, 0);
     }, [items]);
 
-    const checkout = async (): Promise<{ success: boolean; orderId?: string; error?: string }> => {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                // Mock 90% success rate
-                const isSuccess = Math.random() > 0.1;
-                if (isSuccess) {
-                    const newOrderId = Math.floor(1000 + Math.random() * 9000).toString();
+    const checkout = async (params?: { establishmentId?: string; promoCode?: string; usePoints?: boolean }): Promise<{ success: boolean; orderId?: string; error?: string }> => {
+        try {
+            const orderItems = items.map(item => ({
+                productId: item.id,
+                quantity: item.quantity,
+                unitPrice: item.price,
+            }));
 
-                    // Create active order
-                    setActiveOrders(prev => [{
-                        id: newOrderId,
-                        items: [...items],
-                        total: totalAmount,
-                        savings: 0,
-                        status: 'pending',
-                        establishmentName: 'Club Vertigo', // Mock data
-                        establishmentLogo: 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80' // Mock logo
-                    }, ...prev]);
+            const order = await createOrder({
+                establishmentId: params?.establishmentId ?? '',
+                items: orderItems,
+                promoCode: params?.promoCode,
+                usePoints: params?.usePoints,
+            });
 
-                    resolve({ success: true, orderId: newOrderId });
-                } else {
-                    resolve({ success: false, error: 'Payment declined by bank' });
-                }
-            }, 2000);
-        });
+            setActiveOrders(prev => [{
+                id: order.id,
+                items: [...items],
+                total: order.total,
+                savings: order.discount,
+                status: 'pending',
+                establishmentName: order.establishmentName,
+            }, ...prev]);
+
+            return { success: true, orderId: order.id };
+        } catch (error: any) {
+            const msg = error?.response?.data?.message;
+            return { success: false, error: Array.isArray(msg) ? msg.join('\n') : msg || 'Payment failed' };
+        }
     };
 
     return (

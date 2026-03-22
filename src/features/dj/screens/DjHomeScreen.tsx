@@ -1,6 +1,8 @@
 import { ScreenLayout } from '@/components/ScreenLayout';
 import { ThemedText } from '@/components/themed-text';
+import { VideoBackground } from '@/components/VideoBackground';
 import { useAuth } from '@/features/auth/context/AuthContext';
+import { useZync } from '@/context/ZyncContext';
 import { ZyncTheme } from '@/shared/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
@@ -19,6 +21,7 @@ import {
 
 export default function DjHomeScreen() {
     const { user } = useAuth();
+    const { currentEstablishment } = useZync();
     const router = useRouter();
     const [isReceivingSongs, setIsReceivingSongs] = useState(true);
     const [trackMessage, setTrackMessage] = useState('');
@@ -51,6 +54,7 @@ export default function DjHomeScreen() {
 
     return (
         <ScreenLayout noPadding>
+            <VideoBackground videoUri={currentEstablishment?.video}>
             <ScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
@@ -247,6 +251,7 @@ export default function DjHomeScreen() {
                 {/* Extra spacing for bottom tabs */}
                 <View style={{ height: 80 }} />
             </ScrollView>
+            </VideoBackground>
         </ScreenLayout>
     );
 }

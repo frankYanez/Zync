@@ -39,6 +39,7 @@ export interface Establishment {
         startTime: string;
         endTime: string;
         isLive: boolean;
+        djProfileId?: string;
     };
 }
 

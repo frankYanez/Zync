@@ -12,28 +12,31 @@ import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, S
 
 export default function CreateOrganizerProfileScreen() {
     const router = useRouter();
-    const { checkUser } = useAuth();
+    const { refreshSession } = useAuth();
 
     const [organizationName, setOrganizationName] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleSubmit = async () => {
         if (!organizationName.trim()) {
-            Alert.alert('Error', 'Please enter your organization or club name.');
+            Alert.alert('Error', 'Please enter your organization name.');
             return;
         }
 
-
+        setIsSubmitting(true);
         try {
             await updateOrganizerProfile({
                 organizationName: organizationName.trim(),
             });
 
-
+            await refreshSession();
+            router.back();
         } catch (error: any) {
-
             console.error('Organizer Profile Error:', error);
-            Alert.alert('Error', error?.response?.data?.message || 'Failed to create Organizer profile.');
+            const msg = error?.response?.data?.message;
+            Alert.alert('Error', Array.isArray(msg) ? msg.join('\n') : msg || 'Failed to create Organizer profile.');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -64,7 +67,7 @@ export default function CreateOrganizerProfileScreen() {
                     <View style={styles.spacer} />
 
                     <NeonButton
-                        title={"Create Organizer Profile"}
+                        title={isSubmitting ? 'Creating...' : 'Create Organizer Profile'}
                         onPress={handleSubmit}
                         disabled={isSubmitting}
                     />
