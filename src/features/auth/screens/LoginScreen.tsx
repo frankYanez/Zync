@@ -5,16 +5,66 @@ import { ThemedText } from '@/components/themed-text';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { ZyncTheme } from '@/shared/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
+import * as Google from 'expo-auth-session/providers/google';
+import * as WebBrowser from 'expo-web-browser';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { Alert, Keyboard, StyleSheet, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import {
+    Alert,
+    Keyboard,
+    StyleSheet,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+    View,
+    ActivityIndicator,
+    Image,
+} from 'react-native';
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function AuthScreen() {
     const router = useRouter();
-    const { login } = useAuth();
+    const { login, loginWithGoogle } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const [googleLoading, setGoogleLoading] = useState(false);
+
+    const [request, response, promptAsync] = Google.useAuthRequest({
+        androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
+        iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+        webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+    });
+
+    useEffect(() => {
+        if (response?.type === 'success') {
+            const { authentication } = response;
+            if (authentication?.accessToken) {
+                handleGoogleSuccess(authentication.accessToken);
+            }
+        } else if (response?.type === 'error') {
+            Alert.alert('Error', 'Google sign-in failed. Please try again.');
+            setGoogleLoading(false);
+        } else if (response?.type === 'dismiss') {
+            setGoogleLoading(false);
+        }
+    }, [response]);
+
+    const handleGoogleSuccess = async (accessToken: string) => {
+        try {
+            await loginWithGoogle(accessToken);
+        } catch (error: any) {
+            const message = error.response?.data?.message || 'Google login failed.';
+            Alert.alert('Error', message);
+        } finally {
+            setGoogleLoading(false);
+        }
+    };
+
+    const handleGoogleLogin = async () => {
+        setGoogleLoading(true);
+        await promptAsync();
+    };
 
     const handleLogin = async () => {
         if (!email || !password) {
@@ -27,8 +77,6 @@ export default function AuthScreen() {
 
         try {
             await login({ email: email.trim(), password });
-            // Navigation is handled by auth state or we can do it here explicitly
-            // router.replace('/(tabs)');
         } catch (error: any) {
             const message = error.response?.data?.message || 'Login failed. Please check your credentials.';
             Alert.alert('Access Denied', message);
@@ -81,6 +129,31 @@ export default function AuthScreen() {
                             textStyle={{ fontSize: 18, fontWeight: '900' }}
                             style={styles.loginButton}
                         />
+
+                        <View style={styles.dividerRow}>
+                            <View style={styles.dividerLine} />
+                            <ThemedText style={styles.dividerText}>OR</ThemedText>
+                            <View style={styles.dividerLine} />
+                        </View>
+
+                        <TouchableOpacity
+                            style={[styles.googleButton, (googleLoading || !request) && styles.googleButtonDisabled]}
+                            onPress={handleGoogleLogin}
+                            disabled={googleLoading || !request}
+                            activeOpacity={0.8}
+                        >
+                            {googleLoading ? (
+                                <ActivityIndicator size="small" color={ZyncTheme.colors.text} />
+                            ) : (
+                                <>
+                                    <Image
+                                        source={{ uri: 'https://www.google.com/favicon.ico' }}
+                                        style={styles.googleIcon}
+                                    />
+                                    <ThemedText style={styles.googleButtonText}>CONTINUE WITH GOOGLE</ThemedText>
+                                </>
+                            )}
+                        </TouchableOpacity>
                     </View>
 
                     <View style={styles.footer}>
@@ -110,7 +183,6 @@ const styles = StyleSheet.create({
     },
     header: {
         alignItems: 'center',
-        // marginTop: 40,
     },
     logoContainer: {
         width: 60,
@@ -158,6 +230,46 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.5,
         shadowRadius: 15,
         elevation: 10,
+    },
+    dividerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: ZyncTheme.spacing.l,
+        gap: ZyncTheme.spacing.m,
+    },
+    dividerLine: {
+        flex: 1,
+        height: 1,
+        backgroundColor: ZyncTheme.colors.border,
+    },
+    dividerText: {
+        color: ZyncTheme.colors.textSecondary,
+        fontSize: ZyncTheme.typography.size.s,
+        letterSpacing: 1,
+    },
+    googleButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: 56,
+        borderWidth: 1,
+        borderColor: ZyncTheme.colors.border,
+        borderRadius: ZyncTheme.borderRadius.m,
+        backgroundColor: ZyncTheme.colors.card,
+        gap: ZyncTheme.spacing.s,
+    },
+    googleButtonDisabled: {
+        opacity: 0.5,
+    },
+    googleIcon: {
+        width: 20,
+        height: 20,
+    },
+    googleButtonText: {
+        color: ZyncTheme.colors.text,
+        fontSize: ZyncTheme.typography.size.s,
+        fontWeight: '700',
+        letterSpacing: 1,
     },
     footer: {
         alignItems: 'center',
