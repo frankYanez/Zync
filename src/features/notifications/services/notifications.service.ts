@@ -37,8 +37,8 @@ export async function registerForPushNotifications(): Promise<string | null> {
 
 export async function savePushToken(token: string): Promise<void> {
   const headers = await getAuthHeaders();
-  await fetch(`${API_URL}/notifications/push-token`, {
-    method: 'POST',
+  await fetch(`${API_URL}/users/push-token`, {
+    method: 'PUT',
     headers: { ...headers, 'Content-Type': 'application/json' },
     body: JSON.stringify({ token, platform: 'android' }),
   });
