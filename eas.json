@@ -16,7 +16,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://100.31.134.251:3000"
+        "EXPO_PUBLIC_API_URL": "https://holophrastic-prevalently-brodie.ngrok-free.dev"
       }
     },
     "production": {
