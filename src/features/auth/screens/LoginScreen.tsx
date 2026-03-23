@@ -5,8 +5,6 @@ import { ThemedText } from '@/components/themed-text';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { ZyncTheme } from '@/shared/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
-import * as Google from 'expo-auth-session/providers/google';
-import * as WebBrowser from 'expo-web-browser';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -20,7 +18,19 @@ import {
     Image,
 } from 'react-native';
 
-WebBrowser.maybeCompleteAuthSession();
+let GoogleSignin: any = null;
+let statusCodes: any = {};
+try {
+    const GoogleModule = require('@react-native-google-signin/google-signin');
+    GoogleSignin = GoogleModule.GoogleSignin;
+    statusCodes = GoogleModule.statusCodes;
+    GoogleSignin.configure({
+        webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+        androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
+    });
+} catch (e) {
+    console.log('Google Sign-In native module not available.');
+}
 
 export default function AuthScreen() {
     const router = useRouter();
@@ -30,40 +40,26 @@ export default function AuthScreen() {
     const [loading, setLoading] = useState(false);
     const [googleLoading, setGoogleLoading] = useState(false);
 
-    const [request, response, promptAsync] = Google.useAuthRequest({
-        androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
-        iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
-        webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-    });
-
-    useEffect(() => {
-        if (response?.type === 'success') {
-            const { authentication } = response;
-            if (authentication?.accessToken) {
-                handleGoogleSuccess(authentication.accessToken);
-            }
-        } else if (response?.type === 'error') {
-            Alert.alert('Error', 'Google sign-in failed. Please try again.');
-            setGoogleLoading(false);
-        } else if (response?.type === 'dismiss') {
-            setGoogleLoading(false);
-        }
-    }, [response]);
-
-    const handleGoogleSuccess = async (accessToken: string) => {
+    const handleGoogleLogin = async () => {
+        setGoogleLoading(true);
         try {
-            await loginWithGoogle(accessToken);
+            await GoogleSignin.hasPlayServices();
+            await GoogleSignin.signIn();
+            const tokens = await GoogleSignin.getTokens();
+            if (!tokens.accessToken) throw new Error('No accessToken received');
+            await loginWithGoogle(tokens.accessToken);
         } catch (error: any) {
-            const message = error.response?.data?.message || 'Google login failed.';
-            Alert.alert('Error', message);
+            if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+                // usuario canceló, no mostrar error
+            } else if (error.code === statusCodes.IN_PROGRESS) {
+                // ya hay un sign-in en progreso
+            } else {
+                const message = error.response?.data?.message || 'Google login failed.';
+                Alert.alert('Error', message);
+            }
         } finally {
             setGoogleLoading(false);
         }
-    };
-
-    const handleGoogleLogin = async () => {
-        setGoogleLoading(true);
-        await promptAsync();
     };
 
     const handleLogin = async () => {
@@ -137,9 +133,9 @@ export default function AuthScreen() {
                         </View>
 
                         <TouchableOpacity
-                            style={[styles.googleButton, (googleLoading || !request) && styles.googleButtonDisabled]}
+                            style={[styles.googleButton, googleLoading && styles.googleButtonDisabled]}
                             onPress={handleGoogleLogin}
-                            disabled={googleLoading || !request}
+                            disabled={googleLoading}
                             activeOpacity={0.8}
                         >
                             {googleLoading ? (

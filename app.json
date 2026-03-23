@@ -49,7 +49,8 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "@react-native-google-signin/google-signin"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -58,9 +59,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "6aad13aa-2ffd-4ca9-83e0-5acfe51808d5"
+        "projectId": "e151b624-aa5d-4c04-be8a-fc96524acc50"
       }
     },
-    "owner": "zync"
+    "owner": "gonzachabit"
   }
 }
