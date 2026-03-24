@@ -23,7 +23,7 @@ export const getPublicProfile = async (userId: string) => {
  */
 export const updateProfile = async (profileData: any) => {
     const config = await getAuthHeaders();
-    const response = await axios.patch(`${API_URL}/users/me/profile`, profileData, config);
+    const response = await axios.patch(`${API_URL}/users/profile`, profileData, config);
     return response.data;
 };
 

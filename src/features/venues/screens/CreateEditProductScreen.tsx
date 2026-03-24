@@ -2,13 +2,8 @@ import { NeonButton } from '@/components/NeonButton';
 import { NeonInput } from '@/components/NeonInput';
 import { ScreenLayout } from '@/components/ScreenLayout';
 import { ThemedText } from '@/components/themed-text';
-import {
-    CreateProductDto,
-    Product,
-    createProduct,
-    getProductsByVenue,
-    updateProduct,
-} from '@/features/venues/services/product.service';
+import { CreateProductDto } from '@/features/venues/services/product.service';
+import { useVenueProducts } from '@/features/venues/hooks/useVenueProducts';
 import { ZyncTheme } from '@/shared/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -19,7 +14,6 @@ import {
     Platform,
     ScrollView,
     StyleSheet,
-    Switch,
     TouchableOpacity,
     View,
 } from 'react-native';
@@ -36,23 +30,20 @@ export default function CreateEditProductScreen() {
     const [price, setPrice] = useState('');
     const [category, setCategory] = useState(CATEGORIES[0]);
     const [imageUrl, setImageUrl] = useState('');
-    const [isAvailable, setIsAvailable] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    const { products, add, update } = useVenueProducts(venueId);
+
     useEffect(() => {
-        if (!isEdit || !venueId || !id) return;
-        // Load existing product data for editing
-        getProductsByVenue(venueId).then(products => {
-            const p = products.find(x => x.id === id);
-            if (!p) return;
-            setName(p.name);
-            setDescription(p.description ?? '');
-            setPrice(String(p.price));
-            setCategory(p.category);
-            setImageUrl(p.imageUrl ?? '');
-            setIsAvailable(p.isAvailable);
-        }).catch(e => console.error('Failed to load product', e));
-    }, [id, venueId, isEdit]);
+        if (!isEdit || !id || products.length === 0) return;
+        const p = products.find(x => x.id === id);
+        if (!p) return;
+        setName(p.name);
+        setDescription(p.description ?? '');
+        setPrice(String(p.price));
+        setCategory(p.category);
+        setImageUrl(p.imageUrl ?? '');
+    }, [products, id, isEdit]);
 
     const handleSubmit = async () => {
         if (!name.trim()) return Alert.alert('Error', 'Ingresá el nombre del producto.');
@@ -65,15 +56,14 @@ export default function CreateEditProductScreen() {
             price: parseFloat(price),
             category,
             imageUrl: imageUrl.trim() || undefined,
-            isAvailable,
         };
 
         setIsSubmitting(true);
         try {
             if (isEdit && id) {
-                await updateProduct(venueId, id, data);
+                await update(id, data);
             } else {
-                await createProduct(venueId, data);
+                await add(data);
             }
             router.back();
         } catch (error: any) {
@@ -149,19 +139,6 @@ export default function CreateEditProductScreen() {
                         />
                     </View>
 
-                    <View style={styles.switchRow}>
-                        <View>
-                            <ThemedText style={styles.label}>Disponible</ThemedText>
-                            <ThemedText style={styles.switchHint}>El producto aparece en el menú del cliente</ThemedText>
-                        </View>
-                        <Switch
-                            value={isAvailable}
-                            onValueChange={setIsAvailable}
-                            trackColor={{ false: ZyncTheme.colors.border, true: ZyncTheme.colors.primary }}
-                            thumbColor="#fff"
-                        />
-                    </View>
-
                     <View style={{ height: 16 }} />
                     <NeonButton
                         title={isSubmitting ? 'Guardando...' : isEdit ? 'Guardar cambios' : 'Crear producto'}
@@ -203,11 +180,4 @@ const styles = StyleSheet.create({
     catChipActive: { backgroundColor: ZyncTheme.colors.primary, borderColor: ZyncTheme.colors.primary },
     catChipText: { fontSize: 13, color: ZyncTheme.colors.textSecondary },
     catChipTextActive: { color: '#000', fontWeight: '700' },
-    switchRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: ZyncTheme.spacing.l,
-    },
-    switchHint: { fontSize: 12, color: ZyncTheme.colors.textSecondary, marginTop: 2 },
 });

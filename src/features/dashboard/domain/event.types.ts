@@ -22,6 +22,8 @@ export interface Event {
     isActive: boolean;
     imageUrl?: string;
     capacity?: number;
+    ticketPrice?: number;
+    description?: string;
     organizerId?: string;
     venueId?: string;
     venue?: Venue;
@@ -30,9 +32,35 @@ export interface Event {
 
 export interface CreateEventDto {
     name: string;
-    startsAt: string;
-    endsAt: string;
+    description?: string;
+    startDate: string;
+    endDate: string;
     venueId: string;
-    capacity?: number;
+    djs?: string[];
+    isPrivate?: boolean;
+    maxCapacity?: number;
     imageUrl?: string;
+    ticketPrice?: number;
+}
+
+export interface CheckLocationDto {
+    eventId: string;
+    latitude: number;
+    longitude: number;
+    action: 'ENTER' | 'LEAVE';
+}
+
+export interface VenueStats {
+    todayOrders: number;
+    todayRevenue: number;
+    activeCustomers: number;
+    pendingOrdersCount: number;
+}
+
+export interface EventStats {
+    ticketsSold: number;
+    ticketRevenue: number;
+    checkIns: number;
+    capacity: number;
+    activeDjs: number;
 }

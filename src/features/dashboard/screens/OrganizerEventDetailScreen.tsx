@@ -37,11 +37,13 @@ export default function OrganizerEventDetailScreen() {
             setEvent(ev);
             setLineup(lp);
             setAllDjs(djs);
-            // Load promo codes, ignore error if endpoint not available yet
+            // Load promo codes for each DJ in the lineup in parallel
             try {
-                const codes = await getEventPromoCodes(id);
-                setPromoCodes(codes);
-            } catch { /* endpoint may not be available yet */ }
+                const perDj = await Promise.all(
+                    lp.map(entry => getEventPromoCodes(id, entry.djProfileId).catch(() => [] as PromoCode[]))
+                );
+                setPromoCodes(perDj.flat());
+            } catch { /* ignore */ }
         } catch (e) {
             console.error('Failed to load event detail', e);
         } finally {

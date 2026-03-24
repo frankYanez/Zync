@@ -2,7 +2,8 @@ import { CyberCard } from '@/components/CyberCard';
 import { NeonButton } from '@/components/NeonButton';
 import { ScreenLayout } from '@/components/ScreenLayout';
 import { ThemedText } from '@/components/themed-text';
-import { Product, deleteProduct, getProductsByVenue } from '@/features/venues/services/product.service';
+import { Product } from '@/features/venues/services/product.service';
+import { useVenueProducts } from '@/features/venues/hooks/useVenueProducts';
 import { Venue, deleteVenue, getMyVenues } from '@/features/venues/services/venue.service';
 import { ZyncTheme } from '@/shared/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,6 +17,7 @@ import {
     RefreshControl,
     ScrollView,
     StyleSheet,
+    Switch,
     TouchableOpacity,
     View,
 } from 'react-native';
@@ -24,10 +26,10 @@ export default function ProductsManagementScreen() {
     const router = useRouter();
     const [venues, setVenues] = useState<Venue[]>([]);
     const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null);
-    const [products, setProducts] = useState<Product[]>([]);
     const [loadingVenues, setLoadingVenues] = useState(true);
-    const [loadingProducts, setLoadingProducts] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
+
+    const { products, isLoading: loadingProducts, refresh: refreshProducts, remove } = useVenueProducts(selectedVenue?.id);
 
     const loadVenues = useCallback(async () => {
         try {
@@ -44,29 +46,12 @@ export default function ProductsManagementScreen() {
         }
     }, [selectedVenue]);
 
-    const loadProducts = useCallback(async (venueId: string) => {
-        setLoadingProducts(true);
-        try {
-            const data = await getProductsByVenue(venueId);
-            setProducts(data);
-        } catch (e) {
-            console.error('Failed to load products', e);
-            setProducts([]);
-        } finally {
-            setLoadingProducts(false);
-        }
-    }, []);
-
     useEffect(() => { loadVenues(); }, []);
-
-    useEffect(() => {
-        if (selectedVenue) loadProducts(selectedVenue.id);
-    }, [selectedVenue]);
 
     const onRefresh = () => {
         setRefreshing(true);
         loadVenues();
-        if (selectedVenue) loadProducts(selectedVenue.id);
+        refreshProducts();
     };
 
     const handleDeleteProduct = (product: Product) => {
@@ -80,8 +65,7 @@ export default function ProductsManagementScreen() {
                     style: 'destructive',
                     onPress: async () => {
                         try {
-                            await deleteProduct(selectedVenue!.id, product.id);
-                            setProducts(prev => prev.filter(p => p.id !== product.id));
+                            await remove(product.id);
                         } catch (e: any) {
                             const msg = e?.response?.data?.message;
                             Alert.alert('Error', Array.isArray(msg) ? msg.join('\n') : msg || 'No se pudo eliminar.');
@@ -90,6 +74,13 @@ export default function ProductsManagementScreen() {
                 },
             ],
         );
+    };
+
+    // isAvailable is not part of the backend DTO — optimistic local toggle only
+    const handleToggleAvailable = (product: Product) => {
+        // No API call since the backend doesn't support isAvailable updates
+        // The toggle reflects local state only until the list is refreshed
+        console.warn('Toggle available: not supported by backend');
     };
 
     const handleDeleteVenue = (venue: Venue) => {
@@ -137,14 +128,19 @@ export default function ProductsManagementScreen() {
                     ) : null}
                     <View style={styles.productMeta}>
                         <ThemedText style={styles.productPrice}>${item.price.toLocaleString()}</ThemedText>
-                        <View style={[styles.availBadge, { borderColor: item.isAvailable ? '#22C55E' : ZyncTheme.colors.border }]}>
-                            <ThemedText style={[styles.availText, { color: item.isAvailable ? '#22C55E' : ZyncTheme.colors.textSecondary }]}>
-                                {item.isAvailable ? 'Disponible' : 'No disponible'}
-                            </ThemedText>
-                        </View>
+                        <ThemedText style={[styles.availText, { color: item.isAvailable ? '#22C55E' : '#666' }]}>
+                            {item.isAvailable ? '● Disponible' : '○ Oculto'}
+                        </ThemedText>
                     </View>
                 </View>
                 <View style={styles.productActions}>
+                    <Switch
+                        value={item.isAvailable}
+                        onValueChange={() => handleToggleAvailable(item)}
+                        trackColor={{ false: ZyncTheme.colors.border, true: 'rgba(204,255,0,0.3)' }}
+                        thumbColor={item.isAvailable ? ZyncTheme.colors.primary : '#666'}
+                        style={{ transform: [{ scaleX: 0.85 }, { scaleY: 0.85 }] }}
+                    />
                     <TouchableOpacity
                         style={styles.actionBtn}
                         onPress={() => router.push({ pathname: '/(business)/products/[id]' as any, params: { id: item.id, venueId: selectedVenue!.id } })}

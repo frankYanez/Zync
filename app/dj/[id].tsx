@@ -44,6 +44,7 @@ export default function PublicDjProfileScreen() {
         Promise.all([getDjById(id), getDjGigs(id), getDjReviews(id)])
             .then(([profile, gigList, reviews]) => {
                 setDj(profile);
+                setIsFollowing(profile?.isFollowing ?? false);
                 setGigs(gigList);
                 setReviewsData(reviews);
             })
