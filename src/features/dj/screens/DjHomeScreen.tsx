@@ -38,8 +38,8 @@ export default function DjHomeScreen() {
 
     const topRequests = pendingRequests.slice(0, 3);
 
-    const activeEventId = stats?.activeEvents[0]?.id ?? null;
-    const activeEventName = stats?.activeEvents[0]?.name ?? currentEstablishment?.name ?? 'Sin evento activo';
+    const activeEventId = stats?.activeEvents?.[0]?.id ?? null;
+    const activeEventName = stats?.activeEvents?.[0]?.name ?? currentEstablishment?.name ?? 'Sin evento activo';
 
     const toggleReceivingSongs = async () => {
         const next = !isReceivingSongs;

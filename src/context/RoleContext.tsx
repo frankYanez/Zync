@@ -84,7 +84,9 @@ export const RoleProvider: React.FC<RoleProviderProps> = ({ children }) => {
             }
             setIsLoading(false);
         });
-    }, [authLoading, user]);
+    // user?.id is a stable primitive — avoids re-running on every new user object reference
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [authLoading, user?.id]);
 
     const switchRole = async (role: UserRole) => {
         if (role === currentRole) return;
