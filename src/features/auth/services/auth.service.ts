@@ -82,7 +82,7 @@ export const getMe = async (): Promise<User> => {
     return response.data;
 };
 
-const setToken = async (token: string) => {
+export const setToken = async (token: string) => {
     cachedToken = token;
     if (Platform.OS !== 'web') {
         await SecureStore.setItemAsync(STORAGE_KEY, token);
@@ -101,7 +101,7 @@ export const getToken = async (): Promise<string | null> => {
     return cachedToken;
 };
 
-const setRefreshToken = async (token: string) => {
+export const setRefreshToken = async (token: string) => {
     cachedRefreshToken = token;
     if (Platform.OS !== 'web') {
         await SecureStore.setItemAsync(REFRESH_STORAGE_KEY, token);

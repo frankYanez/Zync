@@ -1,7 +1,9 @@
+import { clearPersistedRole } from '@/context/RoleContext';
 import { LoginUserDto, RegisterDto, User } from '@/features/auth/domain/auth.types';
 import * as authService from '@/features/auth/services/auth.service';
+import { loginWithGoogleAccessToken } from '@/features/auth/services/google-auth.service';
 import { disconnectSocket } from '@/features/chat/services/socket.service';
-import { clearPersistedRole } from '@/context/RoleContext';
+import { registerForPushNotifications, savePushToken } from '@/features/notifications/services/notifications.service';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 interface AuthContextType {
@@ -10,6 +12,7 @@ interface AuthContextType {
     isLoading: boolean;
     register: (data: RegisterDto) => Promise<boolean>;
     login: (data: LoginUserDto) => Promise<boolean>;
+    loginWithGoogle: (accessToken: string) => Promise<boolean>;
     logout: () => Promise<void>;
     verifyEmail: (email: string, otp: string) => Promise<boolean>;
     resendVerification: (email: string) => Promise<void>;
@@ -44,9 +47,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     };
 
+    const registerPushToken = async () => {
+        try {
+            const token = await registerForPushNotifications();
+            if (token) await savePushToken(token);
+        } catch (e) {
+            console.warn('Push token registration failed:', e);
+        }
+    };
+
     const login = async (loginDto: LoginUserDto) => {
         const response = await authService.login(loginDto);
         setUser(response.user);
+        registerPushToken();
+        return true;
+    };
+
+    const loginWithGoogle = async (accessToken: string) => {
+        const response = await loginWithGoogleAccessToken(accessToken);
+        setUser(response.user);
+        registerPushToken();
         return true;
     };
 
@@ -114,6 +134,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 isLoading,
                 register,
                 login,
+                loginWithGoogle,
                 logout,
                 verifyEmail,
                 resendVerification,

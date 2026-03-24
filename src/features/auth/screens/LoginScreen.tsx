@@ -6,15 +6,61 @@ import { useAuth } from '@/features/auth/context/AuthContext';
 import { ZyncTheme } from '@/shared/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { Alert, Keyboard, StyleSheet, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import {
+    Alert,
+    Keyboard,
+    StyleSheet,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+    View,
+    ActivityIndicator,
+    Image,
+} from 'react-native';
+
+let GoogleSignin: any = null;
+let statusCodes: any = {};
+try {
+    const GoogleModule = require('@react-native-google-signin/google-signin');
+    GoogleSignin = GoogleModule.GoogleSignin;
+    statusCodes = GoogleModule.statusCodes;
+    GoogleSignin.configure({
+        webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+        androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
+    });
+} catch (e) {
+    console.log('Google Sign-In native module not available.');
+}
 
 export default function AuthScreen() {
     const router = useRouter();
-    const { login } = useAuth();
+    const { login, loginWithGoogle } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const [googleLoading, setGoogleLoading] = useState(false);
+
+    const handleGoogleLogin = async () => {
+        setGoogleLoading(true);
+        try {
+            await GoogleSignin.hasPlayServices();
+            await GoogleSignin.signIn();
+            const tokens = await GoogleSignin.getTokens();
+            if (!tokens.accessToken) throw new Error('No accessToken received');
+            await loginWithGoogle(tokens.accessToken);
+        } catch (error: any) {
+            if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+                // usuario canceló, no mostrar error
+            } else if (error.code === statusCodes.IN_PROGRESS) {
+                // ya hay un sign-in en progreso
+            } else {
+                const message = error.response?.data?.message || 'Google login failed.';
+                Alert.alert('Error', message);
+            }
+        } finally {
+            setGoogleLoading(false);
+        }
+    };
 
     const handleLogin = async () => {
         if (!email || !password) {
@@ -27,8 +73,6 @@ export default function AuthScreen() {
 
         try {
             await login({ email: email.trim(), password });
-            // Navigation is handled by auth state or we can do it here explicitly
-            // router.replace('/(tabs)');
         } catch (error: any) {
             const message = error.response?.data?.message || 'Login failed. Please check your credentials.';
             Alert.alert('Access Denied', message);
@@ -81,6 +125,31 @@ export default function AuthScreen() {
                             textStyle={{ fontSize: 18, fontWeight: '900' }}
                             style={styles.loginButton}
                         />
+
+                        <View style={styles.dividerRow}>
+                            <View style={styles.dividerLine} />
+                            <ThemedText style={styles.dividerText}>OR</ThemedText>
+                            <View style={styles.dividerLine} />
+                        </View>
+
+                        <TouchableOpacity
+                            style={[styles.googleButton, googleLoading && styles.googleButtonDisabled]}
+                            onPress={handleGoogleLogin}
+                            disabled={googleLoading}
+                            activeOpacity={0.8}
+                        >
+                            {googleLoading ? (
+                                <ActivityIndicator size="small" color={ZyncTheme.colors.text} />
+                            ) : (
+                                <>
+                                    <Image
+                                        source={{ uri: 'https://www.google.com/favicon.ico' }}
+                                        style={styles.googleIcon}
+                                    />
+                                    <ThemedText style={styles.googleButtonText}>CONTINUE WITH GOOGLE</ThemedText>
+                                </>
+                            )}
+                        </TouchableOpacity>
                     </View>
 
                     <View style={styles.footer}>
@@ -110,7 +179,6 @@ const styles = StyleSheet.create({
     },
     header: {
         alignItems: 'center',
-        // marginTop: 40,
     },
     logoContainer: {
         width: 60,
@@ -158,6 +226,46 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.5,
         shadowRadius: 15,
         elevation: 10,
+    },
+    dividerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: ZyncTheme.spacing.l,
+        gap: ZyncTheme.spacing.m,
+    },
+    dividerLine: {
+        flex: 1,
+        height: 1,
+        backgroundColor: ZyncTheme.colors.border,
+    },
+    dividerText: {
+        color: ZyncTheme.colors.textSecondary,
+        fontSize: ZyncTheme.typography.size.s,
+        letterSpacing: 1,
+    },
+    googleButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: 56,
+        borderWidth: 1,
+        borderColor: ZyncTheme.colors.border,
+        borderRadius: ZyncTheme.borderRadius.m,
+        backgroundColor: ZyncTheme.colors.card,
+        gap: ZyncTheme.spacing.s,
+    },
+    googleButtonDisabled: {
+        opacity: 0.5,
+    },
+    googleIcon: {
+        width: 20,
+        height: 20,
+    },
+    googleButtonText: {
+        color: ZyncTheme.colors.text,
+        fontSize: ZyncTheme.typography.size.s,
+        fontWeight: '700',
+        letterSpacing: 1,
     },
     footer: {
         alignItems: 'center',
