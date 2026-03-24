@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Gig } from '@/features/dj/domain/dj.types';
-import { getDjGigs } from '@/features/dj/services/dj.service';
+import { CreateGigDto, Gig, GigStatus } from '@/features/dj/domain/dj.types';
+import { createGig, deleteGig, getDjGigs, updateGigStatus } from '@/features/dj/services/dj.service';
 
 /**
  * Hook para obtener la lista de gigs (presentaciones) de un DJ.
@@ -36,5 +36,24 @@ export function useDjGigs(djProfileId: string | undefined) {
         fetchGigs();
     }, [fetchGigs]);
 
-    return { gigs, isLoading, error, refetch: fetchGigs };
+    const addGig = useCallback(async (data: CreateGigDto) => {
+        if (!djProfileId) return;
+        const newGig = await createGig(djProfileId, data);
+        setGigs(prev => [newGig, ...prev]);
+        return newGig;
+    }, [djProfileId]);
+
+    const changeGigStatus = useCallback(async (gigId: string, status: GigStatus) => {
+        if (!djProfileId) return;
+        await updateGigStatus(djProfileId, gigId, status);
+        setGigs(prev => prev.map(g => g.id === gigId ? { ...g, status } : g));
+    }, [djProfileId]);
+
+    const removeGig = useCallback(async (gigId: string) => {
+        if (!djProfileId) return;
+        await deleteGig(djProfileId, gigId);
+        setGigs(prev => prev.filter(g => g.id !== gigId));
+    }, [djProfileId]);
+
+    return { gigs, isLoading, error, refetch: fetchGigs, addGig, changeGigStatus, removeGig };
 }

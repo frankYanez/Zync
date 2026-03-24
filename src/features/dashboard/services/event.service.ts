@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { getAuthHeaders } from '../../auth/services/auth.service';
-import { CreateEventDto, Event, LineupEntry } from '../domain/event.types';
+import { CheckLocationDto, CreateEventDto, Event, EventStats, LineupEntry, VenueStats } from '../domain/event.types';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
@@ -11,7 +11,10 @@ export const getEvents = async (skip: number = 0, take: number = 10): Promise<Ev
 
 export const getMyEvents = async (): Promise<Event[]> => {
     const config = await getAuthHeaders();
-    const response = await axios.get(`${API_URL}/events/my-events`, config);
+    const response = await axios.get(`${API_URL}/events/my-events`, {
+        ...config,
+        params: { skip: 0, take: 100 },
+    });
     return response.data;
 };
 
@@ -42,7 +45,46 @@ export const getEventLineup = async (eventId: string): Promise<LineupEntry[]> =>
     return response.data;
 };
 
+export const enterEvent = async (eventId: string): Promise<void> => {
+    const config = await getAuthHeaders();
+    await axios.post(`${API_URL}/events/${eventId}/enter`, {}, config);
+};
+
+export const leaveEvent = async (eventId: string): Promise<void> => {
+    const config = await getAuthHeaders();
+    await axios.post(`${API_URL}/events/${eventId}/leave`, {}, config);
+};
+
+export const checkLocation = async (data: CheckLocationDto): Promise<void> => {
+    const config = await getAuthHeaders();
+    await axios.post(`${API_URL}/events/check-location`, data, config);
+};
+
 export const endEvent = async (eventId: string): Promise<void> => {
     const config = await getAuthHeaders();
     await axios.post(`${API_URL}/chats/${eventId}/cleanup`, {}, config);
+};
+
+// POST /events/:eventId/cover  (multipart)
+// TODO: replace mock → const form = new FormData(); form.append('file', {...}); axios.post(...)
+export const uploadEventCover = async (_eventId: string, _imageUri: string): Promise<{ coverImageUrl: string }> => {
+    return { coverImageUrl: _imageUri };
+};
+
+// GET /venues/:venueId/active-event
+export const getVenueActiveEvent = async (venueId: string): Promise<import('../domain/event.types').Event | null> => {
+    const response = await axios.get(`${API_URL}/venues/${venueId}/active-event`);
+    return response.data ?? null;
+};
+
+// GET /venues/:venueId/stats
+// TODO: replace mock → axios.get(`${API_URL}/venues/${venueId}/stats`, await getAuthHeaders())
+export const getVenueStats = async (_venueId: string): Promise<VenueStats> => {
+    return { todayOrders: 0, todayRevenue: 0, activeCustomers: 0, pendingOrdersCount: 0 };
+};
+
+// GET /events/:eventId/stats
+// TODO: replace mock → axios.get(`${API_URL}/events/${eventId}/stats`, await getAuthHeaders())
+export const getEventStats = async (_eventId: string): Promise<EventStats> => {
+    return { ticketsSold: 0, ticketRevenue: 0, checkIns: 0, capacity: 0, activeDjs: 0 };
 };

@@ -3,13 +3,14 @@ import { ScreenLayout } from '@/components/ScreenLayout';
 
 import { ThemedText } from '@/components/themed-text';
 import { useAuth } from '@/features/auth/context/AuthContext';
+import { topUp } from '@/features/wallet/services/wallet.service';
 import { PaymentMethod } from '@/infrastructure/mock-data';
 import { ZyncTheme } from '@/shared/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import BottomSheet from '@gorhom/bottom-sheet';
 import { MotiView } from 'moti';
 import React, { useRef, useState } from 'react';
-import { Dimensions, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Dimensions, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import Animated, { interpolate, SharedValue, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { AddCardSheet } from '../components/AddCardSheet';
 import { PaymentCard } from '../components/PaymentCard';
@@ -19,7 +20,7 @@ export default function WalletScreen() {
     const ITEM_SIZE = width * 0.75;
     const EMPTY_ITEM_SIZE = (width - ITEM_SIZE) / 2;
 
-    const { isAuthenticated, user } = useAuth()
+    const { isAuthenticated, user, updateBalance } = useAuth()
     const points = user?.zyncPoints || 0;
     const balance = user?.balance || 0;
 
@@ -29,6 +30,7 @@ export default function WalletScreen() {
 
     const [selectedAmount, setSelectedAmount] = useState<string>('');
     const [customAmount, setCustomAmount] = useState('');
+    const [isLoadingTopUp, setIsLoadingTopUp] = useState(false);
 
     const activeAmount = customAmount || selectedAmount; // Logic: custom overrides preset if typed, or just one state?
     // Let's make it exclusive: if typing custom, clear preset. If picking preset, clear custom.
@@ -44,6 +46,23 @@ export default function WalletScreen() {
     };
 
     const hasAmount = activeAmount && parseFloat(activeAmount) > 0;
+
+    const handleTopUp = async () => {
+        const amount = parseFloat(activeAmount);
+        if (!amount || amount <= 0) return;
+        setIsLoadingTopUp(true);
+        try {
+            const result = await topUp(amount);
+            updateBalance(result.balance);
+            setSelectedAmount('');
+            setCustomAmount('');
+            Alert.alert('¡Saldo cargado!', `Se acreditaron $${amount.toLocaleString()} a tu cuenta.`);
+        } catch {
+            Alert.alert('Error', 'No se pudo procesar la carga. Intentá de nuevo.');
+        } finally {
+            setIsLoadingTopUp(false);
+        }
+    };
 
     const scrollHandler = useAnimatedScrollHandler(event => {
         scrollX.value = event.contentOffset.x;
@@ -200,20 +219,24 @@ export default function WalletScreen() {
                                 }}
                             />
 
-                            <TouchableOpacity style={styles.chargeButton} activeOpacity={0.8}>
-                                <MotiView
-                                    from={{ opacity: 0.6 }}
-                                    animate={{ opacity: 1 }}
-                                    transition={{
-                                        type: 'timing',
-                                        duration: 800,
-                                        loop: true,
-                                        repeatReverse: true,
-                                    }}
-                                    style={{ marginRight: 10 }}
-                                >
-                                    <Ionicons name="flash" size={24} color="black" />
-                                </MotiView>
+                            <TouchableOpacity
+                                style={[styles.chargeButton, isLoadingTopUp && { opacity: 0.7 }]}
+                                activeOpacity={0.8}
+                                onPress={handleTopUp}
+                                disabled={isLoadingTopUp}
+                            >
+                                {isLoadingTopUp ? (
+                                    <ActivityIndicator size="small" color="black" style={{ marginRight: 10 }} />
+                                ) : (
+                                    <MotiView
+                                        from={{ opacity: 0.6 }}
+                                        animate={{ opacity: 1 }}
+                                        transition={{ type: 'timing', duration: 800, loop: true, repeatReverse: true }}
+                                        style={{ marginRight: 10 }}
+                                    >
+                                        <Ionicons name="flash" size={24} color="black" />
+                                    </MotiView>
+                                )}
                                 <ThemedText style={styles.chargeButtonText}>Cargar Saldo</ThemedText>
                             </TouchableOpacity>
                         </View>

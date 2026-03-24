@@ -6,7 +6,7 @@ import { ThemedText } from '@/components/themed-text';
 import { useZync } from '@/context/ZyncContext';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { DjProfile } from '@/features/dj/domain/dj.types';
-import { followDj, getDjs, unfollowDj } from '@/features/dj/services/dj.service';
+import { getDjById, followDj, getDjs, unfollowDj } from '@/features/dj/services/dj.service';
 import { SongRequest, submitSongRequest } from '@/features/music/services/song-request.service';
 import { SpotifyTrack, spotifyService } from '@/features/music/services/spotify-service';
 import { ZyncTheme } from '@/shared/constants/theme';
@@ -47,9 +47,15 @@ function BeatsTab() {
     const [loading, setLoading] = useState(false);
     const [activeRequest, setActiveRequest] = useState<SongRequest | null>(null);
     const [isRequesting, setIsRequesting] = useState(false);
+    const [liveDjProfile, setLiveDjProfile] = useState<DjProfile | null>(null);
 
     const liveDj = currentEstablishment?.currentDj?.isLive ? currentEstablishment.currentDj : null;
     const djProfileId = liveDj?.djProfileId ?? null;
+
+    useEffect(() => {
+        if (!djProfileId) { setLiveDjProfile(null); return; }
+        getDjById(djProfileId).then(setLiveDjProfile).catch(() => setLiveDjProfile(null));
+    }, [djProfileId]);
 
     // Debounced Spotify search
     useEffect(() => {
@@ -78,7 +84,9 @@ function BeatsTab() {
 
         setIsRequesting(true);
         try {
-            const req = await submitSongRequest(djProfileId, track);
+            const eventId = currentEstablishment?.eventId ?? '';
+            const pricePaid = parseFloat(liveDjProfile?.pricePerSong ?? '0') || 0;
+            const req = await submitSongRequest(djProfileId, track, eventId, pricePaid);
             setActiveRequest(req);
             await refreshSession();
             setSearch('');
@@ -222,8 +230,14 @@ function DjsTab() {
     const load = useCallback(async (g?: string) => {
         setLoading(true);
         try {
-            const data = await getDjs(g && g !== 'Todos' ? g : undefined);
-            setDjs(data);
+            const list = await getDjs(g && g !== 'Todos' ? g : undefined);
+            // Fetch full profiles in parallel — list endpoint omits logoUrl/bannerUrl
+            const full = await Promise.all(list.map(dj => getDjById(dj.id).catch(() => dj)));
+            const enriched = full.filter(Boolean) as typeof list;
+            setDjs(enriched);
+            // Initialise follow state from the profile data
+            const alreadyFollowing = new Set(enriched.filter(dj => dj.isFollowing).map(dj => dj.id));
+            setFollowedIds(alreadyFollowing);
         } catch (e) {
             console.error('Failed to load DJs', e);
         } finally {
@@ -248,13 +262,15 @@ function DjsTab() {
             } else {
                 await followDj(dj.id);
             }
-        } catch (e) {
-            // Revert on error
+        } catch (e: any) {
+            // Revert optimistic update and show error
             setFollowedIds(prev => {
                 const next = new Set(prev);
                 isFollowed ? next.add(dj.id) : next.delete(dj.id);
                 return next;
             });
+            const msg = e?.response?.data?.message;
+            Alert.alert('Error', Array.isArray(msg) ? msg.join('\n') : msg || 'No se pudo completar la acción.');
         } finally {
             setTogglingId(null);
         }

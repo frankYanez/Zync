@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { getAuthHeaders } from '../../auth/services/auth.service';
-import { DjProfile, DjReviewsResponse, Gig, PromoCode } from '../domain/dj.types';
+import { CreateGigDto, CreatePromoCodeDto, DjProfile, DjReviewsResponse, DjStats, Gig, GigStatus, PromoCode } from '../domain/dj.types';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
@@ -43,10 +43,58 @@ export const getDjGigs = async (djProfileId: string): Promise<Gig[]> => {
     return response.data;
 };
 
+// GET /dj/:djProfileId/stats
+export const getDjStats = async (djProfileId: string): Promise<DjStats> => {
+    const config = await getAuthHeaders();
+    const response = await axios.get(`${API_URL}/dj/${djProfileId}/stats`, config);
+    return response.data;
+};
+
+// PATCH /dj/:djProfileId  { acceptingRequests: boolean }
+export const toggleAcceptingRequests = async (djProfileId: string, accepting: boolean): Promise<void> => {
+    const config = await getAuthHeaders();
+    await axios.patch(`${API_URL}/dj/${djProfileId}`, { acceptingRequests: accepting }, config);
+};
+
+// POST /dj/:djProfileId/gigs
+// TODO: replace mock → await axios.post(`${API_URL}/dj/${djProfileId}/gigs`, data, await getAuthHeaders())
+export const createGig = async (djProfileId: string, data: CreateGigDto): Promise<Gig> => {
+    return {
+        id: Math.random().toString(36).substring(2, 10),
+        eventId: data.eventId ?? '',
+        eventName: data.eventId ? 'Evento vinculado' : data.venueName,
+        venueName: data.venueName,
+        startsAt: data.startsAt,
+        endsAt: data.endsAt,
+        fee: data.fee,
+        status: 'pending',
+    };
+};
+
+// PATCH /dj/:djProfileId/gigs/:gigId
+// TODO: replace mock → await axios.patch(`${API_URL}/dj/${djProfileId}/gigs/${gigId}`, data, await getAuthHeaders())
+export const updateGigStatus = async (_djProfileId: string, gigId: string, status: GigStatus): Promise<{ id: string; status: GigStatus }> => {
+    return { id: gigId, status };
+};
+
+// DELETE /dj/:djProfileId/gigs/:gigId
+// TODO: replace mock → await axios.delete(`${API_URL}/dj/${djProfileId}/gigs/${gigId}`, await getAuthHeaders())
+export const deleteGig = async (_djProfileId: string, _gigId: string): Promise<void> => {
+    // mock: no-op
+};
+
+// POST /events/:eventId/broadcast
+// TODO: replace mock → await axios.post(`${API_URL}/events/${eventId}/broadcast`, { message, type }, await getAuthHeaders())
+export const sendBroadcast = async (_eventId: string, _message: string, _type: 'announcement' | 'song' = 'announcement'): Promise<void> => {
+    // mock: no-op
+};
+
 // 3. POST /dj/:djProfileId/follow (auth)
 export const followDj = async (djProfileId: string): Promise<{ success: boolean }> => {
     const headers = await getAuthHeaders();
     const response = await axios.post(`${API_URL}/dj/${djProfileId}/follow`, {}, headers);
+    console.log(response.data, "response follow");
+
     return response.data;
 };
 
@@ -66,7 +114,7 @@ export const addDjToLineup = async (djProfileId: string, eventId: string): Promi
 
 export const generatePromoCode = async (djProfileId: string, eventId: string): Promise<{ code: string }> => {
     const headers = await getAuthHeaders();
-    
+
     // Fetch DJ profile to get artist name
     const djProfile = await getDjById(djProfileId);
     if (!djProfile) throw new Error("DJ Profile not found");
@@ -75,15 +123,15 @@ export const generatePromoCode = async (djProfileId: string, eventId: string): P
         .toUpperCase()
         .replace(/[^A-Z0-9]/g, '')
         .substring(0, 8);
-    
+
     const randomChars = Math.random().toString(36).substring(2, 8).toUpperCase();
     const customCode = `${artistName}_ZYNC_${randomChars}`;
 
-    const response = await axios.post(`${API_URL}/dj/${djProfileId}/promo-codes`, { 
+    const response = await axios.post(`${API_URL}/dj/${djProfileId}/promo-codes`, {
         eventId,
-        code: customCode 
+        code: customCode
     }, headers);
-    
+
     return response.data;
 };
 
@@ -94,10 +142,10 @@ export const getDjPromoCodes = async (djProfileId: string): Promise<PromoCode[]>
     return response.data;
 };
 
-// Organizer: GET /events/:eventId/promo-codes
-export const getEventPromoCodes = async (eventId: string): Promise<PromoCode[]> => {
+// Organizer: GET /events/:eventId/djs/:djProfileId/promo-codes
+export const getEventPromoCodes = async (eventId: string, djProfileId: string): Promise<PromoCode[]> => {
     const headers = await getAuthHeaders();
-    const response = await axios.get(`${API_URL}/events/${eventId}/promo-codes`, headers);
+    const response = await axios.get(`${API_URL}/events/${eventId}/djs/${djProfileId}/promo-codes`, headers);
     return response.data;
 };
 
@@ -105,6 +153,7 @@ export const getEventPromoCodes = async (eventId: string): Promise<PromoCode[]> 
 export const createOrganizerPromoCode = async (
     eventId: string,
     djProfileId: string,
+    dto?: Partial<CreatePromoCodeDto>,
 ): Promise<PromoCode> => {
     const headers = await getAuthHeaders();
     const djProfile = await getDjById(djProfileId);
@@ -113,10 +162,15 @@ export const createOrganizerPromoCode = async (
         .replace(/[^A-Z0-9]/g, '')
         .substring(0, 8);
     const randomChars = Math.random().toString(36).substring(2, 8).toUpperCase();
-    const customCode = `${artistName}_ZYNC_${randomChars}`;
+    const body: CreatePromoCodeDto = {
+        code: dto?.code ?? `${artistName}_ZYNC_${randomChars}`,
+        discountPercentage: dto?.discountPercentage ?? 10,
+        maxUses: dto?.maxUses ?? 100,
+        expiresAt: dto?.expiresAt ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    };
     const response = await axios.post(
         `${API_URL}/events/${eventId}/djs/${djProfileId}/promo-codes`,
-        { code: customCode },
+        body,
         headers,
     );
     return response.data;

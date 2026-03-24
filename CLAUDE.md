@@ -36,9 +36,10 @@ Root Stack (_layout.tsx)
 ├── (business)/      — DJ/Business tabs (role-conditional)
 │   ├── Shared: Home, Profile
 │   ├── DJ-only: Requests (songs), dj/promo-codes
-│   ├── Business-only: Products, Scanner
+│   ├── Business-only: Products, Scanner, Orders
 │   └── Hidden: dj/gigs, events/lineup, config
 ├── chat/            — index (list), [id] (1-to-1), connected-users
+├── tickets/         — index (user ticket list), [id] (ticket detail with QR)
 ├── profile/         — edit, change-password, create-dj, create-organizer, edit-dj
 └── dj/              — [id] (public DJ profile view)
 ```
@@ -69,14 +70,22 @@ Each feature follows: `screens/`, `services/`, `domain/` (types), `context/`, `h
 
 - **auth** — JWT auth, token refresh, OTP email verification
 - **chat** — Socket.io real-time messaging (1-to-1 and event group chats)
-- **dj** — DJ profiles, gigs, promo codes
-- **profile** — User profile editing, avatar upload, DJ/organizer sub-profiles
-- **wallet** — Cart, orders, payment methods
-- **dashboard** — Home feed, event/venue discovery
+- **dj** — DJ profiles, gigs, promo codes, stats (`DjStats`)
+- **profile** — User profile editing, avatar upload, DJ/organizer sub-profiles; `stats.service.ts` exposes user tier (`bronze`/`silver`/`gold`)
+- **wallet** — Cart, orders, payment methods; `wallet.service.ts` for balance/top-up
+- **dashboard** — Home feed, event/venue discovery; `BusinessHomeScreen` (venue metrics + live pending orders)
 - **scanner** — QR code scanning
+- **tickets** — User ticket purchase/display with QR codes; `validateTicket` for business scanner. **Note:** currently mock-only (see TODO comments in `ticket.service.ts`)
 - **venues** — Venue creation and management (`createVenue`, `getMyVenues`)
 - **music** — Spotify integration: client-credentials OAuth, `searchTracks(query)`
 - **stories** — Event stories: create, view by event, view by user-in-event
+
+### Mock Services
+
+Several services are temporarily mock-only while backend endpoints are being built. They include `TODO` comments with the real endpoint. Check before integrating:
+- `src/features/tickets/services/ticket.service.ts` — all endpoints mocked
+- `src/features/wallet/services/wallet.service.ts` — `topUp` is mocked; `getBalance` is real
+- `src/features/profile/services/stats.service.ts` — `getUserStats` is mocked
 
 ### API Integration
 
@@ -110,7 +119,7 @@ Theme defined in `src/shared/constants/theme.ts` (`ZyncTheme`):
 - Error: `#FF0055`, Tab bar: `#121212`
 - Spacing scale: `xs=4, s=8, m=16, l=24, xl=32, xxl=48`
 
-Shared UI components (`src/components/`): `NeonButton`, `NeonInput`, `NeonModal`, `CustomTabBar`, `CyberCard`, `ZyncLoader`, `ScreenLayout`.
+Shared UI components (`src/components/`): `NeonButton`, `NeonInput`, `NeonModal`, `CustomTabBar`, `CyberCard`, `ZyncLoader`, `ScreenLayout`, `VideoBackground`, `CollapsingProfileHeader`.
 
 ### Key Hooks
 
@@ -118,4 +127,7 @@ Shared UI components (`src/components/`): `NeonButton`, `NeonInput`, `NeonModal`
 - `useRoleManager` — Thin wrapper around `RoleContext` (`currentRole`, `switchRole`)
 - `useDjProfile` — Fetches current user's DJ profile
 - `useDjGigs` — Fetches gigs for a DJ profile ID
+- `useDjStats` — Fetches `DjStats` for a DJ profile ID
 - `useDjPromoCodes` — Fetches/generates promo codes; exposes `createPromoCode(eventId)`
+- `useSongRequests` — Fetches song requests for a DJ; exposes `pending`, `accepted`, `history`, and `updateStatus(requestId, status)`
+- `useProfile` (`src/features/profile/hooks/`) — Fetches and updates the authenticated user's profile; exposes `profile`, `isLoading`, `isSaving`, `updateField(field, value)`, `setAvatarUrl`, `refetch`. Always use this hook instead of calling `profile.service.ts` directly from screens.

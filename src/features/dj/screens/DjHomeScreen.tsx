@@ -2,7 +2,11 @@ import { ScreenLayout } from '@/components/ScreenLayout';
 import { ThemedText } from '@/components/themed-text';
 import { VideoBackground } from '@/components/VideoBackground';
 import { useAuth } from '@/features/auth/context/AuthContext';
+import { sendBroadcast, toggleAcceptingRequests } from '@/features/dj/services/dj.service';
 import { useZync } from '@/context/ZyncContext';
+import { useDjProfile } from '@/hooks/useDjProfile';
+import { useDjStats } from '@/hooks/useDjStats';
+import { useSongRequests } from '@/hooks/useSongRequests';
 import { ZyncTheme } from '@/shared/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
@@ -11,6 +15,7 @@ import { MotiView } from 'moti';
 import React, { useState } from 'react';
 import {
     ActivityIndicator,
+    Alert,
     ScrollView,
     StyleSheet,
     Switch,
@@ -25,32 +30,35 @@ export default function DjHomeScreen() {
     const router = useRouter();
     const [isReceivingSongs, setIsReceivingSongs] = useState(true);
     const [trackMessage, setTrackMessage] = useState('');
+    const [isSending, setIsSending] = useState(false);
 
-    // Mock data for the UI
-    const earnings = { amount: '$15.000', change: '+20% vs. última sesión' };
-    const requestsData = { current: 18, total: 45 };
-    const topRequests = [
-        {
-            id: '1',
-            title: 'Bad Bunny - Tití Me Preguntó',
-            tip: '$2.000',
-            image: 'https://i.scdn.co/image/ab67616d0000b27349d694203245f241a1bcaa72',
-        },
-        {
-            id: '2',
-            title: 'Bizarrap - Shakira Vol. 53',
-            tip: '$1.500',
-            image: 'https://i.scdn.co/image/ab67616d0000b273760447ec1fbb4ef0a5dd467b',
-        },
-        {
-            id: '3',
-            title: 'Quevedo - BZRP Session 52',
-            tip: '$1.000',
-            image: 'https://i.scdn.co/image/ab67616d0000b273716c0bdf059a4ebfb7d1880a',
-        },
-    ];
+    const { profile } = useDjProfile();
+    const { stats, isLoading: statsLoading } = useDjStats(profile?.id);
+    const { pending: pendingRequests, updateStatus } = useSongRequests(profile?.id);
 
-    const toggleReceivingSongs = () => setIsReceivingSongs((prev) => !prev);
+    const topRequests = pendingRequests.slice(0, 3);
+
+    const activeEventId = stats?.activeEvents[0]?.id ?? null;
+    const activeEventName = stats?.activeEvents[0]?.name ?? currentEstablishment?.name ?? 'Sin evento activo';
+
+    const toggleReceivingSongs = async () => {
+        const next = !isReceivingSongs;
+        setIsReceivingSongs(next);
+        if (profile?.id) await toggleAcceptingRequests(profile.id, next);
+    };
+
+    const handleSendBroadcast = async () => {
+        if (!trackMessage.trim() || !activeEventId) return;
+        setIsSending(true);
+        try {
+            await sendBroadcast(activeEventId, trackMessage.trim());
+            setTrackMessage('');
+        } catch {
+            Alert.alert('Error', 'No se pudo enviar el mensaje.');
+        } finally {
+            setIsSending(false);
+        }
+    };
 
     return (
         <ScreenLayout noPadding>
@@ -90,7 +98,9 @@ export default function DjHomeScreen() {
                             style={styles.liveBadge}
                         >
                             <View style={styles.liveDot} />
-                            <ThemedText style={styles.liveText}>EN VIVO - CLUB VERTIGO</ThemedText>
+                            <ThemedText style={styles.liveText}>
+                                {activeEventId ? `EN VIVO — ${activeEventName.toUpperCase()}` : 'SIN EVENTO ACTIVO'}
+                            </ThemedText>
                         </MotiView>
                     </View>
 
@@ -116,8 +126,18 @@ export default function DjHomeScreen() {
                             <ThemedText style={styles.metricTitle}>GANANCIAS HOY</ThemedText>
                             <Ionicons name="cash-outline" size={20} color="#444" />
                         </View>
-                        <ThemedText style={styles.metricAmount}>{earnings.amount}</ThemedText>
-                        <ThemedText style={styles.metricChange}>{earnings.change}</ThemedText>
+                        {statsLoading ? (
+                            <ActivityIndicator size="small" color={ZyncTheme.colors.primary} />
+                        ) : (
+                            <>
+                                <ThemedText style={styles.metricAmount}>
+                                    ${(stats?.totalEarnings ?? 0).toLocaleString('es-AR')}
+                                </ThemedText>
+                                <ThemedText style={styles.metricChange}>
+                                    {stats?.acceptedRequests ?? 0} canciones aceptadas
+                                </ThemedText>
+                            </>
+                        )}
                     </MotiView>
 
                     <MotiView
@@ -130,26 +150,32 @@ export default function DjHomeScreen() {
                             <ThemedText style={styles.metricTitle}>PETICIONES BEATS</ThemedText>
                             <Ionicons name="list-outline" size={20} color="#444" />
                         </View>
-                        <View style={styles.requestsRow}>
-                            <ThemedText style={styles.requestsCurrent}>
-                                {requestsData.current}
-                            </ThemedText>
-                            <ThemedText style={styles.requestsTotal}>
-                                {' '}
-                                / {requestsData.total} Totales
-                            </ThemedText>
-                        </View>
-                        <View style={styles.progressBarContainer}>
-                            <View
-                                style={[
-                                    styles.progressBarFill,
-                                    {
-                                        width: `${(requestsData.current / requestsData.total) * 100
-                                            }%`,
-                                    },
-                                ]}
-                            />
-                        </View>
+                        {statsLoading ? (
+                            <ActivityIndicator size="small" color={ZyncTheme.colors.primary} />
+                        ) : (
+                            <>
+                                <View style={styles.requestsRow}>
+                                    <ThemedText style={styles.requestsCurrent}>
+                                        {stats?.pendingRequests ?? 0}
+                                    </ThemedText>
+                                    <ThemedText style={styles.requestsTotal}>
+                                        {' '}/ {stats?.totalRequests ?? 0} Totales
+                                    </ThemedText>
+                                </View>
+                                <View style={styles.progressBarContainer}>
+                                    <View
+                                        style={[
+                                            styles.progressBarFill,
+                                            {
+                                                width: stats && stats.totalRequests > 0
+                                                    ? `${(stats.pendingRequests / stats.totalRequests) * 100}%`
+                                                    : '0%',
+                                            },
+                                        ]}
+                                    />
+                                </View>
+                            </>
+                        )}
                     </MotiView>
                 </View>
 
@@ -186,8 +212,16 @@ export default function DjHomeScreen() {
                             value={trackMessage}
                             onChangeText={setTrackMessage}
                         />
-                        <TouchableOpacity style={styles.sendButton} activeOpacity={0.8}>
-                            <Ionicons name="send" size={18} color="#000" />
+                        <TouchableOpacity
+                            style={styles.sendButton}
+                            activeOpacity={0.8}
+                            onPress={handleSendBroadcast}
+                            disabled={isSending || !trackMessage.trim()}
+                        >
+                            {isSending
+                                ? <ActivityIndicator size="small" color="#000" />
+                                : <Ionicons name="send" size={18} color="#000" />
+                            }
                         </TouchableOpacity>
                     </View>
                     <ThemedText style={styles.disclaimerText}>
@@ -215,6 +249,12 @@ export default function DjHomeScreen() {
                         </TouchableOpacity>
                     </View>
 
+                    {topRequests.length === 0 && (
+                        <View style={styles.emptyRequests}>
+                            <Ionicons name="musical-notes-outline" size={32} color="#444" />
+                            <ThemedText style={styles.emptyRequestsText}>Sin peticiones pendientes</ThemedText>
+                        </View>
+                    )}
                     {topRequests.map((req, index) => (
                         <MotiView
                             key={req.id}
@@ -224,23 +264,33 @@ export default function DjHomeScreen() {
                             style={styles.requestCard}
                         >
                             <View style={styles.requestImageContainer}>
-                                <Image source={{ uri: req.image }} style={styles.requestImage} contentFit="cover" />
+                                {req.albumCover
+                                    ? <Image source={{ uri: req.albumCover }} style={styles.requestImage} contentFit="cover" />
+                                    : <Ionicons name="musical-note" size={24} color="#666" />
+                                }
                             </View>
                             <View style={styles.requestInfo}>
                                 <ThemedText style={styles.requestName} numberOfLines={1}>
-                                    {req.title}
+                                    {req.trackName}
                                 </ThemedText>
                                 <ThemedText style={styles.requestTip}>
-                                    Propina: {req.tip}
+                                    {req.artistName}
                                 </ThemedText>
                             </View>
 
-                            {/* Buttons */}
                             <View style={styles.requestActions}>
-                                <TouchableOpacity style={styles.rejectButton} activeOpacity={0.7}>
+                                <TouchableOpacity
+                                    style={styles.rejectButton}
+                                    activeOpacity={0.7}
+                                    onPress={() => updateStatus(req.id, 'rejected')}
+                                >
                                     <Ionicons name="close" size={20} color="#ddd" />
                                 </TouchableOpacity>
-                                <TouchableOpacity style={styles.acceptButton} activeOpacity={0.7}>
+                                <TouchableOpacity
+                                    style={styles.acceptButton}
+                                    activeOpacity={0.7}
+                                    onPress={() => updateStatus(req.id, 'accepted')}
+                                >
                                     <Ionicons name="checkmark" size={20} color={ZyncTheme.colors.primary} />
                                 </TouchableOpacity>
                             </View>
@@ -548,5 +598,14 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         borderWidth: 1,
         borderColor: 'rgba(204,255,0,0.3)',
+    },
+    emptyRequests: {
+        alignItems: 'center',
+        paddingVertical: 24,
+        gap: 8,
+    },
+    emptyRequestsText: {
+        fontSize: 13,
+        color: ZyncTheme.colors.textSecondary,
     },
 });

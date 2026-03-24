@@ -9,7 +9,10 @@
       "WebFetch(domain:100.31.134.251)",
       "Bash(xargs grep:*)",
       "Bash(grep -r \"interface.*Event\\\\|type.*Event\\\\|export.*Event\" /c/Users/frank/Downloads/Zync-mobile/src --include=*.ts --include=*.tsx)",
-      "Bash(npx expo:*)"
+      "Bash(npx expo:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm list:*)",
+      "Bash(npm install:*)"
     ]
   }
 }

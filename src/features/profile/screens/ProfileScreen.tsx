@@ -5,7 +5,8 @@ import { RoleSelector } from '@/components/profile/RoleSelector';
 import { ThemedText } from '@/components/themed-text';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { AvatarUpload } from '@/features/profile/components/AvatarUpload';
-import { getPublicProfile } from '@/features/profile/services/profile.service';
+import { useProfile } from '@/features/profile/hooks/useProfile';
+import { getUserStats, UserStats } from '@/features/profile/services/stats.service';
 import { getMyOrders } from '@/features/wallet/services/order.service';
 import { ZyncTheme } from '@/shared/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,22 +17,16 @@ import { StyleSheet, TouchableOpacity, View } from 'react-native';
 export default function ProfileScreen() {
     const { logout, user } = useAuth();
     const router = useRouter();
-    const [avatarUrl, setAvatarUrl] = useState<string | undefined>(user?.avatarUrl);
+    const { profile, setAvatarUrl } = useProfile();
     const [showAvatarUpload, setShowAvatarUpload] = useState(false);
     const [orderCount, setOrderCount] = useState<number | null>(null);
-
-    useEffect(() => {
-        if (user?.sub) {
-            getPublicProfile(user.sub).then((profile) => {
-                setAvatarUrl(profile.avatarUrl);
-            });
-        }
-    }, [user?.sub]);
+    const [userStats, setUserStats] = useState<UserStats | null>(null);
 
     useEffect(() => {
         getMyOrders()
             .then(orders => setOrderCount(orders.length))
             .catch(() => {});
+        getUserStats().then(setUserStats).catch(() => {});
     }, []);
 
     const handleLogout = async () => {
@@ -44,7 +39,7 @@ export default function ProfileScreen() {
             <CollapsingProfileHeader
                 variant="user"
                 title={user?.firstName ?? 'Mi perfil'}
-                avatarUri={avatarUrl}
+                avatarUri={profile.avatarUrl}
                 onAvatarPress={() => setShowAvatarUpload(true)}
             >
                 {/* Email */}
@@ -58,14 +53,18 @@ export default function ProfileScreen() {
                     </TouchableOpacity>
                     <View style={styles.statDivider} />
                     <View style={styles.stat}>
-                        <ThemedText style={styles.statValue}>$15k</ThemedText>
+                        <ThemedText style={styles.statValue}>
+                            {userStats ? `$${userStats.totalSpent.toLocaleString('es-AR')}` : '—'}
+                        </ThemedText>
                         <ThemedText style={styles.statLabel}>Spent</ThemedText>
                     </View>
                     <View style={styles.statDivider} />
-                    <View style={styles.stat}>
-                        <ThemedText style={styles.statValue}>Gold</ThemedText>
+                    <TouchableOpacity style={styles.stat} onPress={() => router.push('/tickets' as any)}>
+                        <ThemedText style={[styles.statValue, { textTransform: 'capitalize' }]}>
+                            {userStats?.tier ?? '—'}
+                        </ThemedText>
                         <ThemedText style={styles.statLabel}>Tier</ThemedText>
-                    </View>
+                    </TouchableOpacity>
                 </View>
 
                 <RoleSelector />
@@ -84,21 +83,21 @@ export default function ProfileScreen() {
                         </CyberCard>
                     </TouchableOpacity>
 
-                    <TouchableOpacity onPress={() => router.push('/profile/change-password' as any)}>
-                        <CyberCard style={styles.menuItem}>
-                            <View style={styles.menuItemLeft}>
-                                <Ionicons name="lock-closed-outline" size={24} color={ZyncTheme.colors.textSecondary} />
-                                <ThemedText>Change Password</ThemedText>
-                            </View>
-                            <Ionicons name="chevron-forward" size={20} color={ZyncTheme.colors.textSecondary} />
-                        </CyberCard>
-                    </TouchableOpacity>
-
                     <TouchableOpacity onPress={() => router.push('/profile/notifications' as any)}>
                         <CyberCard style={styles.menuItem}>
                             <View style={styles.menuItemLeft}>
                                 <Ionicons name="notifications-outline" size={24} color={ZyncTheme.colors.textSecondary} />
                                 <ThemedText>Notificaciones</ThemedText>
+                            </View>
+                            <Ionicons name="chevron-forward" size={20} color={ZyncTheme.colors.textSecondary} />
+                        </CyberCard>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity onPress={() => router.push('/tickets' as any)}>
+                        <CyberCard style={styles.menuItem}>
+                            <View style={styles.menuItemLeft}>
+                                <Ionicons name="ticket-outline" size={24} color={ZyncTheme.colors.textSecondary} />
+                                <ThemedText>Mis Tickets</ThemedText>
                             </View>
                             <Ionicons name="chevron-forward" size={20} color={ZyncTheme.colors.textSecondary} />
                         </CyberCard>
@@ -170,7 +169,7 @@ export default function ProfileScreen() {
             {showAvatarUpload && (
                 <View style={styles.avatarUploadOverlay}>
                     <AvatarUpload
-                        currentAvatarUrl={avatarUrl}
+                        currentAvatarUrl={profile.avatarUrl}
                         onUploadSuccess={(newUrl) => {
                             setAvatarUrl(newUrl);
                             setShowAvatarUpload(false);
