@@ -8,8 +8,17 @@ import { Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { ThemedText } from './themed-text';
 
 const DJ_ONLY_TABS = ['requests', 'dj/promo-codes'];
-const BUSINESS_ONLY_TABS = ['products', 'scanner'];
-const ALWAYS_HIDDEN_TABS = ['dj/gigs', 'events/lineup', 'config'];
+const BUSINESS_ONLY_TABS = ['products/index', 'scanner', 'events/index'];
+const ALWAYS_HIDDEN_TABS = [
+    'dj/gigs',
+    'events/lineup',
+    'events/create',
+    'events/[id]',
+    'products/create',
+    'products/[id]',
+    'products/create-venue',
+    'config',
+];
 
 export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
     const { currentRole } = useRole();
@@ -53,7 +62,8 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
                 if (route.name === 'beats') iconName = isFocused ? 'musical-notes' : 'musical-notes-outline';
                 // Canciones: solicitudes de canciones del DJ
                 if (route.name === 'requests') iconName = isFocused ? 'musical-notes' : 'musical-notes-outline';
-                if (route.name === 'products') iconName = isFocused ? 'cube' : 'cube-outline';
+                if (route.name === 'products/index') iconName = isFocused ? 'cube' : 'cube-outline';
+                if (route.name === 'events/index') iconName = isFocused ? 'calendar' : 'calendar-outline';
                 // Descuentos: códigos promocionales del DJ
                 if (route.name === 'dj/promo-codes') iconName = isFocused ? 'pricetag' : 'pricetag-outline';
                 if (route.name === 'profile') iconName = isFocused ? 'person' : 'person-outline';

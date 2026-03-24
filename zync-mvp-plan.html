@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Zync — Plan MVP</title>
+  <style>
+    :root {
+      --neon: #CCFF00;
+      --bg: #0a0a0a;
+      --card: #161616;
+      --border: #2a2a2a;
+      --error: #FF0055;
+      --text: #f0f0f0;
+      --muted: #888;
+      --tab: #121212;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      font-size: 13px;
+    }
+
+    /* ── COVER ── */
+    .cover {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 60px 40px;
+      background: radial-gradient(ellipse at 50% 40%, #1a2600 0%, var(--bg) 70%);
+      page-break-after: always;
+    }
+    .cover-logo {
+      font-size: 72px;
+      font-weight: 900;
+      letter-spacing: -2px;
+      color: var(--neon);
+      text-shadow: 0 0 40px rgba(204,255,0,0.4);
+      margin-bottom: 12px;
+    }
+    .cover-sub {
+      font-size: 18px;
+      color: var(--muted);
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      margin-bottom: 60px;
+    }
+    .cover-title {
+      font-size: 38px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      max-width: 600px;
+    }
+    .cover-desc {
+      font-size: 15px;
+      color: var(--muted);
+      max-width: 500px;
+      margin-bottom: 60px;
+    }
+    .cover-meta {
+      display: flex;
+      gap: 40px;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+    .cover-meta span { color: var(--neon); }
+
+    /* ── LAYOUT ── */
+    .page {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 48px 48px;
+    }
+
+    /* ── SECTION HEADER ── */
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin: 48px 0 28px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .section-num {
+      width: 36px;
+      height: 36px;
+      background: var(--neon);
+      color: #000;
+      border-radius: 8px;
+      font-weight: 900;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .section-title {
+      font-size: 22px;
+      font-weight: 700;
+    }
+    .section-title span {
+      color: var(--neon);
+    }
+
+    /* ── ROLE BADGE ── */
+    .role-block {
+      page-break-before: always;
+      padding-top: 20px;
+    }
+    .role-banner {
+      border-radius: 12px;
+      padding: 24px 32px;
+      margin-bottom: 32px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .role-banner.user   { background: linear-gradient(135deg, #0a1a2e, #0d2040); border: 1px solid #1a4a80; }
+    .role-banner.dj     { background: linear-gradient(135deg, #1a0a2e, #2d0d40); border: 1px solid #6a1aaa; }
+    .role-banner.biz    { background: linear-gradient(135deg, #1a1a00, #2a2a00); border: 1px solid #666600; }
+    .role-banner.ticket { background: linear-gradient(135deg, #1a0a00, #2e1500); border: 1px solid #cc4400; }
+
+    .role-icon { font-size: 36px; }
+    .role-name { font-size: 24px; font-weight: 800; }
+    .role-desc { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+    /* ── SUBSECTION ── */
+    .sub-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 28px 0 14px;
+    }
+    .layer-badge {
+      padding: 3px 10px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .layer-badge.back  { background: #0a2a1a; color: #00ff88; border: 1px solid #00ff8844; }
+    .layer-badge.front { background: #0a1a2a; color: #00aaff; border: 1px solid #00aaff44; }
+    .sub-title { font-size: 16px; font-weight: 700; }
+
+    /* ── TASK CARD ── */
+    .task-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+    .task-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 18px;
+    }
+    .task-card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+    .task-id {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--neon);
+      background: rgba(204,255,0,0.08);
+      padding: 2px 7px;
+      border-radius: 4px;
+      letter-spacing: 1px;
+    }
+    .task-name { font-weight: 700; font-size: 13px; }
+    .task-body { color: #bbb; font-size: 12px; line-height: 1.6; }
+    .task-body ul { padding-left: 18px; margin-top: 6px; }
+    .task-body li { margin-bottom: 3px; }
+    .task-body code {
+      background: #222;
+      color: var(--neon);
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-size: 11px;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+    }
+
+    /* ── STATUS TABLE ── */
+    .status-table { width: 100%; border-collapse: collapse; margin-bottom: 32px; }
+    .status-table th {
+      text-align: left;
+      padding: 10px 14px;
+      background: #111;
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border-bottom: 1px solid var(--border);
+    }
+    .status-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid #1a1a1a;
+      font-size: 12px;
+      vertical-align: middle;
+    }
+    .status-table tr:hover td { background: #0f0f0f; }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .badge.ok    { background: #0a2a1a; color: #00ff88; }
+    .badge.warn  { background: #2a1a00; color: #ffaa00; }
+    .badge.no    { background: #2a0a0a; color: #ff4466; }
+    .badge.new   { background: #1a1a00; color: var(--neon); }
+
+    /* ── SPRINT TABLE ── */
+    .sprint-section { margin: 40px 0; }
+    .sprint-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--neon);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .sprint-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .sprint-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .sprint-num {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--neon);
+      color: #000;
+      font-weight: 900;
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .sprint-card-title { font-weight: 700; font-size: 12px; margin-bottom: 2px; }
+    .sprint-card-meta  { font-size: 11px; color: var(--muted); }
+    .sprint-card.s1 { border-left: 3px solid #ff4466; }
+    .sprint-card.s2 { border-left: 3px solid #ffaa00; }
+    .sprint-card.s3 { border-left: 3px solid var(--neon); }
+
+    /* ── DEBT ── */
+    .debt-list { display: flex; flex-direction: column; gap: 8px; }
+    .debt-card {
+      background: #1a0505;
+      border: 1px solid #3a1010;
+      border-radius: 8px;
+      padding: 12px 16px;
+      display: flex;
+      gap: 12px;
+    }
+    .debt-icon { font-size: 18px; flex-shrink: 0; }
+    .debt-title { font-weight: 700; font-size: 12px; color: #ff6688; margin-bottom: 2px; }
+    .debt-body  { font-size: 12px; color: #bbb; }
+
+    /* ── TICKET SECTION ── */
+    .ticket-feature {
+      background: linear-gradient(135deg, #1a0a00, #2e1500);
+      border: 1px solid #884400;
+      border-radius: 12px;
+      padding: 28px;
+      margin: 20px 0;
+    }
+    .ticket-feature h3 {
+      color: #ff9944;
+      font-size: 18px;
+      margin-bottom: 16px;
+    }
+
+    .ticket-flow {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 20px 0;
+    }
+    .flow-step {
+      background: #1a1a1a;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 12px;
+      text-align: center;
+      min-width: 110px;
+    }
+    .flow-step .step-num {
+      font-size: 18px;
+      font-weight: 900;
+      color: var(--neon);
+    }
+    .flow-arrow { color: var(--muted); font-size: 18px; }
+
+    /* ── ENDPOINT BOX ── */
+    .endpoint {
+      background: #0d0d0d;
+      border: 1px solid #222;
+      border-radius: 6px;
+      padding: 10px 14px;
+      margin: 6px 0;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 11px;
+    }
+    .method {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-weight: 700;
+      font-size: 10px;
+      margin-right: 8px;
+    }
+    .method.get    { background: #003a1a; color: #00ee66; }
+    .method.post   { background: #002a3a; color: #00aaff; }
+    .method.patch  { background: #3a2a00; color: #ffaa00; }
+    .method.delete { background: #3a000a; color: #ff4466; }
+    .ep-path { color: #f0f0f0; }
+    .ep-desc { color: var(--muted); font-family: 'Segoe UI', sans-serif; font-size: 11px; margin-top: 4px; padding-left: 2px; }
+
+    /* ── FOOTER ── */
+    .footer {
+      text-align: center;
+      padding: 40px;
+      color: var(--muted);
+      font-size: 11px;
+      border-top: 1px solid var(--border);
+      margin-top: 60px;
+    }
+    .footer span { color: var(--neon); }
+
+    /* ── PRINT ── */
+    @media print {
+      body { background: #0a0a0a; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .cover { page-break-after: always; }
+      .role-block { page-break-before: always; }
+      .sprint-section { page-break-inside: avoid; }
+      .task-card { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════
+     COVER
+══════════════════════════════════════════════ -->
+<div class="cover">
+  <div class="cover-logo">ZYNC</div>
+  <div class="cover-sub">Nightlife Platform</div>
+  <div class="cover-title">Plan de MVP — Tareas Backend & Frontend</div>
+  <div class="cover-desc">
+    Análisis completo del estado actual del proyecto y roadmap de desarrollo
+    organizado por rol y capa para alcanzar el producto mínimo viable.
+  </div>
+  <div class="cover-meta">
+    <div>Versión <span>1.0</span></div>
+    <div>Fecha <span>Marzo 2026</span></div>
+    <div>Roles <span>User · DJ · Business</span></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     ESTADO ACTUAL
+══════════════════════════════════════════════ -->
+<div class="page">
+  <div class="section-header">
+    <div class="section-num">0</div>
+    <div class="section-title">Estado <span>Actual</span> del Proyecto</div>
+  </div>
+
+  <table class="status-table">
+    <thead>
+      <tr>
+        <th>Feature</th>
+        <th>User</th>
+        <th>DJ</th>
+        <th>Business</th>
+        <th>Notas</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Auth (login / register / OTP)</td>
+        <td><span class="badge ok">✅ Completo</span></td>
+        <td><span class="badge ok">✅ Completo</span></td>
+        <td><span class="badge ok">✅ Completo</span></td>
+        <td>Flujo completo con verificación de email</td>
+      </tr>
+      <tr>
+        <td>Perfil propio</td>
+        <td><span class="badge ok">✅ Completo</span></td>
+        <td><span class="badge ok">✅ Completo</span></td>
+        <td><span class="badge warn">⚠️ Stub</span></td>
+        <td>Business home es placeholder</td>
+      </tr>
+      <tr>
+        <td>Song requests</td>
+        <td><span class="badge ok">✅ Enviar</span></td>
+        <td><span class="badge no">❌ Sin gestión</span></td>
+        <td>—</td>
+        <td>DJ no puede aceptar/rechazar desde la app</td>
+      </tr>
+      <tr>
+        <td>Pedidos / Carrito</td>
+        <td><span class="badge warn">⚠️ Sin pago</span></td>
+        <td>—</td>
+        <td><span class="badge no">❌ Sin fulfillment</span></td>
+        <td>Carrito existe, negocio no gestiona pedidos</td>
+      </tr>
+      <tr>
+        <td>Scanner QR</td>
+        <td><span class="badge no">❌ Placeholder</span></td>
+        <td>—</td>
+        <td><span class="badge no">❌ Placeholder</span></td>
+        <td>UI existe pero sin cámara real</td>
+      </tr>
+      <tr>
+        <td>Wallet / Top-up</td>
+        <td><span class="badge no">❌ Sin handler</span></td>
+        <td>—</td>
+        <td>—</td>
+        <td>Botón existe, onPress vacío</td>
+      </tr>
+      <tr>
+        <td>Eventos / Discovery</td>
+        <td><span class="badge no">❌ Sin feed</span></td>
+        <td>—</td>
+        <td><span class="badge warn">⚠️ Sin UI</span></td>
+        <td>API existe, pantallas incompletas</td>
+      </tr>
+      <tr>
+        <td>Venta de entradas</td>
+        <td><span class="badge new">✨ Nuevo</span></td>
+        <td>—</td>
+        <td><span class="badge new">✨ Nuevo</span></td>
+        <td>Feature nuevo a construir</td>
+      </tr>
+      <tr>
+        <td>Promo codes</td>
+        <td><span class="badge ok">✅ Canjear</span></td>
+        <td><span class="badge warn">⚠️ Parcial</span></td>
+        <td><span class="badge warn">⚠️ Parcial</span></td>
+        <td>Generación en cliente (inseguro)</td>
+      </tr>
+      <tr>
+        <td>Chat 1-to-1</td>
+        <td><span class="badge ok">✅ Completo</span></td>
+        <td><span class="badge ok">✅ Completo</span></td>
+        <td><span class="badge ok">✅ Completo</span></td>
+        <td>Socket.io real-time funcional</td>
+      </tr>
+      <tr>
+        <td>Home dashboard</td>
+        <td><span class="badge warn">⚠️ Mock</span></td>
+        <td><span class="badge no">❌ Todo mock</span></td>
+        <td><span class="badge no">❌ Placeholder</span></td>
+        <td>Datos hardcodeados en todas las capas</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ── TICKET FEATURE BOX ── -->
+  <div class="section-header">
+    <div class="section-num">✨</div>
+    <div class="section-title">Feature Nuevo: <span>Venta de Entradas</span></div>
+  </div>
+
+  <div class="ticket-feature">
+    <h3>🎟 Flujo de venta de entradas para eventos</h3>
+    <p style="color:#bbb; font-size:12px; margin-bottom:16px;">
+      El negocio define un precio de entrada para cada evento. El usuario lo compra
+      desde la app, el sistema genera un ticket con QR único, y el negocio escanea
+      el QR en la puerta para validar el acceso.
+    </p>
+
+    <div class="ticket-flow">
+      <div class="flow-step"><div class="step-num">1</div>Business crea evento con precio</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><div class="step-num">2</div>User ve evento y compra entrada</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><div class="step-num">3</div>Se descuenta del wallet</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><div class="step-num">4</div>App genera ticket + QR</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><div class="step-num">5</div>Business escanea QR en puerta</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><div class="step-num">6</div>Acceso validado ✅</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════
+     ROL: USER
+══════════════════════════════════════════════ -->
+<div class="page role-block">
+  <div class="role-banner user">
+    <div class="role-icon">👤</div>
+    <div>
+      <div class="role-name">ROL: USER</div>
+      <div class="role-desc">Asistente — Descubre eventos, compra entradas, pide al bar, solicita canciones al DJ</div>
+    </div>
+  </div>
+
+  <!-- BACKEND USER -->
+  <div class="sub-header">
+    <span class="layer-badge back">Backend</span>
+    <span class="sub-title">Endpoints a implementar / completar</span>
+  </div>
+
+  <div class="task-list">
+
+    <div class="task-card">
+      <div class="task-card-header">
+        <span class="task-id">B-U1</span>
+        <span class="task-name">QR de entrada al establecimiento</span>
+      </div>
+      <div class="task-body">
+        <div class="endpoint"><span class="method post">POST</span><span class="ep-path">/qr/scan</span><div class="ep-desc">Recibe payload del QR (venueId + eventId). Devuelve <code>{ venue, event, products[] }</code>. Registra al usuario como "dentro" del establecimiento.</div></div>
+        <div class="endpoint"><span class="method get">GET</span><span class="ep-path">/venues/:venueId/active-event</span><div class="ep-desc">Devuelve el evento activo del venue si existe, sin que el usuario lo busque manualmente.</div></div>
+      </div>
+    </div>
+
+    <div class="task-card">
+      <div class="task-card-header">
+        <span class="task-id">B-U2</span>
+        <span class="task-name">Menú / Productos accesibles para usuario</span>
+      </div>
+      <div class="task-body">
+        <div class="endpoint"><span class="method get">GET</span><span class="ep-path">/venues/:venueId/products?category=bebidas</span><div class="ep-desc">Endpoint ya existe solo para Business. Abrir para JWT de usuario normal. Añadir campo <code>category</code> a Product y permitir filtro.</div></div>
+        <ul>
+          <li>Producto debe incluir: <code>name, description, price, category, imageUrl, available</code></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="task-card">
+      <div class="task-card-header">
+        <span class="task-id">B-U3</span>
+        <span class="task-name">Order status en tiempo real</span>
+      </div>
+      <div class="task-body">
+        <div class="endpoint"><span class="method get">GET</span><span class="ep-path">/orders/:orderId/status</span><div class="ep-desc">Para polling si el socket no está conectado.</div></div>
+        <ul>
+          <li>Socket event: <code>order:status_update</code> → <code>{ orderId, status, estimatedMinutes? }</code></li>
+          <li>El negocio cambia el estado → el backend emite el evento al usuario</li>
+          <li>Estados: <code>pending → confirmed → ready → delivered</code></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="task-card">
+      <div class="task-card-header">
+        <span class="task-id">B-U4</span>
+        <span class="task-name">Wallet / Top-up</span>
+      </div>
+      <div class="task-body">
+        <div class="endpoint"><span class="method post">POST</span><span class="ep-path">/wallet/topup</span><div class="ep-desc">Recibe <code>{ amount, paymentMethodToken? }</code>. Actualiza <code>user.balance</code>. MVP puede ser mock sin pasarela real.</div></div>
+        <div class="endpoint"><span class="method get">GET</span><span class="ep-path">/wallet/balance</span><div class="ep-desc">Devuelve <code>{ balance, zyncPoints }</code> para refrescar sin recargar el perfil completo.</div></div>
+      </div>
+    </div>
+
+    <div class="task-card">
+      <div class="task-card-header">
+        <span class="task-id">B-U5</span>
+        <span class="task-name">Estadísticas de perfil (tier, gasto)</span>
+      </div>
+      <div class="task-body">
+        <div class="endpoint"><span class="method get">GET</span><span class="ep-path">/users/me/stats</span><div class="ep-desc">Devuelve <code>{ totalOrders, totalSpent, tier: 'bronze'|'silver'|'gold' }</code>. Actualmente el perfil muestra "$15k" y "Gold" hardcodeados.</div></div>
+      </div>
+    </div>
+
+    <div class="task-card">
+      <div class="task-card-header">
+        <span class="task-id">B-U6</span>
+        <span class="task-name">🎟 Compra de entradas para eventos</span>
+      </div>
+      <div class="task-body">
+        <div class="endpoint"><span class="method post">POST</span><span class="ep-path">/events/:eventId/tickets/purchase</span><div class="ep-desc">Descuenta el precio de <code>user.balance</code>, genera un ticket con <code>qrCode</code> único (UUID firmado). Devuelve <code>{ ticket: { id, qrCode, eventId, userId, purchasedAt } }</code>.</div></div>
+        <div class="endpoint"><span class="method get">GET</span><span class="ep-path">/users/me/tickets</span><div class="ep-desc">Lista de tickets comprados. Incluye el evento asociado y el estado: <code>valid | used | expired</code>.</div></div>
+        <div class="endpoint"><span class="method get">GET</span><span class="ep-path">/users/me/tickets/:ticketId</span><div class="ep-desc">Detalle de un ticket + QR para mostrar en pantalla o compartir.</div></div>
+        <ul>
+          <li>Si el evento tiene <code>maxCapacity</code>, verificar aforo antes de permitir compra</li>
+          <li>El <code>qrCode</code> es un string único e irrepetible (ej. JWT firmado con <code>ticketId + userId + eventId</code>)</li>
+          <li>Si el usuario no tiene saldo suficiente → error <code>402 Insufficient Balance</code></li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FRONTEND USER -->
+  <div class="sub-header" style="margin-top:32px;">
+    <span class="layer-badge front">Frontend</span>
+    <span class="sub-title">Pantallas a implementar / completar</span>
+  </div>
+
+  <div class="task-list">
+
+    <div class="task-card">
+      <div class="task-card-header">
+        <span class="task-id">F-U1</span>
+        <span class="task-name">Scanner QR — Unirse al establecimiento</span>
+      </div>
+      <div class="task-body">
+        <b>Pantalla:</b> <code>app/(tabs)/scanner.tsx</code> — actualmente placeholder total.
+        <ul>
+          <li>Integrar <code>expo-camera</code> con <code>BarCodeScanner</code></li>
+          <li>Al escanear: llamar <code>POST /qr/scan</code>, guardar resultado en <code>ZyncContext</code></li>
+          <li>Mostrar modal de confirmación: nombre del venue/evento, opción "Ver menú"</li>
+          <li>Estado de error si el QR es inválido o el establecimiento no está activo</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="task-card">
+      <div class="task-card-header">
+        <span class="task-id">F-U2</span>
+        <span class="task-name">Home — Feed real de eventos y pedidos activos</span>
+      </div>
+      <div class="task-body">
+        <b>Pantalla:</b> <code>src/features/dashboard/screens/HomeScreen.tsx</code>
+        <ul>
+          <li><b>Sin establecimiento activo:</b> feed de eventos próximos (<code>GET /events</code>) con cards de venue + fecha + precio entrada + botón "Comprar entrada"</li>
+          <li><b>Con establecimiento activo</b> (post-scan): DJ en vivo, botón "Ver Menú", pedidos activos con su status en tiempo real</li>
+          <li>Sección "Mis pedidos activos" con listener de socket <code>order:status_update</code></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="task-card">
+      <div class="task-card-header">
+        <span class="task-id">F-U3</span>
+        <span class="task-name">Menú + Carrito</span>
+      </div>
+      <div class="task-body">
+        <b>Pantalla:</b> <code>app/menu.tsx</code>
+        <ul>
+          <li>Llamar <code>GET /venues/:venueId/products</code> con el venueId del <code>ZyncContext</code></li>
+          <li>Agrupar por <code>category</code> con tabs horizontales de scroll</li>
+          <li>Cada producto: imagen, nombre, precio, botón <code>+</code> → <code>CartContext.addToCart()</code></li>
+          <li>Barra flotante inferior: conteo del carrito + total → navega a <code>CartScreen</code></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="task-card">
+      <div class="task-card-header">
+        <span class="task-id">F-U4</span>
+        <span class="task-name">Wallet — Top-up funcional</span>
+      </div>
+      <div class="task-body">
+        <b>Pantalla:</b> <code>src/features/wallet/screens/WalletScreen.tsx</code> — botón "Cargar Saldo" existe sin <code>onPress</code>.
+        <ul>
+          <li>Modal con <code>NeonInput</code> para monto (presets $10 / $50 / $100 + custom)</li>
+          <li>Llamar <code>POST /wallet/topup</code></li>
+          <li>Al resolver: <code>AuthContext.updateBalance()</code> con el nuevo saldo</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="task-card">
+      <div class="task-card-header">
+        <span class="task-id">F-U5</span>
+        <span class="task-name">Order Detail — Status en tiempo real</span>
+      </div>
+      <div class="task-body">
+        <b>Pantalla:</b> <code>app/orders/[orderId].tsx</code>
+        <ul>
+          <li>Timeline visual: <code>Pendiente → Confirmado → En preparación → Listo → Entregado</code></li>
+          <li>Suscribirse al socket <code>order:status_update</code> al montar la pantalla</li>
+          <li>Mostrar notificación visual cuando pase a "Listo para retirar"</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="task-card">
+      <div class="task-card-header">
+        <span class="task-id">F-U6</span>
+        <span class="task-name">🎟 Mis Tickets — Compra y visualización</span>
+      </div>
+      <div class="task-body">
+        <b>Pantalla nueva:</b> <code>app/tickets/index.tsx</code> (lista) + <code>app/tickets/[id].tsx</code> (ticket con QR)
+        <ul>
+          <li><b>Lista:</b> tarjetas por evento — portada, nombre, fecha, estado (válido / usado / expirado)</li>
+          <li><b>Detalle del ticket:</b> QR grande centrado en pantalla, nombre del evento, fecha, nombre del asistente — apto para mostrar en la puerta</li>
+          <li><b>Compra desde Home:</b> al tocar "Comprar entrada" en el feed → modal de confirmación con precio → descuento del wallet → navega al ticket generado</li>
+          <li>Acceso desde el perfil: sección "Mis tickets"</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="task-card">
+      <div class="task-card-header">
+        <span class="task-id">F-U7</span>
+        <span class="task-name">Perfil — Métricas reales</span>
+      </div>
+      <div class="task-body">
+        <b>Pantalla:</b> <code>src/features/profile/screens/ProfileScreen.tsx</code>
+        <ul>
+          <li>Llamar <code>GET /users/me/stats</code> para reemplazar "$15k" y "Gold" hardcodeados</li>
+          <li>Mostrar tier con badge visual basado en valor real (Bronze / Silver / Gold)</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     ROL: DJ
+══════════════════════════════════════════════ -->
+<div class="page role-block">
+  <div class="role-banner dj">
+    <div class="role-icon">🎧</div>
+    <div>
+      <div class="role-name">ROL: DJ</div>
+      <div class="role-desc">Artista — Gestiona song requests, gigs, promo codes y su presencia en eventos</div>
+    </div>
+  </div>
+
+  <!-- BACKEND DJ -->
+  <div class="sub-header">
+    <span class="layer-badge back">Backend</span>
+    <span class="sub-title">Endpoints a implementar / completar</span>
+  </div>
+
+  <div class="task-list">
+
+    <div class="task-card">
+      <div class="task-card-header">
+        <span class="task-id">B-DJ1</span>
+        <span class="task-name">Dashboard — Métricas reales</span>
+      </div>
+      <div class="task-body">
+        <div class="endpoint"><span class="method get">GET</span><span class="ep-path">/dj/:djProfileId/stats</span><div class="ep-desc">Devuelve <code>{ totalEarnings, totalRequests, acceptedRequests, rejectedRequests, pendingRequests, activeEvents[] }</code>. Los earnings se calculan desde gigs confirmados o comisión de promo codes.</div></div>
+        <div class="endpoint"><span class="method patch">PATCH</span><span class="ep-path">/dj/:djProfileId</span><div class="ep-desc">Actualizar campos del perfil incluyendo <code>{ acceptingRequests: boolean }</code> para el toggle de la home.</div></div>
+      </div>
+    </div>
+
+    <div class="task-card">
+      <div class="task-card-header">
+        <span class="task-id">B-DJ2</span>
+        <span class="task-name">Cola de song requests — Gestión completa</span>
+      </div>
+      <div class="task-body">
+        <div class="endpoint"><span class="method get">GET</span><span class="ep-path">/dj/:djProfileId/song-requests?status=pending</span><div class="ep-desc">Endpoint ya existe. Añadir filtro por <code>status</code>.</div></div>
+        <div class="endpoint"><span class="method patch">PATCH</span><span class="ep-path">/dj/:djProfileId/song-requests/:requestId</span><div class="ep-desc">Body: <code>{ status: 'accepted' | 'rejected' | 'played' }</code>. Solo accesible por el dueño del perfil DJ.</div></div>
+        <ul>
+          <li>Socket event: <code>song_request:new</code> → push al DJ cuando llega una request nueva (evita polling)</li>
+          <li>Socket event: <code>song_request:updated</code> → notifica al user cuando su canción es aceptada/rechazada</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="task-card">
+      <div class="task-card-header">
+        <span class="task-id">B-DJ3</span>
+        <span class="task-name">Gigs — CRUD completo</span>
+      </div>
+      <div class="task-body">
+        <div class="endpoint"><span class="method get">GET</span><span class="ep-path">/dj/:djProfileId/gigs</span><div class="ep-desc">Ya existe. Añadir filtro <code>?status=upcoming|past</code>.</div></div>
+        <div class="endpoint"><span class="method post">POST</span><span class="ep-path">/dj/:djProfileId/gigs</span><div class="ep-desc">Body: <code>{ eventId?, venueName, date, fee? }</code>. Crear gig manual si el organizer no lo invitó.</div></div>
+        <div class="endpoint"><span class="method patch">PATCH</span><span class="ep-path">/dj/:djProfileId/gigs/:gigId</span><div class="ep-desc">Confirmar / cancelar gig. Body: <code>{ status: 'confirmed' | 'cancelled' }</code>.</div></div>
+        <div class="endpoint"><span class="method delete">DELETE</span><span class="ep-path">/dj/:djProfileId/gigs/:gigId</span><div class="ep-desc">Eliminar gig.</div></div>
+      </div>
+    </div>
+
+    <div class="task-card">
+      <div class="task-card-header">
+        <span class="task-id">B-DJ4</span>
+        <span class="task-name">Promo codes — Generación en backend (seguridad)</span>
+      </div>
+      <div class="task-body">
+        <ul>
+          <li>Mover la generación del código al backend. Actualmente se genera en cliente con random chars → trivialmente falsificable</li>
+        </ul>
+        <div class="endpoint"><span class="method post">POST</span><span class="ep-path">/dj/:djProfileId/promo-codes</span><div class="ep-desc">Recibe <code>{ eventId, discountPercent, maxUses }</code>. Genera y devuelve <code>{ code: "ARTISTA_ZYNC_XXXX", discountPercent, maxUses }</code>.</div></div>
+        <div class="endpoint"><span class="method get">GET</span><span class="ep-path">/dj/:djProfileId/promo-codes/:code/stats</span><div class="ep-desc">Cuántas veces se usó, descuento total aplicado, cuántos usos quedan.</div></div>
+      </div>
+    </div>
+
+    <div class="task-card">
+      <div class="task-card-header">
+        <span class="task-id">B-DJ5</span>
+        <span class="task-name">Broadcast a asistentes del evento</span>
+      </div>
+      <div class="task-body">
+        <div class="endpoint"><span class="method post">POST</span><span class="ep-path">/events/:eventId/broadcast</span><div class="ep-desc">Solo accesible para DJ con gig activo en ese evento. Envía mensaje a todos los usuarios conectados.</div></div>
+        <ul>
+          <li>Socket event emit: <code>event:broadcast</code> → <code>{ djProfileId, message, type: 'announcement' | 'song' }</code></li>
+          <li>Ejemplos de uso: "Próxima canción: X", "Happy hour hasta las 2am"</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FRONTEND DJ -->
+  <div class="sub-header" style="margin-top:32px;">
+    <span class="layer-badge front">Frontend</span>
+    <span class="sub-title">Pantallas a implementar / completar</span>
+  </div>
+
+  <div class="task-list">
+
+    <div class="task-card">
+      <div class="task-card-header">
+        <span class="task-id">F-DJ1</span>
+        <span class="task-name">Home Dashboard — Métricas reales</span>
+      </div>
+      <div class="task-body">
+        <b>Pantalla:</b> <code>src/features/dj/screens/DjHomeScreen.tsx</code> — earnings "$15.000" hardcoded, todo mock.
+        <ul>
+          <li>Llamar <code>GET /dj/:djProfileId/stats</code> al montar</li>
+          <li>Tarjetas: Requests pendientes / Aceptadas / Rechazadas del evento activo</li>
+          <li>Toggle "Recibir canciones" funcional → <code>PATCH /dj/:djProfileId { acceptingRequests }</code></li>
+          <li>Input broadcast → <code>POST /events/:eventId/broadcast</code></li>
+          <li>Gigs próximos: listado compacto con venue y fecha</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="task-card">
+      <div class="task-card-header">
+        <span class="task-id">F-DJ2</span>
+        <span class="task-name">Requests — Cola funcional en tiempo real</span>
+      </div>
+      <div class="task-body">
+        <b>Pantalla:</b> <code>app/(business)/requests.tsx</code> — mock data total, botones sin handler.
+        <ul>
+          <li>Llamar <code>GET /dj/:djProfileId/song-requests?status=pending</code></li>
+          <li>Cada card: álbum cover, nombre track, artista, hora de solicitud, usuario</li>
+          <li>Botones: ✓ Aceptar / ✗ Rechazar / ▶ Marcar como tocada</li>
+          <li>Tabs: <b>Pendientes</b> / <b>Aceptadas</b> / <b>Historial</b></li>
+          <li>Suscripción socket <code>song_request:new</code> para updates en tiempo real</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="task-card">
+      <div class="task-card-header">
+        <span class="task-id">F-DJ3</span>
+        <span class="task-name">Gigs — Gestión de actuaciones</span>
+      </div>
+      <div class="task-body">
+        <b>Pantalla:</b> <code>app/(business)/dj/gigs.tsx</code> (existe con <code>href: null</code>).
+        <ul>
+          <li>Lista de gigs con estado visual (confirmado / pendiente / cancelado)</li>
+          <li>Card: venue, fecha/hora, fee, estado</li>
+          <li>FAB "+" → formulario: venue name, fecha, evento asociado (dropdown), fee</li>
+          <li>Swipe izquierda para cancelar/eliminar gig</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="task-card">
+      <div class="task-card-header">
+        <span class="task-id">F-DJ4</span>
+        <span class="task-name">Promo Codes — Con stats</span>
+      </div>
+      <div class="task-body">
+        <b>Pantalla:</b> <code>app/(business)/dj/promo-codes.tsx</code>
+        <ul>
+          <li>Llamar <code>GET /dj/:djProfileId/promo-codes</code></li>
+          <li>Por cada código: usos actuales / máximo / descuento total aplicado</li>
+          <li>Estado visual: Activo / Expirado / Agotado</li>
+          <li>Botón "Generar" → modal con selector de evento + porcentaje de descuento → <code>POST</code></li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     ROL: BUSINESS
+══════════════════════════════════════════════ -->
+<div class="page role-block">
+  <div class="role-banner biz">
+    <div class="role-icon">🏢</div>
+    <div>
+      <div class="role-name">ROL: BUSINESS</div>
+      <div class="role-desc">Organizador / Venue — Gestiona el local, eventos, productos, pedidos y venta de entradas</div>
+    </div>
+  </div>
+
+  <!-- BACKEND BUSINESS -->
+  <div class="sub-header">
+    <span class="layer-badge back">Backend</span>
+    <span class="sub-title">Endpoints a implementar / completar</span>
+  </div>
+
+  <div class="task-list">
+
+    <div class="task-card">
+      <div class="task-card-header">
+        <span class="task-id">B-BIZ1</span>
+        <span class="task-name">Dashboard — Métricas del negocio</span>
+      </div>
+      <div class="task-body">
+        <div class="endpoint"><span class="method get">GET</span><span class="ep-path">/venues/:venueId/stats</span><div class="ep-desc">Devuelve <code>{ todayOrders, todayRevenue, activeCustomers, pendingOrders[] }</code>.</div></div>
+        <div class="endpoint"><span class="method get">GET</span><span class="ep-path">/events/:eventId/stats</span><div class="ep-desc">Devuelve <code>{ ticketsSold, ticketRevenue, checkIns, activeDjs, capacity }</code>.</div></div>
+      </div>
+    </div>
+
+    <div class="task-card">
+      <div class="task-card-header">
+        <span class="task-id">B-BIZ2</span>
+        <span class="task-name">Gestión de pedidos — Fulfillment</span>
+      </div>
+      <div class="task-body">
+        <div class="endpoint"><span class="method get">GET</span><span class="ep-path">/venues/:venueId/orders?status=pending</span><div class="ep-desc">Pedidos activos del venue. Solo accesible para el dueño del venue.</div></div>
+        <div class="endpoint"><span class="method patch">PATCH</span><span class="ep-path">/orders/:orderId/status</span><div class="ep-desc">Body: <code>{ status: 'confirmed' | 'ready' | 'delivered' | 'cancelled' }</code>. Al cambiar → emite socket <code>order:status_update</code> al usuario.</div></div>
+        <ul>
+          <li>Socket event: <code>order:new</code> → push al negocio cuando entra un pedido nuevo</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="task-card">
+      <div class="task-card-header">
+        <span class="task-id">B-BIZ3</span>
+        <span class="task-name">Eventos — CRUD completo + imagen portada</span>
+      </div>
+      <div class="task-body">
+        <div class="endpoint"><span class="method post">POST</span><span class="ep-path">/events</span><div class="ep-desc">Body: <code>{ title, description, venueId, date, endDate, ticketPrice, maxCapacity }</code>. <code>ticketPrice</code> es el precio de entrada (0 si es gratis).</div></div>
+        <div class="endpoint"><span class="method post">POST</span><span class="ep-path">/events/:eventId/cover</span><div class="ep-desc">Subir imagen de portada (multipart). Devuelve <code>{ coverImageUrl }</code>.</div></div>
+        <div class="endpoint"><span class="method get">GET</span><span class="ep-path">/events/my-events</span><div class="ep-desc">Ya existe. Verificar que filtra por el organizer profile del usuario autenticado.</div></div>
+        <div class="endpoint"><span class="method patch">PATCH</span><span class="ep-path">/events/:eventId</span><div class="ep-desc">Actualizar cualquier campo. Ya existe.</div></div>
+        <div class="endpoint"><span class="method delete">DELETE</span><span class="ep-path">/events/:eventId</span><div class="ep-desc">Ya existe.</div></div>
+      </div>
+    </div>
+
+    <div class="task-card">
+      <div class="task-card-header">
+        <span class="task-id">B-BIZ4</span>
+        <span class="task-name">🎟 Entradas — Validación de acceso en puerta</span>
+      </div>
+      <div class="task-body">
+        <div class="endpoint"><span class="method post">POST</span><span class="ep-path">/tickets/validate</span><div class="ep-desc">Recibe <code>{ qrCode, eventId }</code>. Verifica que el ticket es válido, no fue usado y pertenece al evento. Marca el ticket como <code>used</code>. Devuelve <code>{ valid: true, user: { name, avatarUrl }, ticketType }</code> o <code>{ valid: false, reason }</code>.</div></div>
+        <div class="endpoint"><span class="method get">GET</span><span class="ep-path">/events/:eventId/tickets</span><div class="ep-desc">Lista de tickets del evento: <code>{ total, sold, used, remaining }</code> + lista de asistentes con check-in.</div></div>
+        <ul>
+          <li>El QR contiene un JWT firmado con <code>ticketId + userId + eventId</code> para evitar falsificaciones</li>
+          <li>Un ticket <code>used</code> no puede validarse nuevamente → devuelve error con hora de uso</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="task-card">
+      <div class="task-card-header">
+        <span class="task-id">B-BIZ5</span>
+        <span class="task-name">Lineup — Gestión de DJs en evento</span>
+      </div>
+      <div class="task-body">
+        <div class="endpoint"><span class="method get">GET</span><span class="ep-path">/events/:eventId/lineup</span><div class="ep-desc">Lista de DJs con nombre, horario, fee. Ya existe.</div></div>
+        <div class="endpoint"><span class="method post">POST</span><span class="ep-path">/dj/:djProfileId/events/:eventId/lineup</span><div class="ep-desc">Añadir DJ al lineup. Ya existe. Verificar que acepta <code>{ startTime, endTime, fee }</code>.</div></div>
+        <div class="endpoint"><span class="method patch">PATCH</span><span class="ep-path">/events/:eventId/lineup/:djProfileId</span><div class="ep-desc">Actualizar horario o fee del DJ en el lineup.</div></div>
+        <div class="endpoint"><span class="method delete">DELETE</span><span class="ep-path">/events/:eventId/lineup/:djProfileId</span><div class="ep-desc">Quitar DJ del lineup.</div></div>
+      </div>
+    </div>
+
+    <div class="task-card">
+      <div class="task-card-header">
+        <span class="task-id">B-BIZ6</span>
+        <span class="task-name">Venue — Logo y banner</span>
+      </div>
+      <div class="task-body">
+        <div class="endpoint"><span class="method post">POST</span><span class="ep-path">/venues/:venueId/logo</span><div class="ep-desc">Subir logo del venue (multipart).</div></div>
+        <div class="endpoint"><span class="method post">POST</span><span class="ep-path">/venues/:venueId/banner</span><div class="ep-desc">Subir banner del venue (multipart).</div></div>
+      </div>
+    </div>
+
+    <div class="task-card">
+      <div class="task-card-header">
+        <span class="task-id">B-BIZ7</span>
+        <span class="task-name">Productos — Campo available + stock</span>
+      </div>
+      <div class="task-body">
+        <ul>
+          <li>Verificar que <code>Product</code> incluye: <code>name, description, price, category, imageUrl, available: boolean, stock?</code></li>
+          <li><code>PATCH /venues/:venueId/products/:productId</code> ya existe — verificar que acepta <code>{ available: false }</code> para deshabilitar temporalmente sin eliminar</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FRONTEND BUSINESS -->
+  <div class="sub-header" style="margin-top:32px;">
+    <span class="layer-badge front">Frontend</span>
+    <span class="sub-title">Pantallas a implementar / completar</span>
+  </div>
+
+  <div class="task-list">
+
+    <div class="task-card">
+      <div class="task-card-header">
+        <span class="task-id">F-BIZ1</span>
+        <span class="task-name">Home Dashboard — Real</span>
+      </div>
+      <div class="task-body">
+        <b>Pantalla:</b> <code>app/(business)/index.tsx</code> con rol <code>business</code> — actualmente placeholder.
+        <ul>
+          <li>Selector de venue activo si tiene múltiples venues</li>
+          <li>Tarjetas: Pedidos pendientes / Ingresos del día / Clientes activos</li>
+          <li>Si hay evento activo: entradas vendidas vs aforo, check-ins en vivo</li>
+          <li>Lista "Pedidos pendientes" con botones rápidos: Confirmar / Listo</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="task-card">
+      <div class="task-card-header">
+        <span class="task-id">F-BIZ2</span>
+        <span class="task-name">Gestión de Pedidos en tiempo real</span>
+      </div>
+      <div class="task-body">
+        <b>Pantalla nueva:</b> <code>app/(business)/orders.tsx</code>
+        <ul>
+          <li>Tabs: <b>Pendientes</b> / <b>En preparación</b> / <b>Listos</b> / <b>Historial</b></li>
+          <li>Listener socket <code>order:new</code> para recibir pedidos en tiempo real</li>
+          <li>Card: foto de items, nombre usuario, total, hora de pedido</li>
+          <li>Cambio de estado con un tap: <code>Confirmar → En preparación → Listo</code></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="task-card">
+      <div class="task-card-header">
+        <span class="task-id">F-BIZ3</span>
+        <span class="task-name">Eventos — Lista y creación</span>
+      </div>
+      <div class="task-body">
+        <b>Pantalla:</b> <code>app/(business)/events/index.tsx</code> (existe con <code>href: null</code>)
+        <ul>
+          <li>Tabs: Activos / Próximos / Pasados</li>
+          <li>Card: portada, título, fecha, DJs, entradas vendidas / aforo</li>
+          <li>FAB "+" → <code>events/create.tsx</code></li>
+        </ul>
+        <b>Pantalla:</b> <code>app/(business)/events/create.tsx</code>
+        <ul>
+          <li>Campos: título, descripción, venue (dropdown <code>getMyVenues()</code>), fecha inicio/fin, imagen portada (image picker), <b>precio de entrada</b> (0 si es gratis), aforo máximo</li>
+          <li>Llamar <code>POST /events</code> y luego <code>POST /events/:id/cover</code> si hay imagen</li>
+        </ul>
+        <b>Pantalla:</b> <code>app/(business)/events/[id].tsx</code>
+        <ul>
+          <li>Tabs: Info / Lineup / Entradas / Promo Codes</li>
+          <li>Tab Entradas: entradas vendidas, check-ins, lista de asistentes</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="task-card">
+      <div class="task-card-header">
+        <span class="task-id">F-BIZ4</span>
+        <span class="task-name">Lineup — Gestión de DJs</span>
+      </div>
+      <div class="task-body">
+        <b>Pantalla:</b> <code>app/(business)/events/lineup.tsx</code> (existe con <code>href: null</code>)
+        <ul>
+          <li>Lista de DJs añadidos con horario y fee</li>
+          <li>Buscador de DJs por nombre o género → <code>GET /dj?genre=...</code></li>
+          <li>Añadir DJ: seleccionar horario, fee → <code>POST /dj/:djProfileId/events/:eventId/lineup</code></li>
+          <li>Swipe para eliminar DJ del lineup</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="task-card">
+      <div class="task-card-header">
+        <span class="task-id">F-BIZ5</span>
+        <span class="task-name">Scanner — Validación en puerta + pedidos</span>
+      </div>
+      <div class="task-body">
+        <b>Pantalla:</b> <code>app/(business)/scanner.tsx</code> — actualmente placeholder.
+        <ul>
+          <li>Integrar <code>expo-camera</code> con <code>BarCodeScanner</code></li>
+          <li>Modo <b>Entrada</b>: escanea ticket QR del usuario → <code>POST /tickets/validate</code> → muestra ✅ foto + nombre o ❌ con motivo</li>
+          <li>Modo <b>Pedido</b>: escanea QR de orden → marca como <code>delivered</code></li>
+          <li>Selector de modo visible en la parte superior de la pantalla</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="task-card">
+      <div class="task-card-header">
+        <span class="task-id">F-BIZ6</span>
+        <span class="task-name">Productos — Lista y creación</span>
+      </div>
+      <div class="task-body">
+        <b>Pantalla:</b> <code>src/features/venues/screens/ProductsManagementScreen.tsx</code>
+        <ul>
+          <li>Lista agrupada por categoría</li>
+          <li>Toggle "Disponible" por producto sin recargar lista completa</li>
+          <li>FAB "+" → <code>products/create.tsx</code></li>
+        </ul>
+        <b>Pantalla:</b> <code>app/(business)/products/create.tsx</code>
+        <ul>
+          <li>Campos: nombre, categoría (dropdown), precio, foto (image picker), descripción, stock</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="task-card">
+      <div class="task-card-header">
+        <span class="task-id">F-BIZ7</span>
+        <span class="task-name">Crear Venue</span>
+      </div>
+      <div class="task-body">
+        <b>Pantalla:</b> <code>app/(business)/products/create-venue.tsx</code> (existe con <code>href: null</code>)
+        <ul>
+          <li>Formulario: nombre, dirección, tipo (discoteca / bar / club), capacidad, logo, banner</li>
+          <li>Llamar <code>POST /venues</code> → al crear, seleccionar como venue activo en <code>ZyncContext</code></li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     PRIORIDADES + SPRINTS
+══════════════════════════════════════════════ -->
+<div class="page" style="page-break-before: always; padding-top: 20px;">
+
+  <div class="section-header">
+    <div class="section-num">⚡</div>
+    <div class="section-title">Prioridades <span>MVP</span></div>
+  </div>
+
+  <div class="sprint-section">
+    <div class="sprint-title">🔴 Sprint 1 — Core Flow (sin esto no hay producto)</div>
+    <div class="sprint-grid">
+      <div class="sprint-card s1"><div class="sprint-num">1</div><div><div class="sprint-card-title">Scanner QR → join establishment</div><div class="sprint-card-meta">User · Front + Back</div></div></div>
+      <div class="sprint-card s1"><div class="sprint-num">2</div><div><div class="sprint-card-title">Menú real por venue</div><div class="sprint-card-meta">User · Front + Back</div></div></div>
+      <div class="sprint-card s1"><div class="sprint-num">3</div><div><div class="sprint-card-title">Order status en tiempo real (socket)</div><div class="sprint-card-meta">User + Business · Back</div></div></div>
+      <div class="sprint-card s1"><div class="sprint-num">4</div><div><div class="sprint-card-title">Gestión de pedidos (confirmar / listo)</div><div class="sprint-card-meta">Business · Front + Back</div></div></div>
+      <div class="sprint-card s1"><div class="sprint-num">5</div><div><div class="sprint-card-title">Cola de song requests funcional</div><div class="sprint-card-meta">DJ · Front + Back</div></div></div>
+      <div class="sprint-card s1"><div class="sprint-num">6</div><div><div class="sprint-card-title">Home DJ con métricas reales</div><div class="sprint-card-meta">DJ · Front + Back</div></div></div>
+    </div>
+  </div>
+
+  <div class="sprint-section">
+    <div class="sprint-title">🟡 Sprint 2 — Monetización y contenido</div>
+    <div class="sprint-grid">
+      <div class="sprint-card s2"><div class="sprint-num">7</div><div><div class="sprint-card-title">Wallet top-up</div><div class="sprint-card-meta">User · Front + Back</div></div></div>
+      <div class="sprint-card s2"><div class="sprint-num">8</div><div><div class="sprint-card-title">Crear y gestionar eventos</div><div class="sprint-card-meta">Business · Front + Back</div></div></div>
+      <div class="sprint-card s2"><div class="sprint-num">9</div><div><div class="sprint-card-title">🎟 Venta de entradas + ticket QR</div><div class="sprint-card-meta">User + Business · Front + Back</div></div></div>
+      <div class="sprint-card s2"><div class="sprint-num">10</div><div><div class="sprint-card-title">Lineup management</div><div class="sprint-card-meta">Business + DJ · Front + Back</div></div></div>
+      <div class="sprint-card s2"><div class="sprint-num">11</div><div><div class="sprint-card-title">Dashboard business con revenue</div><div class="sprint-card-meta">Business · Front + Back</div></div></div>
+      <div class="sprint-card s2"><div class="sprint-num">12</div><div><div class="sprint-card-title">Promo codes con stats reales</div><div class="sprint-card-meta">DJ + Business · Back</div></div></div>
+    </div>
+  </div>
+
+  <div class="sprint-section">
+    <div class="sprint-title">🟢 Sprint 3 — Engagement y pulido</div>
+    <div class="sprint-grid">
+      <div class="sprint-card s3"><div class="sprint-num">13</div><div><div class="sprint-card-title">Stories de eventos</div><div class="sprint-card-meta">User · Front + Back</div></div></div>
+      <div class="sprint-card s3"><div class="sprint-num">14</div><div><div class="sprint-card-title">Broadcast DJ → asistentes</div><div class="sprint-card-meta">DJ · Front + Back</div></div></div>
+      <div class="sprint-card s3"><div class="sprint-num">15</div><div><div class="sprint-card-title">Perfil métricas reales (tier, gasto)</div><div class="sprint-card-meta">User · Front + Back</div></div></div>
+      <div class="sprint-card s3"><div class="sprint-num">16</div><div><div class="sprint-card-title">Push notifications</div><div class="sprint-card-meta">Todos · Back</div></div></div>
+    </div>
+  </div>
+
+  <!-- ── DEUDA TÉCNICA ── -->
+  <div class="section-header" style="margin-top: 48px;">
+    <div class="section-num" style="background: var(--error); color: white;">!</div>
+    <div class="section-title">Deuda Técnica <span style="color: var(--error);">Crítica</span></div>
+  </div>
+  <p style="color: var(--muted); font-size: 12px; margin-bottom: 20px;">Estos puntos bloquean ir a producción con seguridad.</p>
+
+  <div class="debt-list">
+    <div class="debt-card">
+      <div class="debt-icon">🔑</div>
+      <div>
+        <div class="debt-title">Spotify CLIENT_SECRET expuesto en el cliente</div>
+        <div class="debt-body">Las credenciales de Spotify están hardcodeadas en <code>spotify-service.ts</code>. Cualquiera que descompile la app puede extraerlas. Solución: crear endpoint proxy <code>POST /music/search?q=...</code> que llame a Spotify desde el backend.</div>
+      </div>
+    </div>
+    <div class="debt-card">
+      <div class="debt-icon">🎲</div>
+      <div>
+        <div class="debt-title">Generación de promo codes en el cliente</div>
+        <div class="debt-body">El código se genera con <code>Math.random()</code> en el frontend. Cualquier usuario puede crear códigos de descuento sin pasar por el backend. Mover la generación completamente al servidor.</div>
+      </div>
+    </div>
+    <div class="debt-card">
+      <div class="debt-icon">📊</div>
+      <div>
+        <div class="debt-title">Mock data en DjHomeScreen</div>
+        <div class="debt-body">Earnings, requests y métricas son constantes hardcodeadas (<code>"$15.000"</code>, listas de objetos falsos). Un demo con datos reales los dejaría visibles. Reemplazar con llamadas a <code>GET /dj/:djProfileId/stats</code>.</div>
+      </div>
+    </div>
+    <div class="debt-card">
+      <div class="debt-icon">💾</div>
+      <div>
+        <div class="debt-title">ZyncContext sin persistencia</div>
+        <div class="debt-body">Si el usuario cierra la app, pierde el establecimiento activo y debe re-escanear el QR. Persistir con <code>AsyncStorage</code> o derivarlo del último QR escaneado con TTL (ej. expira a las 6am).</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Zync Mobile · Plan MVP · <span>Marzo 2026</span> · Generado con Claude Code
+  </div>
+</div>
+
+</body>
+</html>

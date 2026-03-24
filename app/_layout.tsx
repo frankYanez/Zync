@@ -42,6 +42,11 @@ function InitialLayout() {
         <Stack.Screen name="(business)" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
         <Stack.Screen name="cart" options={{ presentation: 'modal', headerShown: false }} />
+        <Stack.Screen name="orders" options={{ headerShown: false }} />
+        <Stack.Screen name="profile/notifications" options={{ headerShown: false }} />
+        <Stack.Screen name="profile/security" options={{ headerShown: false }} />
+        <Stack.Screen name="profile/payment-methods" options={{ headerShown: false }} />
+        <Stack.Screen name="profile/edit-organizer" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style="light" />
     </ThemeProvider>

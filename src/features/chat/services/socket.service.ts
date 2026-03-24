@@ -126,6 +126,22 @@ export const onPresenceUpdate = (callback: (data: { userId: string; online: bool
     socket?.on('presence:left', (data) => callback({ ...data, online: false }));
 };
 
+// Order events
+// Received by Business (venue owner) when a new order is placed
+export const onOrderNew = (callback: (order: any) => void) => {
+    socket?.on('order:new', callback);
+};
+
+// Received by the User who placed the order when its status changes
+export const onOrderStatusUpdate = (callback: (data: { orderId: string; status: string }) => void) => {
+    socket?.on('order:status_update', callback);
+};
+
+// Received by the User who requested a song when the DJ updates its status
+export const onSongRequestUpdated = (callback: (songRequest: any) => void) => {
+    socket?.on('song_request:updated', callback);
+};
+
 // Cleanup a specific listener
 export const offSocket = (event: string, callback?: any) => {
     // Map logical event names to the real server event names

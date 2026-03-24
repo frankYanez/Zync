@@ -2,6 +2,7 @@
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { TicketCard } from '@/features/dashboard/components/TicketCard';
 import { useCart } from '@/features/wallet/context/CartContext';
+import { useZync } from '@/context/ZyncContext';
 
 import { ScreenLayout } from '@/components/ScreenLayout';
 import { ThemedText } from '@/components/themed-text';
@@ -22,6 +23,7 @@ export default function CartScreen() {
     const router = useRouter();
     const { items, totalAmount, removeItemQuantity, addToCart, removeFromCart, clearCart, checkout } = useCart();
     const { user, updateBalance } = useAuth();
+    const { currentEstablishment } = useZync();
     const [usePoints, setUsePoints] = useState(false);
     const [status, setStatus] = useState<PaymentStatus>('idle');
     const [orderId, setOrderId] = useState<string>('');
@@ -57,7 +59,11 @@ export default function CartScreen() {
         setStatus('processing');
 
         try {
-            const result = await checkout();
+            const result = await checkout({
+            establishmentId: currentEstablishment?.id,
+            promoCode: appliedPromo ?? undefined,
+            usePoints,
+        });
 
             if (result.success && result.orderId) {
                 // Deduct points locally if used
@@ -80,6 +86,11 @@ export default function CartScreen() {
     const handleFinish = () => {
         clearCart();
         router.back();
+    };
+
+    const handleViewOrders = () => {
+        clearCart();
+        router.push('/orders' as any);
     };
 
     if (status === 'processing') {
@@ -123,7 +134,7 @@ export default function CartScreen() {
                     <View style={styles.footer}>
                         <NeonButton
                             title="VER MIS PEDIDOS"
-                            onPress={handleFinish}
+                            onPress={handleViewOrders}
                             style={{ width: '100%', height: 56 }}
                             textStyle={{ fontSize: 18, fontWeight: 'bold' }}
                             icon={<Ionicons name="arrow-forward" size={24} color="black" />}

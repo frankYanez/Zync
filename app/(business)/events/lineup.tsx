@@ -1,6 +1,6 @@
 import { ScreenLayout } from '@/components/ScreenLayout';
 import { ThemedText } from '@/components/themed-text';
-import { getEvents } from '@/features/dashboard/services/event.service';
+import { getMyEvents } from '@/features/dashboard/services/event.service';
 import { DjProfile } from '@/features/dj/domain/dj.types';
 import { addDjToLineup, getDjs } from '@/features/dj/services/dj.service';
 import { ZyncTheme } from '@/shared/constants/theme';
@@ -29,7 +29,7 @@ export default function OrganizerLineupScreen() {
                 // In a real app, we'd use getMyEvents() for the organizer.
                 // Here we fetch all events as a placeholder.
                 const [eventList, djList] = await Promise.all([
-                    getEvents(),
+                    getMyEvents(),
                     getDjs()
                 ]);
                 setEvents(eventList);

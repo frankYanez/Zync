@@ -122,6 +122,19 @@ export const refreshToken = async (refreshTokenValue: string): Promise<string> =
     throw new Error('Failed to refresh token');
 };
 
+// POST /auth/google  { accessToken }  — login/register via Google OAuth
+export const loginWithGoogle = async (accessToken: string): Promise<AuthResponse> => {
+    const response = await axios.post(`${API_URL}/auth/google`, { accessToken });
+    const data = response.data;
+    if (data.accessToken) {
+        await setToken(data.accessToken);
+        if (data.refreshToken) await setRefreshToken(data.refreshToken);
+        const user = await getMe();
+        return { accessToken: data.accessToken, user };
+    }
+    throw new Error('Google login failed');
+};
+
 export const forgotPassword = async (email: string): Promise<void> => {
     await axios.post(`${API_URL}/auth/forgot-password`, { email });
 };

@@ -97,8 +97,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(null);
     };
 
-    const updateUser = (updatedUser: User) => {
-        setUser(updatedUser);
+    const updateUser = async (updatedUser: User) => {
+        checkUser();
     };
 
     // Refresh JWT using the stored refresh token, then reload user from /auth/me.
