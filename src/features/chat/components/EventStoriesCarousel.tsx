@@ -7,9 +7,10 @@ import { createStory, getEventStories } from '../../stories/services/story.servi
 
 interface EventStoriesCarouselProps {
     eventId: string;
+    canLoad?: boolean;
 }
 
-export const EventStoriesCarousel = ({ eventId }: EventStoriesCarouselProps) => {
+export const EventStoriesCarousel = ({ eventId, canLoad = true }: EventStoriesCarouselProps) => {
     const { user } = useAuth();
     const [stories, setStories] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -26,8 +27,8 @@ export const EventStoriesCarousel = ({ eventId }: EventStoriesCarouselProps) => 
     };
 
     useEffect(() => {
-        loadStories();
-    }, [eventId]);
+        if (canLoad) loadStories();
+    }, [eventId, canLoad]);
 
     const handleAddStory = async () => {
         const result = await ImagePicker.launchImageLibraryAsync({

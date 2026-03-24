@@ -148,7 +148,7 @@ export const GroupChatScreen = () => {
                 </View>
 
                 {/* Event Stories */}
-                <EventStoriesCarousel eventId={eventId} />
+                <EventStoriesCarousel eventId={eventId} canLoad={isJoined} />
 
                 {/* Connected Users - Transparent BG */}
                 <View style={{ height: 100 }}>

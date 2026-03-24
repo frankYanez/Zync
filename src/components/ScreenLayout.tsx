@@ -1,6 +1,7 @@
 import { ZyncTheme } from '@/shared/constants/theme';
 import React from 'react';
-import { SafeAreaView, StatusBar, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
+import { StatusBar, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface ScreenLayoutProps {
     children: React.ReactNode;
