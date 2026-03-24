@@ -24,6 +24,8 @@ export interface CreateProductDto {
 
 // GET /venues/:venueId/products?category=Tragos
 export const getProductsByVenue = async (venueId: string, category?: string): Promise<Product[]> => {
+    console.log("venueId", venueId);
+
     const response = await axios.get(`${API_URL}/venues/${venueId}/products`, {
         params: category ? { category } : undefined,
     });

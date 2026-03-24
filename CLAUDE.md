@@ -70,13 +70,13 @@ Each feature follows: `screens/`, `services/`, `domain/` (types), `context/`, `h
 
 - **auth** — JWT auth, token refresh, OTP email verification
 - **chat** — Socket.io real-time messaging (1-to-1 and event group chats)
-- **dj** — DJ profiles, gigs, promo codes, stats (`DjStats`)
+- **dj** — DJ profiles, gigs, promo codes, stats (`DjStats`); follow/unfollow DJs (`followDj`/`unfollowDj`); DJ reviews (`getDjReviews`, `submitDjReview`); live mode toggle (`setDjLiveMode`); DJ feed of upcoming gigs from followed DJs (`getDjFeed`)
 - **profile** — User profile editing, avatar upload, DJ/organizer sub-profiles; `stats.service.ts` exposes user tier (`bronze`/`silver`/`gold`)
 - **wallet** — Cart, orders, payment methods; `wallet.service.ts` for balance/top-up
-- **dashboard** — Home feed, event/venue discovery; `BusinessHomeScreen` (venue metrics + live pending orders)
+- **dashboard** — Home feed, event/venue discovery; `BusinessHomeScreen` (venue metrics + live pending orders); event management for organizers (`getMyEvents`, `createEvent`, `updateEvent`, `deleteEvent`); geolocation check-in (`checkLocation` → `POST /events/check-location`); lineup management (`addDjToLineup`)
 - **scanner** — QR code scanning
 - **tickets** — User ticket purchase/display with QR codes; `validateTicket` for business scanner. **Note:** currently mock-only (see TODO comments in `ticket.service.ts`)
-- **venues** — Venue creation and management (`createVenue`, `getMyVenues`)
+- **venues** — Venue creation and management (`createVenue`, `getMyVenues`); venue reviews; media upload (image/video via Cloudinary); active event lookup (`getVenueActiveEvent`); orders fulfillment view for venue owners
 - **music** — Spotify integration: client-credentials OAuth, `searchTracks(query)`
 - **stories** — Event stories: create, view by event, view by user-in-event
 
@@ -86,6 +86,9 @@ Several services are temporarily mock-only while backend endpoints are being bui
 - `src/features/tickets/services/ticket.service.ts` — all endpoints mocked
 - `src/features/wallet/services/wallet.service.ts` — `topUp` is mocked; `getBalance` is real
 - `src/features/profile/services/stats.service.ts` — `getUserStats` is mocked
+- `src/features/venues/services/venue.service.ts` — `createVenue`, `deleteVenue` are mocked
+- `src/features/dashboard/services/event.service.ts` — `uploadEventCover`, `getVenueStats`, `getEventStats` are mocked
+- `src/features/dj/services/dj.service.ts` — `sendBroadcast` is mocked (endpoint not yet available)
 
 ### API Integration
 
@@ -93,19 +96,30 @@ Several services are temporarily mock-only while backend endpoints are being bui
 - **HTTP client:** Axios; all authenticated requests use `getAuthHeaders()` from `src/features/auth/services/auth.service.ts`
 - **Token storage:** `expo-secure-store` on mobile, `localStorage` on web; cached in-memory to avoid repeated reads
 - **Real-time:** Socket.io client in `src/features/chat/services/socket.service.ts`, authenticated via JWT in `auth` field
+- **API reference:** `api-reference.md` in the repo root — authoritative spec for all endpoints, error codes, and socket events. Also available interactively at `<BASE_URL>/api/docs` (Swagger).
+
+#### Backend vs App roles
+
+The backend has four roles (`USER`, `DJ`, `ORGANIZER`, `STAFF`), but the app maps them to three navigation roles: `user` → `(tabs)`, `dj` → `(business)`, `business` → `(business)`. A single user can hold multiple backend roles simultaneously (e.g. `DJ` + `ORGANIZER`).
 
 #### Key Socket.io Events
 
-| Direction | Event | Purpose |
-|---|---|---|
-| emit | `join-event` / `leave-event` | Join/leave event room |
-| emit | `send-message` | 1-to-1 message |
-| emit | `send-event-message` | Group/event chat message |
-| on | `new-message` / `event-message` | Receive messages |
-| emit/on | `typing` / `onTyping` | Typing indicators |
-| on | `message-delivered` / `message-seen` | Read receipts |
-| emit | `presence:who` | Request online users list |
-| on | `presence:list` / `presence:update` | Receive presence data |
+Connect to `ws://<HOST>:3000?token=<accessToken>`.
+
+| Direction | Event | Payload | Purpose |
+|---|---|---|---|
+| emit | `event:join` / `event:leave` | `{ eventId }` | Join/leave event room |
+| emit | `chat:send_public` | `{ eventId, content }` | Group chat message |
+| emit | `chat:send_private` | `{ eventId, toUserId, content }` | 1-to-1 message |
+| on | `chat:public_message` / `chat:private_message` | message object | Receive messages |
+| emit | `chat:typing` | `{ eventId, toUserId }` | Typing indicator |
+| on | `chat:typing_status` | `{ fromUserId, eventId }` | Other user typing |
+| emit | `chat:mark_delivered` / `chat:mark_seen` | `{ messageId }` | Read receipts |
+| emit | `presence:get_list` | `{ eventId }` | Request online users list |
+| on | `presence:list` / `presence:joined` / `presence:left` | user data | Presence updates |
+| on | `order:new` | order object | Business receives new order |
+| on | `order:status_update` | `{ orderId, status }` | User receives order status change |
+| on | `song_request:updated` | song request object | User receives DJ response to song request |
 
 ### Path Aliases
 

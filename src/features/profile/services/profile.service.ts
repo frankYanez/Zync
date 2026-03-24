@@ -106,3 +106,26 @@ export const uploadDjBanner = async (formData: FormData) => {
     const response = await axios.patch(`${API_URL}/users/me/dj-profile/banner`, formData, config);
     return response.data;
 };
+
+// --- User preferences ---
+
+export type ThemeMode = 'light' | 'dark' | 'system';
+
+export interface UserPreferences {
+    receiveEmailNotifications: boolean;
+    receivePushNotifications: boolean;
+    language: string;
+    themeMode: ThemeMode;
+}
+
+export const getPreferences = async (): Promise<UserPreferences> => {
+    const config = await getAuthHeaders();
+    const response = await axios.get(`${API_URL}/users/me/preferences`, config);
+    return response.data;
+};
+
+export const updatePreferences = async (data: Partial<UserPreferences>): Promise<UserPreferences> => {
+    const config = await getAuthHeaders();
+    const response = await axios.patch(`${API_URL}/users/me/preferences`, data, config);
+    return response.data;
+};

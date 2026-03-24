@@ -6,14 +6,14 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL;
 export interface OrderItemDto {
     productId: string;
     quantity: number;
-    unitPrice: number;
 }
 
 export interface CreateOrderDto {
-    establishmentId: string;
+    venueId: string;
+    eventId?: string;
     items: OrderItemDto[];
     promoCode?: string;
-    usePoints?: boolean;
+    useZyncPoints?: boolean;
 }
 
 export interface OrderItem {
@@ -33,8 +33,8 @@ export interface Order {
     discount: number;
     total: number;
     createdAt: string;
-    establishmentId?: string;
-    establishmentName?: string;
+    venueId?: string;
+    venueName?: string;
 }
 
 export const createOrder = async (data: CreateOrderDto): Promise<Order> => {
@@ -45,7 +45,7 @@ export const createOrder = async (data: CreateOrderDto): Promise<Order> => {
 
 export const getMyOrders = async (): Promise<Order[]> => {
     const config = await getAuthHeaders();
-    const response = await axios.get(`${API_URL}/orders/my-orders`, config);
+    const response = await axios.get(`${API_URL}/orders/me`, config);
     return response.data;
 };
 

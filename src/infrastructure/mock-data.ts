@@ -33,6 +33,7 @@ export interface Establishment {
     video: string;
     rating: number;
     eventId?: string;
+    venueId?: string;
     currentDj?: {
         name: string;
         genre: string;

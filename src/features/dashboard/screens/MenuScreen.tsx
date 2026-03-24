@@ -2,44 +2,51 @@ import { CyberCard } from '@/components/CyberCard';
 import { NeonButton } from '@/components/NeonButton';
 import { ScreenLayout } from '@/components/ScreenLayout';
 import { ThemedText } from '@/components/themed-text';
+import { useZync } from '@/context/ZyncContext';
+import { useCart } from '@/features/wallet/context/CartContext';
+import { useVenueProducts } from '@/features/venues/hooks/useVenueProducts';
 import { ZyncTheme } from '@/shared/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { FlatList, Image, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
-
-import { useCart } from '@/features/wallet/context/CartContext';
-import { MOCK_MENU } from '@/infrastructure/mock-data';
 import { MotiView } from 'moti';
+import React, { useMemo, useState } from 'react';
+import { ActivityIndicator, FlatList, Image, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
-const FILTERS = ['Autor', 'Clásicos', 'Cervezas', 'Shots', 'Sin Alcohol'];
+const ALL_LABEL = 'Todo';
 
 export default function MenuScreen() {
     const router = useRouter();
-    const [selectedFilter, setSelectedFilter] = useState('Autor');
+    const { currentEstablishment } = useZync();
     const { totalItems, addToCart } = useCart();
+    const [selectedCategory, setSelectedCategory] = useState<string>(ALL_LABEL);
 
-    const filteredDrinks = MOCK_MENU.filter(item => item.category === selectedFilter);
+    const venueId = currentEstablishment?.venueId;
+    const { products, isLoading } = useVenueProducts(venueId);
 
-    const handleAddToCart = (item: typeof MOCK_MENU[0]) => {
-        addToCart(item);
-    };
+    const categories = useMemo(() => {
+        const unique = Array.from(new Set(products.map(p => p.category).filter(Boolean)));
+        return [ALL_LABEL, ...unique];
+    }, [products]);
 
-    const renderDrink = ({ item, index }: { item: typeof MOCK_MENU[0], index: number }) => (
+    const filtered = useMemo(() => {
+        if (selectedCategory === ALL_LABEL) return products;
+        return products.filter(p => p.category === selectedCategory);
+    }, [products, selectedCategory]);
+
+    // Ensure selectedCategory stays valid when products reload
+    const safeCategory = categories.includes(selectedCategory) ? selectedCategory : ALL_LABEL;
+
+    const renderItem = ({ item, index }: { item: typeof products[0]; index: number }) => (
         <MotiView
             from={{ opacity: 0, translateY: 20 }}
             animate={{ opacity: 1, translateY: 0 }}
-            transition={{ delay: index * 100, type: 'timing', duration: 500 }}
+            transition={{ delay: index * 80, type: 'timing', duration: 400 }}
         >
             <CyberCard style={styles.drinkCard}>
                 <View style={styles.drinkRow}>
                     <View style={styles.drinkImagePlaceholder}>
-                        {item.image ? (
-                            <Image
-                                source={{ uri: item.image }}
-                                style={styles.drinkImage}
-                                resizeMode="cover"
-                            />
+                        {item.imageUrl ? (
+                            <Image source={{ uri: item.imageUrl }} style={styles.drinkImage} resizeMode="cover" />
                         ) : (
                             <Ionicons name="wine" size={32} color={ZyncTheme.colors.textSecondary} />
                         )}
@@ -49,8 +56,20 @@ export default function MenuScreen() {
                             <ThemedText style={styles.drinkName}>{item.name}</ThemedText>
                             <ThemedText style={styles.drinkPrice}>${item.price.toLocaleString()}</ThemedText>
                         </View>
-                        <ThemedText style={styles.drinkDesc}>{item.description}</ThemedText>
-                        <TouchableOpacity style={styles.addButton} onPress={() => handleAddToCart(item)}>
+                        {item.description ? (
+                            <ThemedText style={styles.drinkDesc} numberOfLines={2}>{item.description}</ThemedText>
+                        ) : null}
+                        <TouchableOpacity
+                            style={styles.addButton}
+                            onPress={() => addToCart({
+                                id: item.id,
+                                name: item.name,
+                                description: item.description ?? '',
+                                price: item.price,
+                                category: item.category,
+                                image: item.imageUrl ?? '',
+                            })}
+                        >
                             <Ionicons name="add" size={24} color="#000" />
                         </TouchableOpacity>
                     </View>
@@ -67,57 +86,71 @@ export default function MenuScreen() {
                         <View style={styles.logoIcon}>
                             <Ionicons name="cube" size={24} color={ZyncTheme.colors.primary} />
                         </View>
-                        <ThemedText style={styles.headerTitle}>Zync</ThemedText>
+                        <ThemedText style={styles.headerTitle}>
+                            {currentEstablishment?.name ?? 'Menú'}
+                        </ThemedText>
                     </View>
-                    <TouchableOpacity style={styles.searchButton}>
-                        <Ionicons name="search" size={24} color="white" />
-                    </TouchableOpacity>
                 </View>
 
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filtersScroll}>
-                    {FILTERS.map(filter => (
+                    {categories.map(cat => (
                         <TouchableOpacity
-                            key={filter}
-                            style={[
-                                styles.filterChip,
-                                selectedFilter === filter && styles.filterChipSelected
-                            ]}
-                            onPress={() => setSelectedFilter(filter)}
+                            key={cat}
+                            style={[styles.filterChip, safeCategory === cat && styles.filterChipSelected]}
+                            onPress={() => setSelectedCategory(cat)}
                         >
-                            <ThemedText style={[
-                                styles.filterText,
-                                selectedFilter === filter && styles.filterTextSelected
-                            ]}>{filter}</ThemedText>
+                            <ThemedText style={[styles.filterText, safeCategory === cat && styles.filterTextSelected]}>
+                                {cat}
+                            </ThemedText>
                         </TouchableOpacity>
                     ))}
                 </ScrollView>
             </View>
 
             <View style={styles.listContainer}>
-                <View style={styles.sectionHeader}>
-                    <ThemedText style={styles.sectionTitle}>Signature Drinks</ThemedText>
-                    <ThemedText style={styles.sectionSubtitle}>FEATURED</ThemedText>
-                </View>
+                {venueId ? null : (
+                    <View style={styles.emptyState}>
+                        <Ionicons name="location-outline" size={48} color={ZyncTheme.colors.textSecondary} />
+                        <ThemedText style={styles.emptyText}>Seleccioná un lugar para ver el menú</ThemedText>
+                    </View>
+                )}
 
-                <FlatList
-                    data={filteredDrinks}
-                    renderItem={renderDrink}
-                    keyExtractor={item => item.id}
-                    contentContainerStyle={styles.listContent}
+                {venueId && isLoading && (
+                    <View style={styles.emptyState}>
+                        <ActivityIndicator color={ZyncTheme.colors.primary} size="large" />
+                    </View>
+                )}
 
-                />
+                {venueId && !isLoading && (
+                    <FlatList
+                        data={filtered}
+                        renderItem={renderItem}
+                        keyExtractor={item => item.id}
+                        contentContainerStyle={styles.listContent}
+                        showsVerticalScrollIndicator={false}
+                        ListEmptyComponent={
+                            <View style={styles.emptyState}>
+                                <Ionicons name="cube-outline" size={40} color={ZyncTheme.colors.textSecondary} />
+                                <ThemedText style={styles.emptyText}>Sin productos en esta categoría</ThemedText>
+                            </View>
+                        }
+                    />
+                )}
             </View>
 
-            {/* Floating Cart Button */}
             {totalItems > 0 && (
                 <View style={styles.cartButtonContainer}>
                     <NeonButton
                         title="CART"
                         onPress={() => router.push('/cart')}
-                        icon={<View style={{ position: 'relative' }}>
-                            <Ionicons name="cart" size={24} color="black" />
-                            <View style={styles.badge}><ThemedText style={styles.badgeText}>{totalItems}</ThemedText></View>
-                        </View>}
+                        icon={
+                            <View style={{ position: 'relative' }}>
+                                <Ionicons name="cart" size={24} color="black" />
+                                <View style={styles.badge}>
+                                    <ThemedText style={styles.badgeText}>{totalItems}</ThemedText>
+                                </View>
+                            </View>
+                        }
                         style={styles.cartButton}
                         textStyle={{ fontSize: 16, fontWeight: 'bold' }}
                     />
@@ -129,7 +162,7 @@ export default function MenuScreen() {
 
 const styles = StyleSheet.create({
     header: {
-        paddingTop: 50, // Custom unsafe area handling for immersive look
+        paddingTop: 50,
         paddingBottom: ZyncTheme.spacing.m,
         backgroundColor: ZyncTheme.colors.background,
     },
@@ -149,24 +182,10 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         marginRight: ZyncTheme.spacing.s,
         borderWidth: 1,
-        borderColor: '#333'
+        borderColor: '#333',
     },
-    headerTitle: {
-        fontSize: 24,
-        fontWeight: 'bold',
-    },
-    searchButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: '#1E1E1E',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    filtersScroll: {
-        paddingHorizontal: ZyncTheme.spacing.m,
-        gap: ZyncTheme.spacing.s,
-    },
+    headerTitle: { fontSize: 24, fontWeight: 'bold' },
+    filtersScroll: { paddingHorizontal: ZyncTheme.spacing.m, gap: ZyncTheme.spacing.s },
     filterChip: {
         paddingHorizontal: ZyncTheme.spacing.l,
         paddingVertical: ZyncTheme.spacing.s,
@@ -175,54 +194,13 @@ const styles = StyleSheet.create({
         borderColor: '#333',
         backgroundColor: '#111',
     },
-    filterChipSelected: {
-        backgroundColor: ZyncTheme.colors.primary,
-        borderColor: ZyncTheme.colors.primary,
-    },
-    filterText: {
-        color: '#888',
-        fontWeight: '600',
-    },
-    filterTextSelected: {
-        color: '#000',
-        fontWeight: 'bold',
-    },
-    listContainer: {
-        flex: 1,
-        backgroundColor: '#000',
-    },
-    sectionHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: ZyncTheme.spacing.m,
-        marginBottom: ZyncTheme.spacing.m,
-    },
-    sectionTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-    },
-    sectionSubtitle: {
-        fontSize: 10,
-        color: ZyncTheme.colors.primary,
-        fontWeight: 'bold',
-        letterSpacing: 1,
-    },
-    listContent: {
-        padding: ZyncTheme.spacing.m,
-        paddingBottom: 100,
-        gap: ZyncTheme.spacing.m,
-    },
-    drinkCard: {
-        padding: 0,
-        backgroundColor: '#111',
-        borderWidth: 1,
-        borderColor: '#222',
-        borderRadius: 16,
-    },
-    drinkRow: {
-        flexDirection: 'row',
-    },
+    filterChipSelected: { backgroundColor: ZyncTheme.colors.primary, borderColor: ZyncTheme.colors.primary },
+    filterText: { color: '#888', fontWeight: '600' },
+    filterTextSelected: { color: '#000', fontWeight: 'bold' },
+    listContainer: { flex: 1, backgroundColor: '#000' },
+    listContent: { padding: ZyncTheme.spacing.m, paddingBottom: 100, gap: ZyncTheme.spacing.m },
+    drinkCard: { padding: 0, backgroundColor: '#111', borderWidth: 1, borderColor: '#222', borderRadius: 16 },
+    drinkRow: { flexDirection: 'row' },
     drinkImagePlaceholder: {
         width: 100,
         height: 100,
@@ -233,33 +211,12 @@ const styles = StyleSheet.create({
         borderBottomLeftRadius: 16,
         overflow: 'hidden',
     },
-    drinkImage: {
-        width: '100%',
-        height: '100%',
-    },
-    drinkInfo: {
-        flex: 1,
-        padding: ZyncTheme.spacing.m,
-    },
-    drinkHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 4,
-    },
-    drinkName: {
-        fontWeight: 'bold',
-        fontSize: 16,
-    },
-    drinkPrice: {
-        color: ZyncTheme.colors.primary,
-        fontWeight: 'bold',
-        fontSize: 16,
-    },
-    drinkDesc: {
-        fontSize: 12,
-        color: '#666',
-        flex: 1,
-    },
+    drinkImage: { width: '100%', height: '100%' },
+    drinkInfo: { flex: 1, padding: ZyncTheme.spacing.m },
+    drinkHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
+    drinkName: { fontWeight: 'bold', fontSize: 16, flex: 1, marginRight: 8 },
+    drinkPrice: { color: ZyncTheme.colors.primary, fontWeight: 'bold', fontSize: 16 },
+    drinkDesc: { fontSize: 12, color: '#666', flex: 1 },
     addButton: {
         position: 'absolute',
         bottom: 8,
@@ -267,22 +224,14 @@ const styles = StyleSheet.create({
         width: 32,
         height: 32,
         borderRadius: 16,
-        backgroundColor: '#333',
+        backgroundColor: ZyncTheme.colors.primary,
         alignItems: 'center',
         justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: '#444',
     },
-    cartButtonContainer: {
-        position: 'absolute',
-        bottom: 30,
-        right: 20,
-    },
-    cartButton: {
-        borderRadius: 25,
-        height: 50,
-        paddingHorizontal: 20,
-    },
+    emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 60, gap: 12 },
+    emptyText: { color: ZyncTheme.colors.textSecondary, fontSize: 14, textAlign: 'center', paddingHorizontal: 32 },
+    cartButtonContainer: { position: 'absolute', bottom: 30, right: 20 },
+    cartButton: { borderRadius: 25, height: 50, paddingHorizontal: 20 },
     badge: {
         position: 'absolute',
         top: -5,
@@ -294,9 +243,5 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-    badgeText: {
-        color: 'white',
-        fontSize: 10,
-        fontWeight: 'bold'
-    }
+    badgeText: { color: 'white', fontSize: 10, fontWeight: 'bold' },
 });

@@ -33,6 +33,7 @@ export function NeonModal({ visible, onClose }: NeonModalProps) {
                 const mapped: Establishment[] = raw.map((event: any) => ({
                     id: event.id,
                     eventId: event.id,
+                    venueId: event.venueId ?? event.venue?.id,
                     name: event.venue?.name ?? event.name,
                     location: event.venue?.address ?? '',
                     image: event.imageUrl ?? '',

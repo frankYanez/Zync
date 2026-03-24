@@ -89,6 +89,15 @@ Renovar access token.
 ### `GET /auth/me` 🔒
 Retorna el usuario autenticado del JWT.
 
+### `POST /auth/google`
+Login o registro con Google OAuth.
+
+**Body:**
+```json
+{ "accessToken": "ya29.a0..." }
+```
+**Response:** mismo formato que login (`accessToken`, `refreshToken`, `user`).
+
 ### `POST /auth/logout` 🔒
 Cerrar sesión e invalidar el refresh token en el servidor.
 
@@ -228,7 +237,7 @@ Actualizar perfil organizador (mismo body).
 ## Venues
 
 ### `GET /venues`
-Lista todos los venues (público).
+Lista todos los venues (público). Cada venue incluye `imageUrl` y `videoUrl` si fueron subidos.
 
 ### `GET /venues/my-venues` 🔒
 Venues del usuario autenticado.
@@ -317,7 +326,9 @@ Ver el lineup de DJs oficiales del evento.
 [
   {
     "userId": "uuid",
+    "djProfileId": "uuid",
     "artistName": "DJ Gonza",
+    "pricePerSong": "500.00",
     "genres": ["Techno", "House"],
     "logoUrl": "https://...",
     "bio": "...",
@@ -325,6 +336,7 @@ Ver el lineup de DJs oficiales del evento.
     "instagramUrl": "https://...",
     "spotifyUrl": "https://...",
     "soundcloudUrl": "https://...",
+    "isLive": false,
     "assignedAt": "2026-03-18T..."
   }
 ]
@@ -393,7 +405,7 @@ Lista todos los perfiles DJ.
 ### `GET /dj/:djProfileId`
 Obtener perfil público de un DJ por su `djProfileId` (UUID del DjProfile, no del usuario).
 
-**Response:** objeto con todos los campos del perfil DJ (artistName, genres, pricePerSong, bio, city, logoUrl, bannerUrl, spotifyUrl, soundcloudUrl, instagramUrl).
+**Response:** objeto con todos los campos del perfil DJ (artistName, genres, pricePerSong, bio, city, logoUrl, bannerUrl, spotifyUrl, soundcloudUrl, instagramUrl, **followersCount**, **isLive**, **liveEventId**).
 
 **Errores:**
 - `404 DJ_PROFILE_NOT_FOUND`
@@ -461,6 +473,77 @@ Dejar una reseña de un DJ. Solo disponible cuando el evento terminó (`isActive
 - `404 EVENT_NOT_FOUND` — evento no encontrado
 - `409 REVIEW_ALREADY_EXISTS` — ya dejaste una reseña para este DJ en este evento
 
+### `PATCH /dj/me/live` 🔒 (solo DJ)
+Activar o desactivar el modo en vivo. El DJ lo activa manualmente cuando empieza a tocar.
+
+**Body:**
+```json
+{ "isLive": true, "liveEventId": "uuid" }
+```
+- `liveEventId`: opcional. ID del evento donde está tocando.
+- Para desactivar: `{ "isLive": false }`
+
+**Response:** `{ "isLive": true, "liveEventId": "uuid" }`
+
+**Errores:**
+- `404 DJ_PROFILE_NOT_FOUND`
+
+### `GET /dj/:djProfileId/stats` 🔒 (solo el propio DJ)
+Estadísticas de song requests del DJ.
+
+**Response:**
+```json
+{
+  "totalRequests": 120,
+  "pendingRequests": 5,
+  "acceptedRequests": 80,
+  "rejectedRequests": 20,
+  "playedRequests": 15
+}
+```
+
+### `PATCH /dj/:djProfileId` 🔒 (solo el propio DJ)
+Actualizar campos del perfil DJ (actualmente `acceptingRequests`).
+
+**Body:**
+```json
+{ "acceptingRequests": false }
+```
+
+### `GET /dj/:djProfileId/song-requests` 🔒 (solo el propio DJ)
+Cola de song requests recibidas.
+
+**Query params:**
+- `status` (opcional): `PENDING` | `ACCEPTED` | `REJECTED` | `PLAYED`
+
+**Response:**
+```json
+[
+  {
+    "id": "uuid",
+    "trackId": "spotify:track:...",
+    "trackName": "Levels",
+    "artistName": "Avicii",
+    "albumArt": "https://...",
+    "pricePaid": "500.00",
+    "status": "PENDING",
+    "createdAt": "2026-03-23T...",
+    "user": { "id": "uuid", "firstName": "Gonza", "lastName": "García", "avatarUrl": "https://..." }
+  }
+]
+```
+
+### `PATCH /dj/:djProfileId/song-requests/:requestId` 🔒 (solo el propio DJ)
+Actualizar estado de una song request.
+
+**Body:**
+```json
+{ "status": "ACCEPTED" }
+```
+`status`: `"ACCEPTED"` | `"REJECTED"` | `"PLAYED"`
+
+Al cambiar estado se emite socket `song_request:updated` al usuario que pidió la canción.
+
 ### `GET /dj/:djProfileId/reviews`
 Obtener todas las reseñas de un DJ con su promedio y total.
 
@@ -486,10 +569,89 @@ Obtener todas las reseñas de un DJ con su promedio y total.
 
 ---
 
+## Venues — Media y Reseñas
+
+### `POST /venues/:venueId/media` 🔒 (solo el dueño)
+Subir imagen o video del venue a Cloudinary. `multipart/form-data`.
+
+**Query params:**
+- `type`: `"image"` (default) | `"video"`
+
+**Campos:**
+- `file`: archivo de imagen o video — requerido
+
+**Response:** `{ "url": "https://res.cloudinary.com/..." }`
+
+**Errores:**
+- `403 NOT_VENUE_OWNER`
+- `404 VENUE_NOT_FOUND`
+
+### `POST /venues/:venueId/reviews` 🔒
+Dejar una reseña del venue. Un solo review por usuario.
+
+**Body:**
+```json
+{ "score": 5, "comment": "Excelente lugar" }
+```
+- `score`: entero del 1 al 5 — requerido
+- `comment`: opcional
+
+**Response:** `{ "id": "uuid" }`
+
+**Errores:**
+- `404 VENUE_NOT_FOUND`
+- `409 VENUE_REVIEW_ALREADY_EXISTS`
+
+### `GET /venues/:venueId/active-event`
+Devuelve el evento activo del venue o `null` si no hay ninguno.
+
+**Response:** objeto evento o `null`.
+
+### `GET /venues/:venueId/orders?status=` 🔒 (solo dueño del venue)
+Pedidos del venue para gestión (fulfillment).
+
+**Query params:**
+- `status` (opcional): `PENDING` | `CONFIRMED` | `READY` | `DELIVERED` | `CANCELLED`
+
+**Response:**
+```json
+[
+  {
+    "id": "uuid",
+    "status": "PENDING",
+    "total": "2400.00",
+    "createdAt": "2026-03-23T...",
+    "user": { "id": "uuid", "firstName": "Gonza", "lastName": "García", "avatarUrl": "https://..." },
+    "items": [
+      { "quantity": 2, "unitPrice": "1200.00", "product": { "id": "uuid", "name": "Gin Tonic" } }
+    ]
+  }
+]
+```
+
+### `GET /venues/:venueId/reviews`
+Reseñas y promedio de un venue.
+
+**Response:**
+```json
+{
+  "stats": { "averageScore": 4.3, "totalReviews": 28 },
+  "reviews": [
+    { "id": "uuid", "userId": "uuid", "score": 5, "comment": "Muy bueno", "createdAt": "..." }
+  ]
+}
+```
+
+---
+
 ## Venue Products
 
-### `GET /venues/:venueId/products`
+### `GET /venues/:venueId/products?category=`
 Listar productos disponibles del venue (público).
+
+**Query params:**
+- `category` (opcional): filtrar por categoría (ej. `"Tragos"`, `"Comida"`)
+
 
 **Response:**
 ```json
@@ -584,6 +746,25 @@ Mis órdenes ordenadas por fecha descendente, con items y productos incluidos.
 Detalle de una orden. Solo retorna la orden si pertenece al usuario autenticado.
 
 **Errores:**
+- `404 ORDER_NOT_FOUND`
+
+### `PATCH /orders/:orderId/status` 🔒
+Actualizar el estado de una orden.
+
+**Body:**
+```json
+{ "status": "CANCELLED" }
+```
+
+- `status`: `"PENDING"` | `"CONFIRMED"` | `"READY"` | `"DELIVERED"` | `"CANCELLED"`
+- **Usuario** solo puede pasar a `CANCELLED` (su propia orden).
+- **Dueño del venue** puede pasar a `CONFIRMED`, `READY` o `DELIVERED`.
+- Al cambiar estado se emite socket `order:status_update` al usuario.
+
+**Response:** orden actualizada con items y productos.
+
+**Errores:**
+- `403 ORDER_FORBIDDEN` — no tenés permiso para este cambio de estado
 - `404 ORDER_NOT_FOUND`
 
 ---
@@ -681,6 +862,9 @@ Conectar a `ws://<HOST>:3000` con:
 | `presence:joined` | `{ userId }` | Usuario entró al evento |
 | `presence:left` | `{ userId }` | Usuario salió del evento |
 | `chat:typing_status` | `{ fromUserId, eventId }` | El otro usuario está escribiendo |
+| `order:new` | objeto orden completo | **Business** recibe nuevo pedido en tiempo real |
+| `order:status_update` | `{ orderId, status }` | **User** recibe cambio de estado de su pedido |
+| `song_request:updated` | objeto song request completo | **User** recibe respuesta del DJ a su canción |
 
 ---
 

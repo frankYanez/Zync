@@ -17,18 +17,15 @@ export interface CreateVenueDto {
     description?: string;
 }
 
-const MOCK_VENUES: Venue[] = [
-    { id: 'venue-mock-1', name: 'Club Vértigo', address: 'Av. Corrientes 1234, CABA', description: 'El mejor club de Buenos Aires' },
-];
-
 export const getVenues = async (): Promise<Venue[]> => {
     const response = await axios.get(`${API_URL}/venues`);
     return response.data;
 };
 
-// TODO: replace mock → axios.get(`${API_URL}/venues/my-venues`, config)
 export const getMyVenues = async (): Promise<Venue[]> => {
-    return [...MOCK_VENUES];
+    const config = await getAuthHeaders();
+    const response = await axios.get(`${API_URL}/venues/my-venues`, config);
+    return response.data;
 };
 
 export const getVenueById = async (venueId: string): Promise<Venue> => {
@@ -36,11 +33,10 @@ export const getVenueById = async (venueId: string): Promise<Venue> => {
     return response.data;
 };
 
-// TODO: replace mock → axios.post(`${API_URL}/venues`, data, config)
 export const createVenue = async (data: CreateVenueDto): Promise<Venue> => {
-    const newVenue: Venue = { id: `venue-${Date.now()}`, ...data };
-    MOCK_VENUES.push(newVenue);
-    return newVenue;
+    const config = await getAuthHeaders();
+    const response = await axios.post(`${API_URL}/venues`, data, config);
+    return response.data;
 };
 
 export const updateVenue = async (venueId: string, data: Partial<CreateVenueDto>): Promise<Venue> => {
@@ -49,8 +45,45 @@ export const updateVenue = async (venueId: string, data: Partial<CreateVenueDto>
     return response.data;
 };
 
-// TODO: replace mock → axios.delete(`${API_URL}/venues/${venueId}`, config)
 export const deleteVenue = async (venueId: string): Promise<void> => {
-    const idx = MOCK_VENUES.findIndex(v => v.id === venueId);
-    if (idx !== -1) MOCK_VENUES.splice(idx, 1);
+    const config = await getAuthHeaders();
+    await axios.delete(`${API_URL}/venues/${venueId}`, config);
+};
+
+// --- Venue media ---
+
+export const uploadVenueMedia = async (venueId: string, fileUri: string, type: 'image' | 'video' = 'image'): Promise<{ url: string }> => {
+    const config = await getAuthHeaders(true);
+    const formData = new FormData();
+    const filename = fileUri.split('/').pop() ?? 'upload';
+    const mimeType = type === 'video' ? 'video/mp4' : 'image/jpeg';
+    formData.append('file', { uri: fileUri, name: filename, type: mimeType } as any);
+    const response = await axios.post(`${API_URL}/venues/${venueId}/media?type=${type}`, formData, config);
+    return response.data;
+};
+
+// --- Venue reviews ---
+
+export interface VenueReview {
+    id: string;
+    userId: string;
+    score: number;
+    comment?: string;
+    createdAt: string;
+}
+
+export interface VenueReviewsResponse {
+    stats: { averageScore: number; totalReviews: number };
+    reviews: VenueReview[];
+}
+
+export const submitVenueReview = async (venueId: string, score: number, comment?: string): Promise<{ id: string }> => {
+    const config = await getAuthHeaders();
+    const response = await axios.post(`${API_URL}/venues/${venueId}/reviews`, { score, comment }, config);
+    return response.data;
+};
+
+export const getVenueReviews = async (venueId: string): Promise<VenueReviewsResponse> => {
+    const response = await axios.get(`${API_URL}/venues/${venueId}/reviews`);
+    return response.data;
 };

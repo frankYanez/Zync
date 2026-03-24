@@ -60,10 +60,10 @@ export default function CartScreen() {
 
         try {
             const result = await checkout({
-            establishmentId: currentEstablishment?.id,
-            promoCode: appliedPromo ?? undefined,
-            usePoints,
-        });
+                venueId: currentEstablishment?.id,
+                promoCode: appliedPromo ?? undefined,
+                useZyncPoints: usePoints,
+            });
 
             if (result.success && result.orderId) {
                 // Deduct points locally if used

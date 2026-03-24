@@ -44,6 +44,14 @@ export const requestEmailVerification = async (email: string): Promise<void> => 
 };
 
 export const logout = async (): Promise<void> => {
+    try {
+        const refreshTokenValue = await getRefreshToken();
+        if (refreshTokenValue) {
+            await axios.post(`${API_URL}/auth/logout`, { refreshToken: refreshTokenValue });
+        }
+    } catch {
+        // proceed with local cleanup even if server-side invalidation fails
+    }
     cachedToken = null;
     cachedRefreshToken = null;
     if (Platform.OS !== 'web') {
@@ -139,8 +147,8 @@ export const forgotPassword = async (email: string): Promise<void> => {
     await axios.post(`${API_URL}/auth/forgot-password`, { email });
 };
 
-export const resetPassword = async (email: string, code: string, newPassword: string): Promise<void> => {
-    await axios.post(`${API_URL}/auth/reset-password`, { email, code, newPassword });
+export const resetPassword = async (email: string, otp: string, newPassword: string): Promise<void> => {
+    await axios.post(`${API_URL}/auth/reset-password`, { email, otp, newPassword });
 };
 
 export const getAuthHeaders = async (isMultipart = false) => {

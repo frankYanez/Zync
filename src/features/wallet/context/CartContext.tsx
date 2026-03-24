@@ -24,7 +24,7 @@ interface CartContextType {
     clearCart: () => void;
     totalAmount: number;
     totalItems: number;
-    checkout: (params?: { establishmentId?: string; promoCode?: string; usePoints?: boolean }) => Promise<{ success: boolean; orderId?: string; error?: string }>;
+    checkout: (params?: { venueId?: string; eventId?: string; promoCode?: string; useZyncPoints?: boolean }) => Promise<{ success: boolean; orderId?: string; error?: string }>;
     activeOrders: ActiveOrder[];
 }
 
@@ -78,19 +78,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         return items.reduce((toal, item) => toal + item.quantity, 0);
     }, [items]);
 
-    const checkout = async (params?: { establishmentId?: string; promoCode?: string; usePoints?: boolean }): Promise<{ success: boolean; orderId?: string; error?: string }> => {
+    const checkout = async (params?: { venueId?: string; eventId?: string; promoCode?: string; useZyncPoints?: boolean }): Promise<{ success: boolean; orderId?: string; error?: string }> => {
         try {
             const orderItems = items.map(item => ({
                 productId: item.id,
                 quantity: item.quantity,
-                unitPrice: item.price,
             }));
 
             const order = await createOrder({
-                establishmentId: params?.establishmentId ?? '',
+                venueId: params?.venueId ?? '',
+                eventId: params?.eventId,
                 items: orderItems,
                 promoCode: params?.promoCode,
-                usePoints: params?.usePoints,
+                useZyncPoints: params?.useZyncPoints,
             });
 
             setActiveOrders(prev => [{
@@ -99,7 +99,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                 total: order.total,
                 savings: order.discount,
                 status: 'pending',
-                establishmentName: order.establishmentName,
+                establishmentName: order.venueName,
             }, ...prev]);
 
             return { success: true, orderId: order.id };

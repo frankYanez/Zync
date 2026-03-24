@@ -5,12 +5,12 @@ import { useEffect } from 'react';
 
 export function useProtectedRoute() {
     const { user, isLoading } = useAuth();
-    const { currentRole } = useRole();
+    const { currentRole, isLoading: roleLoading } = useRole();
     const segments = useSegments();
     const router = useRouter();
 
     useEffect(() => {
-        if (isLoading) return;
+        if (isLoading || roleLoading) return;
 
         const inAuthGroup = segments[0] === '(auth)';
         const inTabsGroup = segments[0] === '(tabs)';
@@ -38,5 +38,5 @@ export function useProtectedRoute() {
                 router.replace('/(tabs)');
             }
         }
-    }, [user, segments, isLoading, currentRole]);
+    }, [user, segments, isLoading, roleLoading, currentRole]);
 }

@@ -1,6 +1,7 @@
 import { LoginUserDto, RegisterDto, User } from '@/features/auth/domain/auth.types';
 import * as authService from '@/features/auth/services/auth.service';
 import { disconnectSocket } from '@/features/chat/services/socket.service';
+import { clearPersistedRole } from '@/context/RoleContext';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 interface AuthContextType {
@@ -74,6 +75,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const logout = async () => {
         disconnectSocket();
         await authService.logout();
+        await clearPersistedRole();
         setUser(null);
     };
 

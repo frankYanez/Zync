@@ -45,8 +45,8 @@ export function useDjGigs(djProfileId: string | undefined) {
 
     const changeGigStatus = useCallback(async (gigId: string, status: GigStatus) => {
         if (!djProfileId) return;
-        await updateGigStatus(djProfileId, gigId, status);
-        setGigs(prev => prev.map(g => g.id === gigId ? { ...g, status } : g));
+        const updated = await updateGigStatus(djProfileId, gigId, status);
+        setGigs(prev => prev.map(g => g.id === gigId ? updated : g));
     }, [djProfileId]);
 
     const removeGig = useCallback(async (gigId: string) => {

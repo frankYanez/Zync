@@ -1,13 +1,20 @@
 import axios from 'axios';
 import { getAuthHeaders } from '../../auth/services/auth.service';
-import { CreateGigDto, CreatePromoCodeDto, DjProfile, DjReviewsResponse, DjStats, Gig, GigStatus, PromoCode } from '../domain/dj.types';
+import { CreateGigDto, CreatePromoCodeDto, DjFeedEvent, DjProfile, DjReviewsResponse, DjStats, Gig, GigStatus, PromoCode, SetDjLiveModeDto } from '../domain/dj.types';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
-// 1. GET /dj - Query params: genre
+// GET /dj/feed — próximos eventos de los DJs que seguís (auth)
+export const getDjFeed = async (): Promise<DjFeedEvent[]> => {
+    const headers = await getAuthHeaders();
+    const response = await axios.get(`${API_URL}/dj/feed`, headers);
+    return response.data;
+};
+
+// GET /dj — lista de perfiles, filtro opcional por genre
 export const getDjs = async (genre?: string): Promise<DjProfile[]> => {
     const response = await axios.get(`${API_URL}/dj`, {
-        params: { genre }
+        params: genre ? { genre } : undefined,
     });
     return response.data;
 };
@@ -50,6 +57,13 @@ export const getDjStats = async (djProfileId: string): Promise<DjStats> => {
     return response.data;
 };
 
+// PATCH /dj/me/live — activar/desactivar modo en vivo (solo el propio DJ)
+export const setDjLiveMode = async (isLive: boolean): Promise<void> => {
+    const config = await getAuthHeaders();
+    const body: SetDjLiveModeDto = { isLive };
+    await axios.patch(`${API_URL}/dj/me/live`, body, config);
+};
+
 // PATCH /dj/:djProfileId  { acceptingRequests: boolean }
 export const toggleAcceptingRequests = async (djProfileId: string, accepting: boolean): Promise<void> => {
     const config = await getAuthHeaders();
@@ -57,36 +71,29 @@ export const toggleAcceptingRequests = async (djProfileId: string, accepting: bo
 };
 
 // POST /dj/:djProfileId/gigs
-// TODO: replace mock → await axios.post(`${API_URL}/dj/${djProfileId}/gigs`, data, await getAuthHeaders())
 export const createGig = async (djProfileId: string, data: CreateGigDto): Promise<Gig> => {
-    return {
-        id: Math.random().toString(36).substring(2, 10),
-        eventId: data.eventId ?? '',
-        eventName: data.eventId ? 'Evento vinculado' : data.venueName,
-        venueName: data.venueName,
-        startsAt: data.startsAt,
-        endsAt: data.endsAt,
-        fee: data.fee,
-        status: 'pending',
-    };
+    const config = await getAuthHeaders();
+    const response = await axios.post(`${API_URL}/dj/${djProfileId}/gigs`, data, config);
+    return response.data;
 };
 
 // PATCH /dj/:djProfileId/gigs/:gigId
-// TODO: replace mock → await axios.patch(`${API_URL}/dj/${djProfileId}/gigs/${gigId}`, data, await getAuthHeaders())
-export const updateGigStatus = async (_djProfileId: string, gigId: string, status: GigStatus): Promise<{ id: string; status: GigStatus }> => {
-    return { id: gigId, status };
+export const updateGigStatus = async (djProfileId: string, gigId: string, status: GigStatus): Promise<Gig> => {
+    const config = await getAuthHeaders();
+    const response = await axios.patch(`${API_URL}/dj/${djProfileId}/gigs/${gigId}`, { status }, config);
+    return response.data;
 };
 
 // DELETE /dj/:djProfileId/gigs/:gigId
-// TODO: replace mock → await axios.delete(`${API_URL}/dj/${djProfileId}/gigs/${gigId}`, await getAuthHeaders())
-export const deleteGig = async (_djProfileId: string, _gigId: string): Promise<void> => {
-    // mock: no-op
+export const deleteGig = async (djProfileId: string, gigId: string): Promise<void> => {
+    const config = await getAuthHeaders();
+    await axios.delete(`${API_URL}/dj/${djProfileId}/gigs/${gigId}`, config);
 };
 
 // POST /events/:eventId/broadcast
-// TODO: replace mock → await axios.post(`${API_URL}/events/${eventId}/broadcast`, { message, type }, await getAuthHeaders())
+// TODO: replace mock → connect when backend implements the endpoint
 export const sendBroadcast = async (_eventId: string, _message: string, _type: 'announcement' | 'song' = 'announcement'): Promise<void> => {
-    // mock: no-op
+    // mock: endpoint not yet available
 };
 
 // 3. POST /dj/:djProfileId/follow (auth)
@@ -112,26 +119,17 @@ export const addDjToLineup = async (djProfileId: string, eventId: string): Promi
     return response.data;
 };
 
-export const generatePromoCode = async (djProfileId: string, eventId: string): Promise<{ code: string }> => {
+// POST /events/:eventId/djs/:djProfileId/promo-codes (solo ORGANIZER)
+export const generatePromoCode = async (djProfileId: string, eventId: string): Promise<PromoCode> => {
     const headers = await getAuthHeaders();
-
-    // Fetch DJ profile to get artist name
-    const djProfile = await getDjById(djProfileId);
-    if (!djProfile) throw new Error("DJ Profile not found");
-
-    const artistName = djProfile.artistName
-        .toUpperCase()
-        .replace(/[^A-Z0-9]/g, '')
-        .substring(0, 8);
-
-    const randomChars = Math.random().toString(36).substring(2, 8).toUpperCase();
-    const customCode = `${artistName}_ZYNC_${randomChars}`;
-
-    const response = await axios.post(`${API_URL}/dj/${djProfileId}/promo-codes`, {
-        eventId,
-        code: customCode
-    }, headers);
-
+    const body: CreatePromoCodeDto = {
+        type: 'DRINK',
+        discountType: 'FREE',
+        discountValue: null,
+        maxUses: 100,
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    };
+    const response = await axios.post(`${API_URL}/events/${eventId}/djs/${djProfileId}/promo-codes`, body, headers);
     return response.data;
 };
 
@@ -156,15 +154,11 @@ export const createOrganizerPromoCode = async (
     dto?: Partial<CreatePromoCodeDto>,
 ): Promise<PromoCode> => {
     const headers = await getAuthHeaders();
-    const djProfile = await getDjById(djProfileId);
-    const artistName = (djProfile?.artistName ?? 'DJ')
-        .toUpperCase()
-        .replace(/[^A-Z0-9]/g, '')
-        .substring(0, 8);
-    const randomChars = Math.random().toString(36).substring(2, 8).toUpperCase();
     const body: CreatePromoCodeDto = {
-        code: dto?.code ?? `${artistName}_ZYNC_${randomChars}`,
-        discountPercentage: dto?.discountPercentage ?? 10,
+        type: dto?.type ?? 'DRINK',
+        discountType: dto?.discountType ?? 'FREE',
+        discountValue: dto?.discountValue ?? null,
+        description: dto?.description,
         maxUses: dto?.maxUses ?? 100,
         expiresAt: dto?.expiresAt ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
     };

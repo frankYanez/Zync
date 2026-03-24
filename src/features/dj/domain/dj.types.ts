@@ -35,6 +35,22 @@ export interface CreateGigDto {
     fee?: number;
 }
 
+export interface SetDjLiveModeDto {
+    isLive: boolean;
+}
+
+export interface DjFeedEvent {
+    id: string;
+    name: string;
+    startDate?: string;
+    endDate?: string;
+    startsAt?: string;
+    endsAt?: string;
+    imageUrl?: string;
+    venue?: { id: string; name: string; address?: string };
+    dj?: { id: string; artistName: string; logoUrl?: string };
+}
+
 export interface DjStats {
     totalRequests: number;
     pendingRequests: number;
@@ -46,13 +62,19 @@ export interface DjStats {
     activeEvents?: { id: string; name: string }[];
 }
 
+export type PromoCodeType = 'DRINK' | 'ENTRY' | 'MERCH' | 'OTHER';
+export type PromoCodeDiscountType = 'PERCENTAGE' | 'FIXED' | 'FREE';
+
 export interface PromoCode {
     id: string;
     code: string;
     djProfileId: string;
     eventId: string;
     eventName?: string;
-    discountPercentage?: number;
+    type: PromoCodeType;
+    discountType: PromoCodeDiscountType;
+    discountValue: number | null;
+    description?: string;
     maxUses?: number;
     expiresAt?: string;
     usedCount: number;
@@ -60,10 +82,12 @@ export interface PromoCode {
 }
 
 export interface CreatePromoCodeDto {
-    code: string;
-    discountPercentage: number;
-    maxUses: number;
-    expiresAt: string;
+    type: PromoCodeType;
+    discountType: PromoCodeDiscountType;
+    discountValue: number | null;
+    description?: string;
+    maxUses?: number;
+    expiresAt?: string;
 }
 
 export interface PromoCodeRedeemResponse {

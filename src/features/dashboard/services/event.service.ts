@@ -24,8 +24,10 @@ export const getEventById = async (eventId: string): Promise<Event> => {
 };
 
 export const createEvent = async (data: CreateEventDto): Promise<Event> => {
+    console.log("data", data);
     const config = await getAuthHeaders();
     const response = await axios.post(`${API_URL}/events`, data, config);
+    console.log("response", response.data);
     return response.data;
 };
 

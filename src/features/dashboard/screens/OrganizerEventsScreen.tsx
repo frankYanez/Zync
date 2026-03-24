@@ -2,13 +2,14 @@ import { CyberCard } from '@/components/CyberCard';
 import { NeonButton } from '@/components/NeonButton';
 import { ScreenLayout } from '@/components/ScreenLayout';
 import { ThemedText } from '@/components/themed-text';
-import { Event, getMyEvents } from '@/features/dashboard/services/event.service';
+import { getMyEvents } from '@/features/dashboard/services/event.service';
 import { ZyncTheme } from '@/shared/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Event } from '../domain/event.types';
 
 function EventCard({ event, onPress }: { event: Event; onPress: () => void }) {
     const start = new Date(event.startsAt);
