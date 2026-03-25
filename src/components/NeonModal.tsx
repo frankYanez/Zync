@@ -2,8 +2,8 @@ import { CyberCard } from '@/components/CyberCard';
 import { NeonInput } from '@/components/NeonInput';
 import { ThemedText } from '@/components/themed-text';
 import { useZync } from '@/context/ZyncContext';
-import { getEvents } from '@/features/dashboard/services/event.service';
 import { Establishment } from '@/infrastructure/mock-data';
+import { getEvents } from '@/features/dashboard/services/event.service';
 import { ZyncTheme } from '@/shared/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { MotiView } from 'moti';
@@ -17,6 +17,13 @@ interface NeonModalProps {
     onClose: () => void;
 }
 
+const formatEventDate = (dateStr: string): string => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' })
+        + ' • '
+        + date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+};
+
 export function NeonModal({ visible, onClose }: NeonModalProps) {
     const { setEstablishment } = useZync();
     const [search, setSearch] = useState('');
@@ -27,25 +34,23 @@ export function NeonModal({ visible, onClose }: NeonModalProps) {
     useEffect(() => {
         if (!visible) return;
         setLoading(true);
-        getEvents(0, 20)
+        getEvents(0, 50)
             .then((data) => {
-                const raw = Array.isArray(data) ? data : data?.data ?? [];
-                const mapped: Establishment[] = raw.map((event: any) => ({
+                const mapped: Establishment[] = data.map((event) => ({
                     id: event.id,
                     eventId: event.id,
-                    venueId: event.venueId ?? event.venue?.id,
-                    name: event.venue?.name ?? event.name,
-                    location: event.venue?.address ?? '',
+                    venueId: event.venueId,
+                    name: event.name,
+                    location: event.venue
+                        ? `${event.venue.name}${event.venue.address ? ` • ${event.venue.address}` : ''}`
+                        : '',
                     image: event.imageUrl ?? '',
                     video: '',
                     rating: 0,
-                    currentDj: event.isActive ? {
-                        name: event.name,
-                        genre: '',
-                        startTime: event.startsAt ?? '',
-                        endTime: event.endsAt ?? '',
-                        isLive: true,
-                    } : undefined,
+                    theme: 'cyber',
+                    currentDj: event.isActive
+                        ? { name: '', genre: '', startTime: '', endTime: '', isLive: true }
+                        : undefined,
                 }));
                 setEvents(mapped);
             })
@@ -91,7 +96,7 @@ export function NeonModal({ visible, onClose }: NeonModalProps) {
                                 {item.currentDj?.isLive && (
                                     <View style={styles.liveBadge}>
                                         <View style={styles.liveDot} />
-                                        <ThemedText style={styles.liveText}>LIVE</ThemedText>
+                                        <ThemedText style={styles.liveText}>ACTIVE</ThemedText>
                                     </View>
                                 )}
                             </View>
@@ -133,14 +138,14 @@ export function NeonModal({ visible, onClose }: NeonModalProps) {
 
                 <View style={styles.modalContent}>
                     <View style={styles.header}>
-                        <ThemedText style={styles.title}>SELECT LOCATION</ThemedText>
+                        <ThemedText style={styles.title}>SELECT EVENT</ThemedText>
                         <TouchableOpacity onPress={onClose} style={styles.closeButton}>
                             <Ionicons name="close" size={24} color={ZyncTheme.colors.text} />
                         </TouchableOpacity>
                     </View>
 
                     <NeonInput
-                        placeholder="Search for a vibe..."
+                        placeholder="Search events or venues..."
                         icon="search"
                         value={search}
                         onChangeText={setSearch}

@@ -53,10 +53,10 @@ export default function CreateEventScreen() {
         try {
             await createEvent({
                 name: name.trim(),
-                startDate: startsAt.toISOString(),
-                endDate: endsAt.toISOString(),
+                startsAt: startsAt.toISOString(),
+                endsAt: endsAt.toISOString(),
                 venueId: selectedVenueId,
-                maxCapacity: capacity ? parseInt(capacity, 10) : undefined,
+                capacity: capacity ? parseInt(capacity, 10) : undefined,
                 imageUrl: imageUrl.trim() || undefined,
             });
             router.back();

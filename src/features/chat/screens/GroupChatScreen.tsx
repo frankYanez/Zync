@@ -13,15 +13,16 @@ import { EventStoriesCarousel } from '../components/EventStoriesCarousel';
 import { TypingIndicator } from '../components/TypingIndicator';
 
 
+
 export const GroupChatScreen = () => {
-    const { eventId } = useLocalSearchParams<{ eventId: string }>();
+    const params = useLocalSearchParams<{ eventId: string }>();
+    const eventId = params.eventId && params.eventId !== 'null' ? params.eventId : '';
     const insets = useSafeAreaInsets();
     const router = useRouter();
     const { user, isLoading: authLoading } = useAuth();
     const effectiveUserId = user?.sub || '';
 
     const {
-        sendTyping,
         messages,
         messageText,
         setMessageText,
@@ -31,16 +32,20 @@ export const GroupChatScreen = () => {
         markAllAsSeen,
         isJoined,
         scrollToBottom,
-        onNewMessage
     } = useChat(eventId, effectiveUserId);
 
-    // Listen for new messages for side effects (e.g. sounds, haptics)
-    React.useEffect(() => {
-        onNewMessage((msg) => {
-            // console.log('GroupChatScreen: New message received in view', msg);
-            // Here we could trigger haptic feedback or a sound
-        });
-    }, [onNewMessage]);
+    if (!eventId) {
+        return (
+            <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+                <Text style={{ color: '#fff', fontSize: 16, textAlign: 'center', paddingHorizontal: 32 }}>
+                    Select an event first to join the chat.
+                </Text>
+                <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 20 }}>
+                    <Text style={{ color: ZyncTheme.colors.primary, fontSize: 14 }}>Go back</Text>
+                </TouchableOpacity>
+            </View>
+        );
+    }
 
     const renderMessage = ({ item }: { item: any }) => {
         const isMe = item.fromUserId === effectiveUserId;

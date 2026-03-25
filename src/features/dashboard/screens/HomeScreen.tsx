@@ -31,85 +31,91 @@ export default function HomeScreen() {
   return (
     <ScreenLayout noPadding>
       <VideoBackground videoUri={hasLiveDj ? currentEstablishment?.video : null}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <ScrollView contentContainerStyle={styles.scrollContent}>
 
-        {/* HEADER: Club Name & Status */}
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.clubBadge} onPress={() => setModalVisible(true)}>
-            <View style={styles.statusDot} />
-            <ThemedText style={styles.clubName}>
-              {currentEstablishment ? currentEstablishment.name.toUpperCase() : 'SELECCIONAR LUGAR'}
-            </ThemedText>
-          </TouchableOpacity>
-          <View style={styles.iconContainer}  >
-            {/* ACTIVE ORDER BANNER */}
-            {activeOrders && activeOrders.length > 0 && (
-              <LiveOrderBanner
-                count={activeOrders.length}
-                onPress={() => setOrderModalVisible(true)}
-              />
-            )}
+          {/* HEADER: Club Name & Status */}
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.clubBadge} onPress={() => setModalVisible(true)}>
+              <View style={styles.statusDot} />
+              <ThemedText style={styles.clubName}>
+                {currentEstablishment ? currentEstablishment.name.toUpperCase() : 'SELECCIONAR LUGAR'}
+              </ThemedText>
+            </TouchableOpacity>
+            <View style={styles.iconContainer}  >
+              {/* ACTIVE ORDER BANNER */}
+              {activeOrders && activeOrders.length > 0 && (
+                <LiveOrderBanner
+                  count={activeOrders.length}
+                  onPress={() => setOrderModalVisible(true)}
+                />
+              )}
 
-            {/* CHAT BUTTON */}
-            {hasLiveDj && currentEventId && (
+              {/* CHAT BUTTON */}
+
               <TouchableOpacity
                 style={styles.iconButton}
-                onPress={() => router.push({ pathname: '/chat-test', params: { eventId: currentEventId } })}
+                onPress={() => {
+                  if (!currentEventId) {
+                    setModalVisible(true);
+                    return;
+                  }
+                  router.push({ pathname: '/chat-test', params: { eventId: currentEventId } });
+                }}
               >
                 <Ionicons name="chatbubbles-outline" size={20} color={ZyncTheme.colors.primary} />
               </TouchableOpacity>
-            )}
 
-            <TouchableOpacity style={styles.iconButton}>
-              <Ionicons name="bag-outline" size={20} color={ZyncTheme.colors.primary} />
-              <View style={styles.notifDot} />
-            </TouchableOpacity>
-          </View>
-        </View>
 
-        {/* LIVE DJ SECTION */}
-        {hasLiveDj && (
-          <View style={styles.djContainer}>
-            <View style={styles.liveBadge}>
-              <View style={styles.liveDot} />
-              <ThemedText style={styles.liveText}>LIVE DJ SET</ThemedText>
+              <TouchableOpacity style={styles.iconButton}>
+                <Ionicons name="bag-outline" size={20} color={ZyncTheme.colors.primary} />
+                <View style={styles.notifDot} />
+              </TouchableOpacity>
             </View>
-            <ThemedText style={styles.djName}>{currentEstablishment?.currentDj?.name}</ThemedText>
           </View>
-        )}
 
-        {/* PROMOTIONS CAROUSEL */}
-        <View style={styles.promoSection}>
-          <PromotionsCarousel />
-        </View>
+          {/* LIVE DJ SECTION */}
+          {hasLiveDj && (
+            <View style={styles.djContainer}>
+              <View style={styles.liveBadge}>
+                <View style={styles.liveDot} />
+                <ThemedText style={styles.liveText}>LIVE DJ SET</ThemedText>
+              </View>
+              <ThemedText style={styles.djName}>{currentEstablishment?.currentDj?.name}</ThemedText>
+            </View>
+          )}
 
-        {/* MAIN ACTION: SCAN */}
-        <View style={styles.scanSection}>
-          <MotiView
-            from={{ opacity: 0.5, scale: 0.8 }}
-            animate={{ opacity: 0, scale: 1.5 }}
-            transition={{
-              type: 'timing',
-              duration: 2000,
-              loop: true,
-              repeatReverse: false
-            }}
-            style={[styles.scanGlow]}
-          />
-          <TouchableOpacity
-            style={styles.scanButton}
-            onPress={() => router.push('/scanner')}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="qr-code-outline" size={48} color="#000" />
-          </TouchableOpacity>
-          <ThemedText style={styles.scanLabel}>ESCANEAR PARA PAGAR</ThemedText>
-        </View>
+          {/* PROMOTIONS CAROUSEL */}
+          <View style={styles.promoSection}>
+            <PromotionsCarousel />
+          </View>
 
-        {/* QUICK ACCESS CAROUSEL */}
-        <QuickAccessCarousel />
+          {/* MAIN ACTION: SCAN */}
+          <View style={styles.scanSection}>
+            <MotiView
+              from={{ opacity: 0.5, scale: 0.8 }}
+              animate={{ opacity: 0, scale: 1.5 }}
+              transition={{
+                type: 'timing',
+                duration: 2000,
+                loop: true,
+                repeatReverse: false
+              }}
+              style={[styles.scanGlow]}
+            />
+            <TouchableOpacity
+              style={styles.scanButton}
+              onPress={() => router.push('/scanner')}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="qr-code-outline" size={48} color="#000" />
+            </TouchableOpacity>
+            <ThemedText style={styles.scanLabel}>ESCANEAR PARA PAGAR</ThemedText>
+          </View>
 
-      </ScrollView>
+          {/* QUICK ACCESS CAROUSEL */}
+          <QuickAccessCarousel />
+
+        </ScrollView>
       </VideoBackground>
 
       <NeonModal

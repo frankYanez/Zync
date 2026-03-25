@@ -680,11 +680,11 @@ Crear un producto en el menú del venue.
   "name": "Gin Tonic",
   "description": "Hendrick's con agua tónica",
   "price": 1200,
-  "imageUrl": "https://...",
   "category": "Tragos"
 }
 ```
-- `description`, `imageUrl`, `category` son opcionales.
+- `description`, `category` son opcionales.
+- Para la imagen del producto usar `PATCH /venues/:venueId/products/:productId/image`.
 
 **Errores:**
 - `403 NOT_VENUE_OWNER` — no sos el dueño
@@ -694,6 +694,11 @@ Crear un producto en el menú del venue.
 Actualizar un producto. Todos los campos son opcionales.
 
 **Body:** igual que POST + `"isAvailable": false` para pausar el producto.
+
+### `PATCH /venues/:venueId/products/:productId/image` 🔒 (solo el dueño)
+Subir imagen del producto. `multipart/form-data`, campo `file` (JPEG/PNG/WebP, máx 5 MB).
+
+**Response:** `{ "imageUrl": "https://res.cloudinary.com/..." }`
 
 **Errores:**
 - `403 NOT_VENUE_OWNER`

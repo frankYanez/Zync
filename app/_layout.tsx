@@ -2,13 +2,13 @@ import { ZyncLoader } from '@/components/ZyncLoader';
 import { DarkTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
 import { RoleProvider } from '@/context/RoleContext';
 import { ZyncProvider } from '@/context/ZyncContext';
-import { AuthProvider } from '@/features/auth/context/AuthContext';
+import { useAuth, AuthProvider } from '@/features/auth/context/AuthContext';
 import { CartProvider } from '@/features/wallet/context/CartContext';
 import { useProtectedRoute } from '@/hooks/useProtectedRoute';
 
@@ -53,17 +53,26 @@ function InitialLayout() {
   );
 }
 
+function RoleProviderWithAuth({ children }: { children: ReactNode }) {
+  const { user, isLoading: authLoading } = useAuth();
+  return (
+    <RoleProvider userRoles={user?.roles ?? []} authLoading={authLoading}>
+      {children}
+    </RoleProvider>
+  );
+}
+
 export default function RootLayout() {
   return (
     <ZyncProvider>
       <AuthProvider>
-        <RoleProvider>
+        <RoleProviderWithAuth>
           <CartProvider>
             <GestureHandlerRootView style={{ flex: 1 }}>
               <InitialLayout />
             </GestureHandlerRootView>
           </CartProvider>
-        </RoleProvider>
+        </RoleProviderWithAuth>
       </AuthProvider>
     </ZyncProvider>
   );

@@ -1,4 +1,4 @@
-import { clearPersistedRole } from '@/context/RoleContext';
+import { clearPersistedRole } from '@/context/role-storage';
 import { LoginUserDto, RegisterDto, User } from '@/features/auth/domain/auth.types';
 import * as authService from '@/features/auth/services/auth.service';
 import { loginWithGoogleAccessToken } from '@/features/auth/services/google-auth.service';

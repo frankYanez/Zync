@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList } from 'react-native';
+import { enterEvent, leaveEvent as leaveEventApi } from '../../dashboard/services/event.service';
 import { Message } from '../domain/chat.types';
-import { enterEvent, getChatMessages, getEventMessages, leaveEventApi } from '../services/chat.service';
+import { getChatMessages, getEventMessages } from '../services/chat.service';
 import {
     connectSocket,
     joinEvent,
@@ -16,7 +17,7 @@ import {
     sendMessage,
     sendMessageDelivered,
     sendMessageSeen,
-    sendTyping
+    sendTyping,
 } from '../services/socket.service';
 
 export const useChat = (eventId: string, currentUserId: string, otherUserId?: string) => {
@@ -30,9 +31,7 @@ export const useChat = (eventId: string, currentUserId: string, otherUserId?: st
     const lastTypingSentRef = useRef<number>(0);
 
     const scrollToBottom = () => {
-        if (flatListRef.current && messages.length > 0) {
-            flatListRef.current.scrollToEnd({ animated: true });
-        }
+        flatListRef.current?.scrollToEnd({ animated: true });
     };
 
     // --- Typing Logic ---
@@ -44,21 +43,18 @@ export const useChat = (eventId: string, currentUserId: string, otherUserId?: st
         if (now - lastTypingSentRef.current <= 2000) return;
         lastTypingSentRef.current = now;
 
-        sendTyping(eventId, otherUserId); // si otherUserId viene, 1-1; si no, grupo
+        sendTyping(eventId, otherUserId);
     };
-
 
     // --- Status Updates ---
     const markAsSeen = useCallback((messageId: string) => {
         sendMessageSeen(messageId);
-        // Optimistic update?
         setMessages(prev => prev.map(msg =>
             msg.id === messageId ? { ...msg, seenAt: new Date().toISOString() } : msg
         ));
     }, []);
 
     const markAllAsSeen = useCallback(() => {
-        // Find messages from others that are not seen
         messages.forEach(msg => {
             if (msg.fromUserId !== currentUserId && !msg.seenAt) {
                 markAsSeen(msg.id);
@@ -66,24 +62,27 @@ export const useChat = (eventId: string, currentUserId: string, otherUserId?: st
         });
     }, [messages, markAsSeen, currentUserId]);
 
-
     useEffect(() => {
         let isMounted = true;
 
-        // Named callbacks for specific cleanup
-        const handleJoinedEvent = () => {
-            if (isMounted) setIsJoined(true);
-        };
+        const handleNewMessage = (raw: any) => {
+            // Normalize field names: server sends `userId` for group msgs, `fromUserId` for private;
+            // and `sentAt` instead of `createdAt`.
+            const newMessage: Message = {
+                id: raw.id,
+                fromUserId: raw.fromUserId || raw.userId,
+                content: raw.content,
+                createdAt: raw.createdAt || raw.sentAt,
+                sender: raw.sender,
+                deliveredAt: raw.deliveredAt,
+                seenAt: raw.seenAt,
+            };
 
-        const handleNewMessage = (newMessage: Message & { self?: boolean }) => {
-            // console.log('useChat: NEW MESSAGE RECEIVED', newMessage);
             const isMyMessage = newMessage.fromUserId === currentUserId;
-            // Ignore own messages from socket to prevent duplication (handled optimistically + via HTTP)
+            // Ignore own messages from socket to prevent duplication (handled optimistically)
             if (isMyMessage) return;
 
-            if (!isMyMessage) {
-                sendMessageDelivered(newMessage.id!);
-            }
+            sendMessageDelivered(newMessage.id!);
 
             if (isMounted) {
                 setMessages(prev => {
@@ -91,37 +90,28 @@ export const useChat = (eventId: string, currentUserId: string, otherUserId?: st
                     if (exists) return prev;
                     return [...prev, newMessage];
                 });
-                setTimeout(scrollToBottom, 50);
+                setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 50);
             }
         };
 
         const handleTyping = (data: any) => {
-            // console.log('useChat: Received typing event RAW:', data);
             const fromUserId = data?.fromUserId || data?.userId || (typeof data === 'string' ? data : null);
+            if (!fromUserId || fromUserId === currentUserId) return;
 
-            if (!fromUserId) {
-                // console.warn('useChat: Could not extract fromUserId from typing event', data);
-                return;
-            }
-
-            // console.log('useChat: Processing typing from:', fromUserId, 'Current:', currentUserId);
-
-            if (fromUserId === currentUserId) return;
             setTypingUser(fromUserId);
-
             if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
             typingTimeoutRef.current = setTimeout(() => {
                 if (isMounted) setTypingUser(null);
             }, 3000) as unknown as NodeJS.Timeout;
         };
 
-        const handleMessageDelivered = ({ messageId, at }: { messageId: string, at: string }) => {
+        const handleMessageDelivered = ({ messageId, at }: { messageId: string; at: string }) => {
             setMessages(prev => prev.map(msg =>
                 msg.id === messageId ? { ...msg, deliveredAt: at || new Date().toISOString() } : msg
             ));
         };
 
-        const handleMessageSeen = ({ messageId, at }: { messageId: string, at: string }) => {
+        const handleMessageSeen = ({ messageId, at }: { messageId: string; at: string }) => {
             setMessages(prev => prev.map(msg =>
                 msg.id === messageId ? { ...msg, seenAt: at || new Date().toISOString() } : msg
             ));
@@ -133,10 +123,8 @@ export const useChat = (eventId: string, currentUserId: string, otherUserId?: st
             if (!isMounted) return;
 
             if (otherUserId) {
-                // console.log('useChat: Listening for private messages');
                 onNewMessage(handleNewMessage);
             } else {
-                // console.log('useChat: Listening for event messages');
                 onEventMessage(handleNewMessage);
             }
             onTyping(handleTyping);
@@ -152,17 +140,24 @@ export const useChat = (eventId: string, currentUserId: string, otherUserId?: st
                 }
 
                 if (isMounted) {
-                    setMessages(history);
-                    setTimeout(scrollToBottom, 100);
+                    // Merge history with any messages already received via socket
+                    // during the async fetch to avoid losing real-time messages.
+                    setMessages(prev => {
+                        const ids = new Set(history.map(m => m.id));
+                        const socketOnly = prev.filter(m => !ids.has(m.id));
+                        return [...history, ...socketOnly];
+                    });
+                    setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
                 }
             } catch (e) {
                 console.error('useChat: Error fetching history:', e);
             } finally {
-                // console.log('useChat: Entering event API', eventId);
-                await enterEvent(eventId);
-
-                // Unirse al evento. isJoined se activa en el callback
-                // porque el servidor no envía confirmación 'joined-event'.
+                try {
+                    await enterEvent(eventId);
+                } catch {
+                    // enterEvent failure (already entered, event full, etc.) must not
+                    // prevent the socket from joining the room.
+                }
                 joinEvent(eventId, () => {
                     if (isMounted) setIsJoined(true);
                 });
@@ -170,7 +165,7 @@ export const useChat = (eventId: string, currentUserId: string, otherUserId?: st
             }
         };
 
-        if (currentUserId) {
+        if (currentUserId && eventId) {
             runInit();
         }
 
@@ -182,52 +177,33 @@ export const useChat = (eventId: string, currentUserId: string, otherUserId?: st
             offSocket('message-delivered', handleMessageDelivered);
             offSocket('message-seen', handleMessageSeen);
 
-            leaveEvent(eventId); // Socket leave
-            leaveEventApi(eventId); // API leave
-            // No llamar disconnectSocket() aquí: el socket es un singleton compartido
-            // entre useChat y useConnectedUsers. Desconectarlo aquí mataría los listeners
-            // del otro hook. El socket se desconecta al hacer logout.
+            leaveEvent(eventId);
+            leaveEventApi(eventId);
+            // No llamar disconnectSocket() aquí: el socket es singleton compartido
+            // con useConnectedUsers. Se desconecta al hacer logout.
         };
     }, [eventId, otherUserId, currentUserId]);
 
     const handleSend = () => {
-        // console.log('Attempting to send message. isJoined:', isJoined, 'text:', messageText);
-        if (!messageText.trim() || !isJoined) {
-            // console.log('Send aborted. Empty text or not joined.');
-            return;
-        }
+        if (!messageText.trim() || !isJoined) return;
 
         const content = messageText.trim();
         setMessageText('');
 
-        // Optimistic UI Update
-        const tempId = Math.random().toString();
         const optimisticMsg: Message = {
-            id: tempId,
-            fromUserId: currentUserId, // Placeholder
-            content: content,
+            id: Math.random().toString(),
+            fromUserId: currentUserId,
+            content,
             createdAt: new Date().toISOString(),
         };
 
         setMessages(prev => [...prev, optimisticMsg]);
         setTimeout(scrollToBottom, 50);
 
-        console.log(otherUserId);
-
-
         if (otherUserId) {
-            sendMessage({
-                eventId,
-                toUserId: otherUserId,
-                content
-            });
-            // We assume successful emission for now, as socket doesn't return a promise in this setup across the hook boundary easily without ack
-            // The optimistic message remains in the list.
+            sendMessage({ eventId, toUserId: otherUserId, content });
         } else {
-            sendEventMessage({
-                eventId,
-                content
-            });
+            sendEventMessage({ eventId, content });
         }
     };
 
@@ -236,16 +212,11 @@ export const useChat = (eventId: string, currentUserId: string, otherUserId?: st
         loading,
         isJoined,
         messageText,
-        setMessageText: handleTypingInput, // Use wrapper
+        setMessageText: handleTypingInput,
         handleSend,
         flatListRef,
         scrollToBottom,
-        setIsJoined,
         typingUser,
         markAllAsSeen,
-        leaveEvent,
-        sendTyping,
-        lastTypingSentRef,
-        onNewMessage,
     };
 };

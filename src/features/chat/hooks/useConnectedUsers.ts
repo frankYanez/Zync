@@ -67,13 +67,15 @@ export const useConnectedUsers = (eventId: string) => {
             }
         };
 
+        let cleanupPresence: (() => void) | null = null;
+
         const init = async () => {
             setLoading(true);
             await connectSocket();
             if (!isMounted) return;
 
             onOnlineUsersList(handleOnlineUsers);
-            onPresenceUpdate(handlePresenceUpdate);
+            cleanupPresence = onPresenceUpdate(handlePresenceUpdate);
 
             // joinEvent callback fires once the emit goes out (connected or deferred)
             joinEvent(eventId, () => {
@@ -88,7 +90,7 @@ export const useConnectedUsers = (eventId: string) => {
 
         return () => {
             isMounted = false;
-            offSocket('presence:update', handlePresenceUpdate);
+            cleanupPresence?.();
             offSocket('presence:list', handleOnlineUsers);
         };
     }, [eventId]);

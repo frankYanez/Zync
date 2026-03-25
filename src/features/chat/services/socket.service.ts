@@ -5,19 +5,24 @@ const SOCKET_URL = process.env.EXPO_PUBLIC_API_URL;
 
 let socket: Socket | null = null;
 
+// Tracks every room the app has joined so they can be re-joined automatically
+// after a disconnect/reconnect (server drops room membership on disconnect).
+const activeRooms = new Set<string>();
+
 export const connectSocket = async () => {
     if (socket?.connected) return;
-
-    // Socket exists but disconnected — reconnect the same instance to avoid
-    // creating a duplicate where listeners live on the old socket.
-    if (socket) {
-        socket.connect();
-        return;
-    }
 
     const token = await getToken();
     if (!token) {
         console.warn('SocketService: No token, cannot connect');
+        return;
+    }
+
+    // Socket exists but disconnected — update the token (may have refreshed)
+    // and reconnect the same instance to avoid duplicating listeners.
+    if (socket) {
+        (socket.io.opts as any).query = { token };
+        socket.connect();
         return;
     }
 
@@ -30,6 +35,12 @@ export const connectSocket = async () => {
 
     socket.on('connect', () => {
         console.log('Socket connected:', socket?.id);
+        // Re-join every active room after a reconnect. The server drops all
+        // room memberships when a client disconnects, so we must re-emit
+        // event:join for each room the app is currently in.
+        activeRooms.forEach(eventId => {
+            socket?.emit('event:join', { eventId });
+        });
     });
 
     socket.on('disconnect', (reason) => {
@@ -45,12 +56,15 @@ export const disconnectSocket = () => {
     if (socket) {
         socket.disconnect();
         socket = null;
+        activeRooms.clear();
     }
 };
 
-// Join event room. Calls onJoined once the emit actually goes out
-// (either immediately if connected, or after the connect fires).
+// Join event room. Registers the room for automatic re-join on reconnect.
+// Calls onJoined once the emit actually goes out.
 export const joinEvent = (eventId: string, onJoined?: () => void) => {
+    activeRooms.add(eventId);
+
     const emitJoin = () => {
         socket?.emit('event:join', { eventId });
         onJoined?.();
@@ -64,6 +78,7 @@ export const joinEvent = (eventId: string, onJoined?: () => void) => {
 };
 
 export const leaveEvent = (eventId: string) => {
+    activeRooms.delete(eventId);
     socket?.emit('event:leave', { eventId });
 };
 
@@ -121,9 +136,15 @@ export const onOnlineUsersList = (callback: (users: any[]) => void) => {
     socket?.on('presence:list', callback);
 };
 
-export const onPresenceUpdate = (callback: (data: { userId: string; online: boolean; user?: any }) => void) => {
-    socket?.on('presence:joined', (data) => callback({ ...data, online: true }));
-    socket?.on('presence:left', (data) => callback({ ...data, online: false }));
+export const onPresenceUpdate = (callback: (data: { userId: string; online: boolean; user?: any }) => void): (() => void) => {
+    const onJoined = (data: any) => callback({ ...data, online: true });
+    const onLeft = (data: any) => callback({ ...data, online: false });
+    socket?.on('presence:joined', onJoined);
+    socket?.on('presence:left', onLeft);
+    return () => {
+        socket?.off('presence:joined', onJoined);
+        socket?.off('presence:left', onLeft);
+    };
 };
 
 // Order events
@@ -150,6 +171,8 @@ export const offSocket = (event: string, callback?: any) => {
         'new-message':        'chat:private_message',
         'typing':             'chat:typing_status',
         'joined-event':       'joined-event', // not used anymore but kept for safety
+        'message-delivered':  'message-delivered',
+        'message-seen':       'message-seen',
     };
     const realEvent = eventMap[event] ?? event;
 

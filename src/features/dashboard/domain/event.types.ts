@@ -33,12 +33,12 @@ export interface Event {
 export interface CreateEventDto {
     name: string;
     description?: string;
-    startDate: string;
-    endDate: string;
+    startsAt: string;
+    endsAt: string;
     venueId: string;
     djs?: string[];
     isPrivate?: boolean;
-    maxCapacity?: number;
+    capacity?: number;
     imageUrl?: string;
     ticketPrice?: number;
 }

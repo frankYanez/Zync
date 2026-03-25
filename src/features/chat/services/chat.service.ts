@@ -4,98 +4,58 @@ import { Message } from '../domain/chat.types';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
-//Historial del chat 1 a 1
+// Normalize raw message from server to app's Message shape.
+// REST and socket send `userId` (group) or `fromUserId` (private), and `sentAt` instead of `createdAt`.
+const normalizeMessage = (raw: any): Message => ({
+    id: raw.id,
+    fromUserId: raw.fromUserId || raw.userId,
+    content: raw.content,
+    createdAt: raw.createdAt || raw.sentAt,
+    sender: raw.sender,
+    deliveredAt: raw.deliveredAt,
+    seenAt: raw.seenAt,
+});
+
+// GET /chats/:eventId/public/messages
+export const getEventMessages = async (eventId: string): Promise<Message[]> => {
+    try {
+        const headers = await getAuthHeaders();
+        const response = await axios.get(`${API_URL}/chats/${eventId}/public/messages`, headers);
+
+        let raw: any[] = [];
+        if (Array.isArray(response.data)) {
+            raw = response.data;
+        } else if (response.data && Array.isArray(response.data.messages)) {
+            raw = response.data.messages;
+        } else if (response.data && Array.isArray(response.data.data)) {
+            raw = response.data.data;
+        }
+
+        return raw.map(normalizeMessage);
+    } catch (error) {
+        console.error('Error fetching group messages:', error);
+        return [];
+    }
+};
+
+// GET /chats/:eventId/private/:otherUserId/messages
 export const getChatMessages = async (eventId: string, otherUserId: string): Promise<Message[]> => {
     try {
         const headers = await getAuthHeaders();
         const response = await axios.get(`${API_URL}/chats/${eventId}/private/${otherUserId}/messages`, headers);
 
+        let raw: any[] = [];
         if (Array.isArray(response.data)) {
-            return response.data;
+            raw = response.data;
         } else if (response.data && Array.isArray(response.data.messages)) {
-            return response.data.messages;
+            raw = response.data.messages;
         } else if (response.data && Array.isArray(response.data.data)) {
-            return response.data.data;
+            raw = response.data.data;
         }
 
-        return [];
-
+        return raw.map(normalizeMessage);
     } catch (error) {
-        console.log(error, "error en chat service");
+        console.error('Error fetching private messages:', error);
         return [];
-
-    }
-};
-
-//Lista de chats de un usuario
-export const getChats = async (eventId: string): Promise<any[]> => {
-    try {
-        const headers = await getAuthHeaders();
-        const response = await axios.get(`${API_URL}/chats/${eventId}/conversations`, headers);
-
-        if (Array.isArray(response.data)) return response.data;
-        if (response.data && Array.isArray(response.data.chats)) return response.data.chats;
-        if (response.data && Array.isArray(response.data.data)) return response.data.data;
-
-        return [];
-    } catch (error) {
-        console.log("Error fetching chats:", error);
-        return [];
-    }
-};
-
-//Termina el chat y limpia los mensajes
-export const endChatEvent = async (eventId: string): Promise<any> => {
-    const headers = await getAuthHeaders();
-    // User requested POST for this endpoint
-    const response = await axios.post(`${API_URL}/chats/${eventId}/cleanup`, {}, headers);
-    return response.data;
-};
-
-export const getEventMessages = async (eventId: string): Promise<Message[]> => {
-    try {
-        const headers = await getAuthHeaders();
-        // Updated to match backend doc: /event-chat/messages
-        const response = await axios.get(`${API_URL}/chats/${eventId}/public/messages`, headers);
-
-        if (Array.isArray(response.data)) {
-            return response.data;
-        } else if (response.data && Array.isArray(response.data.messages)) {
-            return response.data.messages;
-        } else if (response.data && Array.isArray(response.data.data)) {
-            return response.data.data;
-        }
-
-        return [];
-    } catch (error) {
-        console.log(error, "error en getEventMessages");
-        return [];
-    }
-};
-
-
-
-
-
-
-export const enterEvent = async (eventId: string): Promise<boolean> => {
-    try {
-        const headers = await getAuthHeaders();
-        const response = await axios.post(`${API_URL}/events/${eventId}/enter`, {}, headers);
-        return response.data;
-    } catch (error) {
-        console.error("Error entering event:", error);
-        return false;
-    }
-};
-
-export const leaveEventApi = async (eventId: string): Promise<boolean> => {
-    try {
-        const headers = await getAuthHeaders();
-        const response = await axios.post(`${API_URL}/events/${eventId}/leave`, {}, headers);
-        return response.data;
-    } catch (error) {
-        console.error("Error leaving event:", error);
-        return false;
     }
 };
