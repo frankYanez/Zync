@@ -8,14 +8,6 @@ Todos los endpoints que requieren autenticación esperan el header:
 Authorization: Bearer <accessToken>
 ```
 
-## Estado de implementación
-
-| Símbolo | Significado |
-|---------|-------------|
-| ✅ | Implementado — llamada real a la API |
-| 🔶 | Implementado con mock — pendiente conectar endpoint real |
-| ❌ | Sin implementar en la app todavía |
-
 ---
 
 ## Flujo de registro
@@ -32,7 +24,7 @@ El registro requiere verificar el email antes de crear la cuenta:
 
 ## Email
 
-### `POST /email/request` ✅
+### `POST /email/request`
 Solicitar OTP de verificación.
 
 **Body:**
@@ -41,10 +33,10 @@ Solicitar OTP de verificación.
 ```
 `locale` es opcional (default: `"es-AR"`).
 
-### `POST /email/resend` ✅
+### `POST /email/resend`
 Reenviar OTP (mismo body que request).
 
-### `POST /email/verify` ✅
+### `POST /email/verify`
 Verificar OTP recibido.
 
 **Body:**
@@ -56,7 +48,7 @@ Verificar OTP recibido.
 
 ## Auth
 
-### `POST /auth/register` ✅
+### `POST /auth/register`
 Crear cuenta (el email debe estar verificado primero).
 
 **Body:**
@@ -73,7 +65,7 @@ Crear cuenta (el email debe estar verificado primero).
 { "createdAt": "2026-03-17T..." }
 ```
 
-### `POST /auth/login` ✅
+### `POST /auth/login`
 **Body:**
 ```json
 { "email": "gonza@mail.com", "password": "mipass123" }
@@ -86,7 +78,7 @@ Crear cuenta (el email debe estar verificado primero).
 }
 ```
 
-### `POST /auth/refresh` ✅
+### `POST /auth/refresh`
 Renovar access token.
 **Body:**
 ```json
@@ -94,10 +86,10 @@ Renovar access token.
 ```
 **Response:** mismo formato que login.
 
-### `GET /auth/me` 🔒 ✅
+### `GET /auth/me` 🔒
 Retorna el usuario autenticado del JWT.
 
-### `POST /auth/google` ✅
+### `POST /auth/google`
 Login o registro con Google OAuth.
 
 **Body:**
@@ -106,7 +98,7 @@ Login o registro con Google OAuth.
 ```
 **Response:** mismo formato que login (`accessToken`, `refreshToken`, `user`).
 
-### `POST /auth/logout` 🔒 ✅
+### `POST /auth/logout` 🔒
 Cerrar sesión e invalidar el refresh token en el servidor.
 
 **Body:**
@@ -118,27 +110,27 @@ Cerrar sesión e invalidar el refresh token en el servidor.
 **Errores:**
 - `401 INVALID_REFRESH_TOKEN` — token no encontrado o ya revocado
 
-### `POST /auth/forgot-password` ✅
+### `POST /auth/forgot-password`
 **Body:** `{ "email": "..." }`
 
-### `POST /auth/reset-password` ✅
+### `POST /auth/reset-password`
 **Body:** `{ "email": "...", "otp": "123456", "newPassword": "..." }`
 
 ---
 
 ## Users
 
-### `GET /users` ❌
+### `GET /users`
 Lista todos los usuarios (público).
 
-### `GET /users/:id/profile` ✅
+### `GET /users/:id/profile`
 Perfil público de un usuario. Incluye `zyncPoints` (puntos acumulados del usuario).
 
-### `PATCH /users/profile` 🔒 ✅
+### `PATCH /users/profile` 🔒
 Actualizar nombre, apellido, etc.
 **Body:** `{ "firstName"?: "...", "lastName"?: "..." }`
 
-### `POST /users/me/avatar` 🔒 ✅
+### `POST /users/me/avatar` 🔒
 Subir foto de perfil. `multipart/form-data`, campo `file` (JPEG/PNG/WebP, máx 5 MB).
 
 **Response:**
@@ -146,20 +138,20 @@ Subir foto de perfil. `multipart/form-data`, campo `file` (JPEG/PNG/WebP, máx 5
 { "avatarUrl": "https://res.cloudinary.com/..." }
 ```
 
-### `DELETE /users/me` 🔒 ✅
+### `DELETE /users/me` 🔒
 Eliminar cuenta (soft-delete).
 
-### `POST /users/me/change-password` 🔒 ✅
+### `POST /users/me/change-password` 🔒
 **Body:**
 ```json
 { "oldPassword": "...", "newPassword": "..." }
 ```
 
-### `PUT /users/push-token` 🔒 ✅
+### `PUT /users/push-token` 🔒
 Registrar token push de Expo para notificaciones.
 **Body:** `{ "pushToken": "ExponentPushToken[...]" }`
 
-### `GET /users/me/preferences` 🔒 ✅
+### `GET /users/me/preferences` 🔒
 Retorna preferencias del usuario.
 **Response:**
 ```json
@@ -171,7 +163,7 @@ Retorna preferencias del usuario.
 }
 ```
 
-### `PATCH /users/me/preferences` 🔒 ✅
+### `PATCH /users/me/preferences` 🔒
 **Body (todos opcionales):**
 ```json
 {
@@ -189,7 +181,7 @@ Retorna preferencias del usuario.
 
 Rutas bajo `/users/me/dj-profile` 🔒 (todas requieren auth)
 
-### `POST /users/me/dj-profile` ✅
+### `POST /users/me/dj-profile`
 Crear perfil DJ (asigna el rol `DJ` al usuario automáticamente).
 
 **Body:**
@@ -204,7 +196,7 @@ Crear perfil DJ (asigna el rol `DJ` al usuario automáticamente).
 }
 ```
 
-### `PATCH /users/me/dj-profile` ✅
+### `PATCH /users/me/dj-profile`
 Actualizar info del perfil DJ (todos los campos opcionales).
 
 **Body (todos opcionales):**
@@ -221,11 +213,11 @@ Actualizar info del perfil DJ (todos los campos opcionales).
 }
 ```
 
-### `PATCH /users/me/dj-profile/logo` ✅
+### `PATCH /users/me/dj-profile/logo`
 Subir logo del DJ. `multipart/form-data`, campo `file`.
 **Response:** `{ "logoUrl": "https://..." }`
 
-### `PATCH /users/me/dj-profile/banner` ✅
+### `PATCH /users/me/dj-profile/banner`
 Subir banner del DJ. `multipart/form-data`, campo `file`.
 **Response:** `{ "bannerUrl": "https://..." }`
 
@@ -233,31 +225,31 @@ Subir banner del DJ. `multipart/form-data`, campo `file`.
 
 ## Organizer Profile
 
-### `POST /users/me/organizer-profile` 🔒 ✅
+### `POST /users/me/organizer-profile` 🔒
 Crear perfil organizador (asigna rol `ORGANIZER`).
 **Body:** `{ "companyName": "...", "contactEmail": "..." }`
 
-### `PATCH /users/me/organizer-profile` 🔒 ✅
+### `PATCH /users/me/organizer-profile` 🔒
 Actualizar perfil organizador (mismo body).
 
 ---
 
 ## Venues
 
-### `GET /venues/timezones` ✅
+### `GET /venues/timezones`
 Lista los timezones IANA soportados para configurar en un venue. Actualmente devuelve todos los de Argentina (`America/Argentina/*`).
 
 **Response:** `["America/Argentina/Buenos_Aires", "America/Argentina/Cordoba", ...]`
 
 ---
 
-### `GET /venues` ✅
+### `GET /venues`
 Lista todos los venues (público). Cada venue incluye `imageUrl` y `videoUrl` si fueron subidos.
 
-### `GET /venues/my-venues` 🔒 ✅
+### `GET /venues/my-venues` 🔒
 Venues del usuario autenticado.
 
-### `POST /venues` 🔒 ✅ (solo ORGANIZER)
+### `POST /venues` 🔒 (solo ORGANIZER)
 **Body:**
 ```json
 {
@@ -283,17 +275,17 @@ Todos los campos son opcionales excepto `name` y `address`.
 - `openTime` / `closeTime`: formato `HH:MM` en **hora local del venue**. Si `closeTime < openTime`, se interpreta como cruce de medianoche (ej: 22:00 → 02:00).
 - `timezone`: timezone IANA del venue (ej: `"America/Argentina/Buenos_Aires"`, `"America/Bogota"`). Default: `"America/Argentina/Buenos_Aires"`. Se usa para calcular correctamente `startsAt`/`endsAt` en UTC y determinar el día de apertura.
 
-### `PATCH /venues/:venueId` 🔒 ✅ (solo el dueño)
+### `PATCH /venues/:venueId` 🔒 (solo el dueño)
 **Body:** igual que POST, todos opcionales.
 
-### `DELETE /venues/:venueId` 🔒 ✅ (solo el dueño)
+### `DELETE /venues/:venueId` 🔒 (solo el dueño)
 **Response:** `{ "ok": true }`
 
 ---
 
 ## Events
 
-### `GET /events` ✅
+### `GET /events`
 Lista eventos con paginación.
 
 **Query params:**
@@ -302,7 +294,7 @@ Lista eventos con paginación.
 
 **Response:** array de eventos con venue incluido.
 
-### `GET /events/:eventId` ✅
+### `GET /events/:eventId`
 Detalle de un evento.
 
 **Response:**
@@ -321,7 +313,7 @@ Detalle de un evento.
 }
 ```
 
-### `POST /events` 🔒 ✅ (solo ORGANIZER)
+### `POST /events` 🔒 (solo ORGANIZER)
 Crear evento. Si el evento pertenece a un venue (`venueId`) y ese venue tiene otro evento activo, el evento anterior se desactiva automáticamente — nunca puede haber dos eventos activos en el mismo venue.
 
 **Body:**
@@ -342,17 +334,17 @@ Todos los campos son opcionales excepto `name`, `startsAt` y `endsAt`.
 
 - `latitude`, `longitude`, `radius`: solo para eventos **sin venue** (ej: fiesta en un parque). Si el evento tiene venue, se usan las coordenadas del venue para el check-in.
 
-### `POST /events/:eventId/enter` 🔒 ✅
+### `POST /events/:eventId/enter` 🔒
 Ingresar manualmente a un evento. Si el evento tiene `capacity` definida y está lleno, retorna `403`.
 
 **Response:** `{ "ok": true }`
 
-### `POST /events/:eventId/leave` 🔒 ✅
+### `POST /events/:eventId/leave` 🔒
 Salir manualmente de un evento.
 
 **Response:** `{ "ok": true }`
 
-### `GET /events/:eventId/lineup` ✅
+### `GET /events/:eventId/lineup`
 Ver el lineup de DJs oficiales del evento.
 
 **Response:**
@@ -376,7 +368,7 @@ Ver el lineup de DJs oficiales del evento.
 ]
 ```
 
-### `POST /events/check-location` 🔒 ✅
+### `POST /events/check-location` 🔒
 Check-in/out automático por geolocalización. Compara la posición del usuario con todos los eventos activos. Prioridad de coordenadas: venue del evento → coordenadas propias del evento. Radio default: 100 m.
 
 **Body:**
@@ -397,7 +389,7 @@ Check-in/out automático por geolocalización. Compara la posición del usuario 
 
 ## Promo Codes
 
-### `POST /events/:eventId/djs/:djProfileId/promo-codes` 🔒 ✅ (solo ORGANIZER)
+### `POST /events/:eventId/djs/:djProfileId/promo-codes` 🔒 (solo ORGANIZER)
 Crear código promocional para un DJ en un evento.
 
 **Body:**
@@ -417,26 +409,26 @@ Crear código promocional para un DJ en un evento.
 - `discountValue`: número si es PERCENTAGE o FIXED, `null` si es FREE
 - `expiresAt`: opcional
 
-### `GET /events/:eventId/djs/:djProfileId/promo-codes` 🔒 ✅ (solo ORGANIZER)
+### `GET /events/:eventId/djs/:djProfileId/promo-codes` 🔒 (solo ORGANIZER)
 Ver todos los códigos de un DJ en un evento.
 
-### `GET /dj/:djProfileId/promo-codes` 🔒 ✅ (solo el propio DJ)
+### `GET /dj/:djProfileId/promo-codes` 🔒 (solo el propio DJ)
 Ver mis códigos promocionales con stats de uso.
 
-### `POST /dj/promo-codes/:code/redeem` 🔒 ✅
+### `POST /dj/promo-codes/:code/redeem` 🔒
 Canjear un código. Falla si: ya fue usado por este usuario, superó `maxUses`, el evento terminó, o venció (`expiresAt`).
 
 ---
 
 ## DJ
 
-### `GET /dj` ✅
+### `GET /dj`
 Lista todos los perfiles DJ.
 
 **Query params:**
 - `genre` (string, opcional): filtrar por género musical
 
-### `GET /dj/:djProfileId` ✅
+### `GET /dj/:djProfileId`
 Obtener perfil público de un DJ por su `djProfileId` (UUID del DjProfile, no del usuario).
 
 **Response:** objeto con todos los campos del perfil DJ (artistName, genres, pricePerSong, bio, city, logoUrl, bannerUrl, spotifyUrl, soundcloudUrl, instagramUrl, **followersCount**, **isLive**, **liveEventId**, **acceptingRequests**).
@@ -444,7 +436,7 @@ Obtener perfil público de un DJ por su `djProfileId` (UUID del DjProfile, no de
 **Errores:**
 - `404 DJ_PROFILE_NOT_FOUND`
 
-### `GET /dj/feed` 🔒 ✅
+### `GET /dj/feed` 🔒
 Próximos eventos de los DJs que sigue el usuario autenticado.
 
 **Response:**
@@ -470,19 +462,19 @@ Próximos eventos de los DJs que sigue el usuario autenticado.
 ]
 ```
 
-### `GET /dj/:djProfileId/gigs` ✅
+### `GET /dj/:djProfileId/gigs`
 Próximos eventos de un DJ.
 
-### `POST /dj/:djProfileId/follow` 🔒 ✅
+### `POST /dj/:djProfileId/follow` 🔒
 Seguir a un DJ.
 
-### `DELETE /dj/:djProfileId/follow` 🔒 ✅
+### `DELETE /dj/:djProfileId/follow` 🔒
 Dejar de seguir a un DJ.
 
-### `POST /dj/:djProfileId/events/:eventId/lineup` 🔒 ✅ (solo ORGANIZER)
+### `POST /dj/:djProfileId/events/:eventId/lineup` 🔒 (solo ORGANIZER)
 Agregar un DJ al lineup de un evento.
 
-### `POST /dj/:djProfileId/events/:eventId/reviews` 🔒 ✅
+### `POST /dj/:djProfileId/events/:eventId/reviews` 🔒
 Dejar una reseña de un DJ. Solo disponible cuando el evento terminó (`isActive = false`) y el usuario asistió al evento. Una sola reseña por usuario por evento.
 
 **Body:**
@@ -507,7 +499,7 @@ Dejar una reseña de un DJ. Solo disponible cuando el evento terminó (`isActive
 - `404 EVENT_NOT_FOUND` — evento no encontrado
 - `409 REVIEW_ALREADY_EXISTS` — ya dejaste una reseña para este DJ en este evento
 
-### `PATCH /dj/me/live` 🔒 ✅ (solo DJ)
+### `PATCH /dj/me/live` 🔒 (solo DJ)
 Activar o desactivar el modo en vivo. El DJ lo activa manualmente cuando empieza a tocar.
 
 **Body:**
@@ -522,7 +514,7 @@ Activar o desactivar el modo en vivo. El DJ lo activa manualmente cuando empieza
 **Errores:**
 - `404 DJ_PROFILE_NOT_FOUND`
 
-### `GET /dj/:djProfileId/stats` 🔒 ✅ (solo el propio DJ)
+### `GET /dj/:djProfileId/stats` 🔒 (solo el propio DJ)
 Estadísticas de song requests del DJ.
 
 **Response:**
@@ -536,7 +528,7 @@ Estadísticas de song requests del DJ.
 }
 ```
 
-### `PATCH /dj/:djProfileId` 🔒 ✅ (solo el propio DJ)
+### `PATCH /dj/:djProfileId` 🔒 (solo el propio DJ)
 Actualizar campos del perfil DJ (actualmente `acceptingRequests`).
 
 **Body:**
@@ -544,7 +536,7 @@ Actualizar campos del perfil DJ (actualmente `acceptingRequests`).
 { "acceptingRequests": false }
 ```
 
-### `GET /dj/:djProfileId/song-requests` 🔒 ✅ (solo el propio DJ)
+### `GET /dj/:djProfileId/song-requests` 🔒 (solo el propio DJ)
 Cola de song requests recibidas.
 
 **Query params:**
@@ -567,7 +559,7 @@ Cola de song requests recibidas.
 ]
 ```
 
-### `PATCH /dj/:djProfileId/song-requests/:requestId` 🔒 ✅ (solo el propio DJ)
+### `PATCH /dj/:djProfileId/song-requests/:requestId` 🔒 (solo el propio DJ)
 Actualizar estado de una song request.
 
 **Body:**
@@ -578,7 +570,7 @@ Actualizar estado de una song request.
 
 Al cambiar estado se emite socket `song_request:updated` al usuario que pidió la canción.
 
-### `GET /dj/:djProfileId/reviews` ✅
+### `GET /dj/:djProfileId/reviews`
 Obtener todas las reseñas de un DJ con su promedio y total.
 
 **Response:**
@@ -605,7 +597,7 @@ Obtener todas las reseñas de un DJ con su promedio y total.
 
 ## Venues — Media y Reseñas
 
-### `POST /venues/:venueId/media` 🔒 ✅ (solo el dueño)
+### `POST /venues/:venueId/media` 🔒 (solo el dueño)
 Subir imagen o video del venue a Cloudinary. `multipart/form-data`.
 
 **Query params:**
@@ -620,7 +612,7 @@ Subir imagen o video del venue a Cloudinary. `multipart/form-data`.
 - `403 NOT_VENUE_OWNER`
 - `404 VENUE_NOT_FOUND`
 
-### `POST /venues/:venueId/reviews` 🔒 ✅
+### `POST /venues/:venueId/reviews` 🔒
 Dejar una reseña del venue. Un solo review por usuario.
 
 **Body:**
@@ -636,7 +628,7 @@ Dejar una reseña del venue. Un solo review por usuario.
 - `404 VENUE_NOT_FOUND`
 - `409 VENUE_REVIEW_ALREADY_EXISTS`
 
-### `GET /venues/:venueId/active-event` ✅
+### `GET /venues/:venueId/active-event`
 Devuelve el evento activo del venue o `null` si no hay ninguno.
 
 Los eventos automáticos se pre-crean via cron cada hora para todos los venues con `autoEventEnabled: true`. El cron corre cada hora para soportar cualquier timezone. Este endpoint solo consulta — no crea.
@@ -648,7 +640,7 @@ Lógica de prioridad:
 
 **Response:** objeto evento o `null`.
 
-### `GET /venues/:venueId/orders` 🔒 ✅ (solo dueño del venue)
+### `GET /venues/:venueId/orders?status=` 🔒 (solo dueño del venue)
 Pedidos del venue para gestión (fulfillment).
 
 **Query params:**
@@ -670,7 +662,7 @@ Pedidos del venue para gestión (fulfillment).
 ]
 ```
 
-### `GET /venues/:venueId/reviews` ✅
+### `GET /venues/:venueId/reviews`
 Reseñas y promedio de un venue.
 
 **Response:**
@@ -687,7 +679,7 @@ Reseñas y promedio de un venue.
 
 ## Venue Products
 
-### `GET /venues/:venueId/products` ✅
+### `GET /venues/:venueId/products?category=`
 Listar productos disponibles del venue (público).
 
 **Query params:**
@@ -712,7 +704,7 @@ Listar productos disponibles del venue (público).
 ]
 ```
 
-### `POST /venues/:venueId/products` 🔒 ✅ (solo el dueño del venue)
+### `POST /venues/:venueId/products` 🔒 (solo el dueño del venue)
 Crear un producto en el menú del venue.
 
 **Body:**
@@ -731,12 +723,12 @@ Crear un producto en el menú del venue.
 - `403 NOT_VENUE_OWNER` — no sos el dueño
 - `404 VENUE_NOT_FOUND` — venue no encontrado
 
-### `PATCH /venues/:venueId/products/:productId` 🔒 ✅ (solo el dueño)
+### `PATCH /venues/:venueId/products/:productId` 🔒 (solo el dueño)
 Actualizar un producto. Todos los campos son opcionales.
 
 **Body:** igual que POST + `"isAvailable": false` para pausar el producto.
 
-### `PATCH /venues/:venueId/products/:productId/image` 🔒 ✅ (solo el dueño)
+### `PATCH /venues/:venueId/products/:productId/image` 🔒 (solo el dueño)
 Subir imagen del producto. `multipart/form-data`, campo `file` (JPEG/PNG/WebP, máx 5 MB).
 
 **Response:** `{ "imageUrl": "https://res.cloudinary.com/..." }`
@@ -745,7 +737,7 @@ Subir imagen del producto. `multipart/form-data`, campo `file` (JPEG/PNG/WebP, m
 - `403 NOT_VENUE_OWNER`
 - `404 VENUE_PRODUCT_NOT_FOUND`
 
-### `DELETE /venues/:venueId/products/:productId` 🔒 ✅ (solo el dueño)
+### `DELETE /venues/:venueId/products/:productId` 🔒 (solo el dueño)
 Eliminar un producto del menú.
 
 **Response:** `{ "ok": true }`
@@ -758,7 +750,7 @@ Eliminar un producto del menú.
 
 ## Orders
 
-### `POST /orders` 🔒 ✅
+### `POST /orders` 🔒
 Crear una orden (checkout del carrito).
 
 **Body:**
@@ -785,16 +777,16 @@ Crear una orden (checkout del carrito).
 - `400 INSUFFICIENT_ZYNC_POINTS` — puntos insuficientes
 - `404 VENUE_PRODUCT_NOT_FOUND` — producto no encontrado
 
-### `GET /orders/me` 🔒 ✅
+### `GET /orders/me` 🔒
 Mis órdenes ordenadas por fecha descendente, con items y productos incluidos.
 
-### `GET /orders/:orderId` 🔒 ✅
+### `GET /orders/:orderId` 🔒
 Detalle de una orden. Solo retorna la orden si pertenece al usuario autenticado.
 
 **Errores:**
 - `404 ORDER_NOT_FOUND`
 
-### `PATCH /orders/:orderId/status` 🔒 ✅
+### `PATCH /orders/:orderId/status` 🔒
 Actualizar el estado de una orden.
 
 **Body:**
@@ -817,7 +809,7 @@ Actualizar el estado de una orden.
 
 ## Stories
 
-### `POST /stories` 🔒 ✅
+### `POST /stories` 🔒
 Crear historia en un evento. `multipart/form-data`.
 
 **Campos:**
@@ -842,29 +834,145 @@ Crear historia en un evento. `multipart/form-data`.
 }
 ```
 
-### `DELETE /stories/:storyId` 🔒 ✅
+### `DELETE /stories/:storyId` 🔒
 Eliminar historia propia antes de que expire. Solo el autor puede eliminarla.
 
 **Response:** `204 No Content`
 
 **Errores:**
-- `403 STORY_NOT_OWNED` — no sos el autor
-- `404 STORY_NOT_FOUND`
+- `403 STORY_NOT_OWNED` — no sos el autor de la historia
+- `404 STORY_NOT_FOUND` — historia no encontrada
 
-### `POST /stories/:storyId/seen` 🔒 ✅
+### `POST /stories/:storyId/seen` 🔒
 Marcar historia como vista. El viewer debe ser participante del evento. Idempotente.
 
 **Response:** `204 No Content`
 
 **Errores:**
-- `403 USER_NOT_EVENT_PARTICIPANT`
-- `404 STORY_NOT_FOUND`
+- `403 USER_NOT_EVENT_PARTICIPANT` — no pertenecés al evento
+- `404 STORY_NOT_FOUND` — historia no encontrada
 
-### `GET /stories/events/:eventId/stories` 🔒 ✅
+### `GET /stories/events/:eventId/stories` 🔒
 Ver todas las historias activas de un evento (no expiradas). DJs primero.
 
-### `GET /stories/events/:eventId/users/:userId/stories` 🔒 ✅
+### `GET /stories/events/:eventId/users/:userId/stories` 🔒
 Ver historias activas de un usuario específico en un evento.
+
+---
+
+## Tickets
+
+### `GET /events/:eventId/ticket-types`
+Listar los tipos de ticket de un evento (público).
+
+**Response:**
+```json
+[
+  {
+    "id": "uuid",
+    "eventId": "uuid",
+    "name": "General",
+    "description": "Entrada general",
+    "price": "2500.00",
+    "capacity": 200,
+    "soldCount": 45,
+    "saleStartAt": "2026-04-15T18:00:00Z",
+    "saleEndAt": "2026-04-20T22:00:00Z",
+    "isActive": true,
+    "createdAt": "2026-04-10T..."
+  }
+]
+```
+
+### `POST /events/:eventId/ticket-types` 🔒 (solo ORGANIZER)
+Crear un tipo de ticket para un evento.
+
+**Body:**
+```json
+{
+  "name": "VIP",
+  "description": "Acceso VIP con barra libre",
+  "price": 5000,
+  "capacity": 50,
+  "saleStartAt": "2026-04-15T18:00:00Z",
+  "saleEndAt": "2026-04-20T22:00:00Z"
+}
+```
+- `description`, `capacity`, `saleStartAt`, `saleEndAt` son opcionales.
+- `capacity: null` = sin límite.
+
+### `PATCH /events/:eventId/ticket-types/:ticketTypeId` 🔒 (solo ORGANIZER)
+Actualizar tipo de ticket. Todos los campos opcionales, igual que el POST.
+
+### `DELETE /events/:eventId/ticket-types/:ticketTypeId` 🔒 (solo ORGANIZER)
+Eliminar tipo de ticket.
+**Response:** `204 No Content`
+
+**Errores:**
+- `404 TICKET_TYPE_NOT_FOUND`
+
+---
+
+### `POST /tickets/purchase` 🔒
+Comprar un ticket.
+
+**Body:**
+```json
+{ "ticketTypeId": "uuid" }
+```
+
+**Response:** objeto del ticket creado con `qrToken`, `status`, `pricePaid`, `ticketType` y `event` incluidos.
+
+**Errores:**
+- `404 TICKET_TYPE_NOT_FOUND` — tipo de ticket no encontrado o inactivo
+- `409 TICKET_TYPE_FULL` — sin capacidad disponible
+- `409 TICKET_TYPE_SALE_CLOSED` — la venta no está abierta
+
+### `GET /tickets/me` 🔒
+Mis tickets ordenados por fecha descendente, con `ticketType` y `event` incluidos.
+
+### `GET /tickets/:ticketId` 🔒
+Detalle de un ticket propio.
+
+**Errores:**
+- `403 TICKET_FORBIDDEN` — el ticket no te pertenece
+- `404 TICKET_NOT_FOUND`
+
+### `PATCH /tickets/:ticketId/cancel` 🔒
+Cancelar un ticket propio (solo si está en estado `VALID`).
+
+**Response:** ticket actualizado con `status: "CANCELLED"`.
+
+**Errores:**
+- `403 TICKET_FORBIDDEN`
+- `404 TICKET_NOT_FOUND`
+- `409 TICKET_NOT_VALID` — el ticket ya fue usado, cancelado o expirado
+
+### `POST /tickets/validate` 🔒 (ORGANIZER o STAFF)
+Validar ticket escaneando el QR. El escáner envía el `qrToken` del QR.
+
+**Body:**
+```json
+{ "qrToken": "uuid-del-qr-token" }
+```
+
+**Response:** ticket actualizado con `status: "USED"` y `usedAt`.
+
+**Errores:**
+- `404 TICKET_NOT_FOUND`
+- `409 TICKET_ALREADY_USED`
+- `409 TICKET_NOT_VALID` — cancelado o expirado
+
+---
+
+## Ticket statuses
+
+| Status | Descripción |
+|--------|-------------|
+| `VALID` | Entrada válida, puede usarse |
+| `USED` | Ya fue escaneada en la puerta |
+| `CANCELLED` | Cancelada por el usuario |
+| `EXPIRED` | Venció sin ser usada |
 
 ---
 
@@ -872,7 +980,7 @@ Ver historias activas de un usuario específico en un evento.
 
 Los mensajes se envían en tiempo real vía WebSocket. Estos endpoints sirven para cargar historial.
 
-### `GET /chats/:eventId/public/messages` 🔒 ✅
+### `GET /chats/:eventId/public/messages` 🔒
 Historial del chat grupal del evento.
 
 **Response:**
@@ -890,13 +998,13 @@ Historial del chat grupal del evento.
 }
 ```
 
-### `GET /chats/:eventId/private/:otherUserId/messages` 🔒 ✅
+### `GET /chats/:eventId/private/:otherUserId/messages` 🔒
 Historial de chat privado con otro usuario dentro de un evento.
 
-### `GET /chats/:eventId/conversations` 🔒 ❌
+### `GET /chats/:eventId/conversations` 🔒
 Lista de conversaciones privadas del usuario en un evento.
 
-### `POST /chats/:eventId/cleanup` 🔒 ✅ (solo ORGANIZER)
+### `POST /chats/:eventId/cleanup` 🔒 (solo ORGANIZER)
 Finalizar evento y limpiar datos.
 
 ---
@@ -934,92 +1042,6 @@ Conectar a `ws://<HOST>:3000` con:
 | `order:new` | objeto orden completo | **Business** recibe nuevo pedido en tiempo real |
 | `order:status_update` | `{ orderId, status }` | **User** recibe cambio de estado de su pedido |
 | `song_request:updated` | objeto song request completo | **User** recibe respuesta del DJ a su canción |
-
----
-
-## Endpoints en la app sin documentar
-
-Estos endpoints están siendo llamados desde la app pero no están documentados en esta referencia. Pendiente agregarlos con spec completa.
-
-### `GET /events/my-events` 🔒 ✅ (solo ORGANIZER)
-Eventos del organizador autenticado.
-
-### `PATCH /events/:eventId` 🔒 ✅ (solo ORGANIZER)
-Actualizar datos de un evento.
-
-### `DELETE /events/:eventId` 🔒 ✅ (solo ORGANIZER)
-Eliminar un evento.
-
-### `GET /users/me/organizer-profile` 🔒 ✅
-Obtener el perfil de organizador del usuario autenticado.
-
-### `PATCH /users/me/organizer-profile/logo` 🔒 ✅
-Subir logo del organizador. `multipart/form-data`, campo `file`.
-
-### `PATCH /users/me/organizer-profile/banner` 🔒 ✅
-Subir banner del organizador. `multipart/form-data`, campo `file`.
-
-### `GET /dj/:djProfileId/gigs/:gigId` ✅
-Detalle de un gig específico.
-
-### `POST /dj/:djProfileId/gigs` 🔒 ✅
-Crear un gig para un DJ.
-
-### `PATCH /dj/:djProfileId/gigs/:gigId` 🔒 ✅
-Actualizar estado de un gig.
-
-### `DELETE /dj/:djProfileId/gigs/:gigId` 🔒 ✅
-Eliminar un gig.
-
-### `GET /wallet/balance` 🔒 ✅
-Saldo del wallet del usuario.
-
-### `POST /wallet/topup` 🔒 🔶 Mock
-Top-up de wallet. Pendiente endpoint real del backend.
-
-### `GET /events/:eventId/stats` 🔒 🔶 Mock
-Estadísticas de un evento. Pendiente endpoint real.
-
-### `GET /venues/:venueId/stats` 🔒 🔶 Mock
-Estadísticas de un venue. Pendiente endpoint real.
-
-### `GET /users/me/stats` 🔒 🔶 Mock
-Estadísticas/tier del usuario (`bronze`/`silver`/`gold`). Pendiente endpoint real.
-
-### Tickets ✅
-
-#### `GET /events/:eventId/ticket-types`
-Listar tipos de ticket de un evento (público).
-
-#### `POST /events/:eventId/ticket-types` 🔒 (solo ORGANIZER)
-Crear tipo de ticket. Body: `{ name, description?, price, capacity?, saleStartAt?, saleEndAt? }`.
-
-#### `PATCH /events/:eventId/ticket-types/:ticketTypeId` 🔒 (solo ORGANIZER)
-Actualizar tipo de ticket. Todos los campos opcionales.
-
-#### `DELETE /events/:eventId/ticket-types/:ticketTypeId` 🔒 (solo ORGANIZER)
-Eliminar tipo de ticket. Response: `204 No Content`.
-
-#### `POST /tickets/purchase` 🔒
-Comprar ticket. Body: `{ "ticketTypeId": "uuid" }`. Response: objeto ticket con `qrToken`, `status`, `pricePaid`, `ticketType`, `event`.
-
-Errores: `404 TICKET_TYPE_NOT_FOUND`, `409 TICKET_TYPE_FULL`, `409 TICKET_TYPE_SALE_CLOSED`.
-
-#### `GET /tickets/me` 🔒
-Mis tickets ordenados por fecha descendente.
-
-#### `GET /tickets/:ticketId` 🔒
-Detalle de un ticket propio. Error: `403 TICKET_FORBIDDEN`, `404 TICKET_NOT_FOUND`.
-
-#### `PATCH /tickets/:ticketId/cancel` 🔒
-Cancelar ticket propio (solo si `VALID`). Error: `409 TICKET_NOT_VALID`.
-
-#### `POST /tickets/validate` 🔒 (ORGANIZER o STAFF)
-Validar QR. Body: `{ "qrToken": "uuid" }`. Response: ticket con `status: "USED"`.
-
-Errores: `404 TICKET_NOT_FOUND`, `409 TICKET_ALREADY_USED`, `409 TICKET_NOT_VALID`.
-
-**Ticket statuses:** `VALID` | `USED` | `CANCELLED` | `EXPIRED`
 
 ---
 

@@ -1231,5 +1231,454 @@
   </div>
 </div>
 
+<!-- ══════════════════════════════════════════════
+     NUEVAS FUNCIONALIDADES POR ROL
+══════════════════════════════════════════════ -->
+<div class="page" style="page-break-before: always; padding-top: 20px;">
+
+  <div class="section-header">
+    <div class="section-num">+</div>
+    <div class="section-title">Nuevas <span>Funcionalidades</span> por Rol</div>
+  </div>
+  <p style="color: var(--muted); font-size: 13px; margin-bottom: 36px;">
+    Ideas de producto alineadas con la visión de Zync. Cada funcionalidad se conecta con
+    infraestructura ya existente (sockets, auth, roles, cart, stories, chat) para minimizar el
+    esfuerzo de integración.
+  </p>
+
+  <!-- ────────── USER ────────── -->
+  <div class="role-block">
+    <div class="role-banner user">
+      <div class="role-icon">👤</div>
+      <div>
+        <div class="role-name">Usuario</div>
+        <div class="role-desc">Asistentes a eventos — Tab layout en <code>(tabs)/</code></div>
+      </div>
+    </div>
+
+    <div class="task-list">
+
+      <div class="task-card">
+        <div class="task-card-header">
+          <span class="task-id">NF-U1</span>
+          <span class="task-name">Feed social — ¿A qué van tus amigos?</span>
+        </div>
+        <div class="task-body">
+          Mostrar en la home un carrusel de usuarios seguidos con su evento activo o próximo. Conecta directamente con el feed de DJs ya implementado (<code>getDjFeed</code>) y el sistema de presencia por socket (<code>presence:list</code>).
+          <ul>
+            <li>Seguir / dejar de seguir a otros usuarios (análogo a <code>followDj</code>/<code>unfollowDj</code>)</li>
+            <li>Card compacta: avatar, nombre, nombre del evento y hora de inicio</li>
+            <li>Tap en la card navega al detalle del evento para comprar entrada</li>
+          </ul>
+          <b>Conecta con:</b> <code>presence socket</code>, <code>tickets</code>, <code>events</code>
+        </div>
+      </div>
+
+      <div class="task-card">
+        <div class="task-card-header">
+          <span class="task-id">NF-U2</span>
+          <span class="task-name">Historial de song requests</span>
+        </div>
+        <div class="task-body">
+          Pantalla en el perfil con todas las canciones que el usuario ha pedido, agrupadas por evento. Permite ver el estado final (aceptada / rechazada / tocada) y volver a pedir la misma canción en futuros eventos con un solo tap.
+          <ul>
+            <li>Reutiliza el endpoint <code>GET /dj/:djProfileId/song-requests</code> filtrando por <code>userId</code></li>
+            <li>Acción "Pedir de nuevo" lleva al DJ activo del establecimiento actual (<code>ZyncContext</code>)</li>
+            <li>Badge de "favorita" si fue pedida 3+ veces</li>
+          </ul>
+          <b>Conecta con:</b> <code>ZyncContext</code>, <code>song_request:updated socket</code>, <code>Spotify search</code>
+        </div>
+      </div>
+
+      <div class="task-card">
+        <div class="task-card-header">
+          <span class="task-id">NF-U3</span>
+          <span class="task-name">Reseñas de locales y eventos</span>
+        </div>
+        <div class="task-body">
+          Después de asistir a un evento (ticket validado = check-in confirmado), desbloquear formulario de reseña para el venue y el evento. Se apoya en el sistema de reviews de DJs ya existente (<code>getDjReviews</code>, <code>submitDjReview</code>).
+          <ul>
+            <li>Rating 1-5 estrellas + texto corto + foto opcional</li>
+            <li>Solo habilitado si el ticket del usuario fue validado (<code>POST /tickets/validate</code>)</li>
+            <li>Las reseñas aparecen en el perfil público del venue y en la pantalla del evento</li>
+          </ul>
+          <b>Conecta con:</b> <code>tickets</code>, <code>venues reviews</code>, <code>DJ reviews pattern</code>
+        </div>
+      </div>
+
+      <div class="task-card">
+        <div class="task-card-header">
+          <span class="task-id">NF-U4</span>
+          <span class="task-name">Wallet — Historial detallado de gastos</span>
+        </div>
+        <div class="task-body">
+          Expandir la pantalla Wallet con un historial de transacciones: recargas, compras de entradas y consumiciones en barra, agrupadas por evento. Complementa el tier de usuario (bronce/plata/oro) de <code>stats.service.ts</code>.
+          <ul>
+            <li>Tab "Movimientos" con línea de tiempo de transacciones</li>
+            <li>Filtro por mes / tipo (entrada, consumición, recarga)</li>
+            <li>Total gastado en el mes actual y barra de progreso hacia el siguiente tier</li>
+          </ul>
+          <b>Conecta con:</b> <code>wallet.service</code>, <code>getUserStats</code>, <code>orders</code>
+        </div>
+      </div>
+
+      <div class="task-card">
+        <div class="task-card-header">
+          <span class="task-id">NF-U5</span>
+          <span class="task-name">Modo "En el evento" — HUD contextual</span>
+        </div>
+        <div class="task-body">
+          Cuando el usuario ha hecho check-in en un evento activo, mostrar un banner flotante persistente con accesos rápidos: pedir canción, abrir chat del evento, ver menú de barra. Aprovecha el <code>ZyncContext</code> y el check-in ya implementado (<code>checkLocation</code>).
+          <ul>
+            <li>Banner aparece automáticamente al confirmar <code>POST /events/check-location</code></li>
+            <li>Botones directos: 🎵 Request · 💬 Chat · 🍹 Barra</li>
+            <li>Desaparece al salir del evento o al día siguiente</li>
+          </ul>
+          <b>Conecta con:</b> <code>ZyncContext</code>, <code>checkLocation</code>, <code>chat socket</code>, <code>cart</code>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ────────── DJ ────────── -->
+  <div class="role-block">
+    <div class="role-banner dj">
+      <div class="role-icon">🎧</div>
+      <div>
+        <div class="role-name">DJ</div>
+        <div class="role-desc">Artistas gestionando gigs y promo codes — Tab layout en <code>(business)/</code></div>
+      </div>
+    </div>
+
+    <div class="task-list">
+
+      <div class="task-card">
+        <div class="task-card-header">
+          <span class="task-id">NF-DJ1</span>
+          <span class="task-name">Setlist manager — Preparación de gig</span>
+        </div>
+        <div class="task-body">
+          Antes de un gig, el DJ puede armar una playlist de referencia usando la integración de Spotify ya existente (<code>searchTracks</code>). Las canciones del setlist se priorizan en la cola de song requests del evento.
+          <ul>
+            <li>Pantalla accesible desde el detalle de un gig próximo</li>
+            <li>Buscar tracks con <code>searchTracks()</code> y añadir al setlist del gig</li>
+            <li>En el modo live, las requests de canciones que están en el setlist se resaltan visualmente</li>
+            <li>Al terminar el gig, el setlist se guarda como historial del evento</li>
+          </ul>
+          <b>Conecta con:</b> <code>Spotify search</code>, <code>useDjGigs</code>, <code>song requests</code>
+        </div>
+      </div>
+
+      <div class="task-card">
+        <div class="task-card-header">
+          <span class="task-id">NF-DJ2</span>
+          <span class="task-name">Estadísticas avanzadas — Géneros y tendencias</span>
+        </div>
+        <div class="task-body">
+          Expandir el <code>DjStats</code> con análisis de las canciones más pedidas, géneros dominantes y evolución de fans. Convierte los datos de song requests en inteligencia de audiencia.
+          <ul>
+            <li>Gráfico de barras: top 10 canciones más pedidas (históricamente y por evento)</li>
+            <li>Distribución de géneros de las requests (requiere enriquecer con metadata de Spotify)</li>
+            <li>Evolución mensual de seguidores y requests aceptadas</li>
+            <li>KPI: tasa de aceptación promedio (aceptadas / totales)</li>
+          </ul>
+          <b>Conecta con:</b> <code>useDjStats</code>, <code>DjStats domain</code>, <code>Spotify metadata</code>
+        </div>
+      </div>
+
+      <div class="task-card">
+        <div class="task-card-header">
+          <span class="task-id">NF-DJ3</span>
+          <span class="task-name">Ranking público de DJs</span>
+        </div>
+        <div class="task-body">
+          Sección en el perfil público del DJ y en el home del usuario con un ranking de DJs más populares de la plataforma, filtrable por ciudad o género. Aprovecha el sistema de follows y reviews ya existentes.
+          <ul>
+            <li>Score = combinación de: seguidores, reseñas promedio, gigs confirmados último mes</li>
+            <li>Visible en el perfil público <code>app/dj/[id].tsx</code> con posición actual y cambio semanal</li>
+            <li>Sección "Trending DJs" en la home del usuario (junto al feed de gigs seguidos)</li>
+          </ul>
+          <b>Conecta con:</b> <code>getDjReviews</code>, <code>followDj</code>, <code>useDjGigs</code>, <code>DJ public profile</code>
+        </div>
+      </div>
+
+      <div class="task-card">
+        <div class="task-card-header">
+          <span class="task-id">NF-DJ4</span>
+          <span class="task-name">Ingresos por promo code — Comisión detallada</span>
+        </div>
+        <div class="task-body">
+          Los promo codes ya existen pero el DJ no ve cuánto ha ganado con ellos. Añadir una vista de comisiones dentro del tab de promo codes, conectada con el evento al que pertenece cada código.
+          <ul>
+            <li>Card por promo code: usos / límite, entradas vendidas atribuidas, comisión generada</li>
+            <li>Total de ingresos por promo codes en el periodo seleccionado</li>
+            <li>Export CSV de comisiones (útil para facturación)</li>
+          </ul>
+          <b>Conecta con:</b> <code>useDjPromoCodes</code>, <code>DjStats.totalEarnings</code>, <code>gigs</code>
+        </div>
+      </div>
+
+      <div class="task-card">
+        <div class="task-card-header">
+          <span class="task-id">NF-DJ5</span>
+          <span class="task-name">Modo Live expandido — Visualizador de sala</span>
+        </div>
+        <div class="task-body">
+          Ampliar el <code>setDjLiveMode</code> con una vista del aforo en tiempo real usando el sistema de presencia por socket. El DJ puede ver cuántos usuarios están en la sala y su mood (basado en reactions a songs).
+          <ul>
+            <li>Contador de usuarios con check-in activo en el evento (<code>presence:list</code>)</li>
+            <li>Reactions rápidas en las song requests: 🔥 / 👍 / 🎵 — contribuyen al score de la canción</li>
+            <li>Las reactions mueven canciones arriba o abajo en la cola de requests</li>
+          </ul>
+          <b>Conecta con:</b> <code>setDjLiveMode</code>, <code>presence socket</code>, <code>song requests queue</code>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ────────── BUSINESS ────────── -->
+  <div class="role-block">
+    <div class="role-banner biz">
+      <div class="role-icon">🏢</div>
+      <div>
+        <div class="role-name">Business (Organizer / Venue)</div>
+        <div class="role-desc">Dueños de locales y organizadores de eventos — Tab layout en <code>(business)/</code></div>
+      </div>
+    </div>
+
+    <div class="task-list">
+
+      <div class="task-card">
+        <div class="task-card-header">
+          <span class="task-id">NF-BIZ1</span>
+          <span class="task-name">Control de aforo en tiempo real</span>
+        </div>
+        <div class="task-body">
+          Dashboard de ocupación en vivo usando el sistema de presencia socket y los check-ins validados por el scanner. Integra con el aforo máximo definido al crear el evento.
+          <ul>
+            <li>Indicador circular: X personas / capacidad máxima</li>
+            <li>Histograma de entradas por hora (pico nocturno)</li>
+            <li>Alerta automática al 80% y al 100% de aforo</li>
+            <li>Botón "Cerrar acceso" que deshabilita temporalmente la validación de tickets nuevos</li>
+          </ul>
+          <b>Conecta con:</b> <code>presence socket</code>, <code>scanner QR / tickets/validate</code>, <code>createEvent (capacidad)</code>
+        </div>
+      </div>
+
+      <div class="task-card">
+        <div class="task-card-header">
+          <span class="task-id">NF-BIZ2</span>
+          <span class="task-name">Gestión de staff — Rol STAFF</span>
+        </div>
+        <div class="task-body">
+          El backend ya contempla el rol <code>STAFF</code>. Implementar en la app la capacidad de que el Business invite a empleados como staff de un evento específico, con acceso solo al scanner y a la gestión de pedidos.
+          <ul>
+            <li>Pantalla "Staff" en el detalle del evento: lista de empleados activos</li>
+            <li>Invitación por email: el backend asigna rol <code>STAFF</code> con scope del evento</li>
+            <li>El staff ve solo Scanner y Pedidos, no datos financieros</li>
+            <li>Revocar acceso al terminar el evento</li>
+          </ul>
+          <b>Conecta con:</b> <code>STAFF role (backend)</code>, <code>scanner</code>, <code>orders fulfillment</code>
+        </div>
+      </div>
+
+      <div class="task-card">
+        <div class="task-card-header">
+          <span class="task-id">NF-BIZ3</span>
+          <span class="task-name">Reservas de mesa / área VIP</span>
+        </div>
+        <div class="task-body">
+          Añadir un tipo de producto especial "Reserva" al catálogo del venue. El usuario compra la reserva desde su wallet, igual que cualquier otro producto del carrito. El negocio gestiona las reservas en una pantalla dedicada.
+          <ul>
+            <li>Producto con tipo <code>reservation</code>: nombre del área, personas máx., precio mínimo de consumición</li>
+            <li>El usuario ve las mesas disponibles al entrar al menú del venue</li>
+            <li>La compra genera un QR de reserva (mismo sistema que tickets)</li>
+            <li>Vista "Mesas" en el Business: lista de reservas con estado (libre, reservada, ocupada)</li>
+          </ul>
+          <b>Conecta con:</b> <code>cart/orders</code>, <code>wallet</code>, <code>ticket QR pattern</code>, <code>products</code>
+        </div>
+      </div>
+
+      <div class="task-card">
+        <div class="task-card-header">
+          <span class="task-id">NF-BIZ4</span>
+          <span class="task-name">Notificaciones push a asistentes previos</span>
+        </div>
+        <div class="task-body">
+          El Business puede enviar una notificación push a usuarios que asistieron a eventos pasados del mismo venue. Complementa el broadcast de DJ (<code>sendBroadcast</code>) con alcance a nivel de local.
+          <ul>
+            <li>Segmentación: todos los asistentes previos / últimos 30 días / por evento específico</li>
+            <li>Preview del mensaje + estimación de alcance antes de enviar</li>
+            <li>Límite de 1 push por usuario por semana (anti-spam)</li>
+            <li>Métricas de apertura en el dashboard 24h después</li>
+          </ul>
+          <b>Conecta con:</b> <code>push notifications (Sprint 3)</code>, <code>tickets/asistentes</code>, <code>sendBroadcast pattern</code>
+        </div>
+      </div>
+
+      <div class="task-card">
+        <div class="task-card-header">
+          <span class="task-id">NF-BIZ5</span>
+          <span class="task-name">Reporte de revenue por evento — Export</span>
+        </div>
+        <div class="task-body">
+          Tras cerrar un evento, generar un resumen financiero descargable: entradas vendidas, consumiciones, comisiones pagadas a DJs y promo codes aplicados. Se construye sobre <code>getEventStats</code> (actualmente mock).
+          <ul>
+            <li>Pantalla "Cierre de evento" accesible desde el historial de eventos pasados</li>
+            <li>Desglose: ingresos brutos, comisiones Zync (%), comisiones DJ, neto</li>
+            <li>Top 5 productos más vendidos y top 5 canciones más pedidas en el evento</li>
+            <li>Export a PDF / CSV para facturación</li>
+          </ul>
+          <b>Conecta con:</b> <code>getEventStats</code>, <code>getVenueStats</code>, <code>useDjPromoCodes</code>, <code>orders</code>
+        </div>
+      </div>
+
+      <div class="task-card">
+        <div class="task-card-header">
+          <span class="task-id">NF-BIZ6</span>
+          <span class="task-name">Stories de venue — Promoción de eventos</span>
+        </div>
+        <div class="task-body">
+          El Business puede publicar stories desde la pantalla de su venue o evento, visibles para todos los usuarios que hayan asistido o que sigan el venue. Extiende el sistema de stories de eventos ya implementado.
+          <ul>
+            <li>Acceso desde el perfil del venue: botón "Publicar story"</li>
+            <li>Stories del venue aparecen en el home del usuario en el carrusel de stories</li>
+            <li>Tipos: imagen promo, video corto (≤ 15s), anuncio de line-up</li>
+            <li>Duración: 24h o hasta el fin del evento</li>
+          </ul>
+          <b>Conecta con:</b> <code>stories feature</code>, <code>createStory</code>, <code>venues media (Cloudinary)</code>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── PRIORIZACIÓN DE NUEVAS FEATURES ── -->
+  <div class="section-header" style="margin-top: 48px;">
+    <div class="section-num" style="background: #6a1aaa; color: white;">▲</div>
+    <div class="section-title">Priorización <span>Sugerida</span></div>
+  </div>
+  <p style="color: var(--muted); font-size: 12px; margin-bottom: 20px;">
+    Ordenadas por impacto en retención × esfuerzo estimado. Las primeras 3 son quick-wins post-MVP.
+  </p>
+
+  <table class="status-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Feature</th>
+        <th>Rol</th>
+        <th>Impacto</th>
+        <th>Esfuerzo</th>
+        <th>Dependencias MVP</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="color: var(--neon); font-weight: 700;">1</td>
+        <td>NF-U5 · Modo "En el evento" HUD</td>
+        <td>User</td>
+        <td><span class="badge ok">Alto</span></td>
+        <td><span class="badge ok">Bajo</span></td>
+        <td>checkLocation, ZyncContext, cart</td>
+      </tr>
+      <tr>
+        <td style="color: var(--neon); font-weight: 700;">2</td>
+        <td>NF-U2 · Historial de song requests</td>
+        <td>User</td>
+        <td><span class="badge ok">Alto</span></td>
+        <td><span class="badge ok">Bajo</span></td>
+        <td>Song requests (Sprint 1)</td>
+      </tr>
+      <tr>
+        <td style="color: var(--neon); font-weight: 700;">3</td>
+        <td>NF-DJ1 · Setlist manager</td>
+        <td>DJ</td>
+        <td><span class="badge ok">Alto</span></td>
+        <td><span class="badge warn">Medio</span></td>
+        <td>Spotify search, Gigs (Sprint 2)</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td>NF-BIZ1 · Control de aforo en tiempo real</td>
+        <td>Business</td>
+        <td><span class="badge ok">Alto</span></td>
+        <td><span class="badge warn">Medio</span></td>
+        <td>Scanner QR, presence socket</td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td>NF-DJ5 · Modo Live — reactions</td>
+        <td>DJ</td>
+        <td><span class="badge warn">Medio</span></td>
+        <td><span class="badge warn">Medio</span></td>
+        <td>setDjLiveMode, presence socket</td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td>NF-U3 · Reseñas de locales y eventos</td>
+        <td>User</td>
+        <td><span class="badge warn">Medio</span></td>
+        <td><span class="badge warn">Medio</span></td>
+        <td>DJ reviews pattern, tickets validate</td>
+      </tr>
+      <tr>
+        <td>7</td>
+        <td>NF-BIZ3 · Reservas de mesa / VIP</td>
+        <td>Business</td>
+        <td><span class="badge warn">Medio</span></td>
+        <td><span class="badge warn">Medio</span></td>
+        <td>Cart/orders, wallet, ticket QR</td>
+      </tr>
+      <tr>
+        <td>8</td>
+        <td>NF-BIZ2 · Gestión de staff</td>
+        <td>Business</td>
+        <td><span class="badge warn">Medio</span></td>
+        <td><span class="badge no">Alto</span></td>
+        <td>STAFF role (backend), scanner</td>
+      </tr>
+      <tr>
+        <td>9</td>
+        <td>NF-U1 · Feed social de amigos</td>
+        <td>User</td>
+        <td><span class="badge warn">Medio</span></td>
+        <td><span class="badge no">Alto</span></td>
+        <td>Follow system (nuevo), presence</td>
+      </tr>
+      <tr>
+        <td>10</td>
+        <td>NF-DJ3 · Ranking público de DJs</td>
+        <td>DJ</td>
+        <td><span class="badge warn">Medio</span></td>
+        <td><span class="badge warn">Medio</span></td>
+        <td>followDj, getDjReviews, stats</td>
+      </tr>
+      <tr>
+        <td>11</td>
+        <td>NF-BIZ6 · Stories de venue</td>
+        <td>Business</td>
+        <td><span class="badge warn">Medio</span></td>
+        <td><span class="badge ok">Bajo</span></td>
+        <td>Stories feature (Sprint 3)</td>
+      </tr>
+      <tr>
+        <td>12</td>
+        <td>NF-BIZ5 · Reporte de revenue — Export</td>
+        <td>Business</td>
+        <td><span class="badge ok">Alto</span></td>
+        <td><span class="badge no">Alto</span></td>
+        <td>getEventStats (real), orders</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="footer">
+    Zync Mobile · Plan MVP · <span>Marzo 2026</span> · Generado con Claude Code
+  </div>
+</div>
+
 </body>
 </html>

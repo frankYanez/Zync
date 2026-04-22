@@ -75,7 +75,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }, [items]);
 
     const totalItems = useMemo(() => {
-        return items.reduce((toal, item) => toal + item.quantity, 0);
+        return items.reduce((total, item) => total + item.quantity, 0);
     }, [items]);
 
     const checkout = async (params?: { venueId?: string; eventId?: string; promoCode?: string; useZyncPoints?: boolean }): Promise<{ success: boolean; orderId?: string; error?: string }> => {

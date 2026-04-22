@@ -17,7 +17,7 @@ interface AuthContextType {
     verifyEmail: (email: string, otp: string) => Promise<boolean>;
     resendVerification: (email: string) => Promise<void>;
     requestEmailVerification: (email: string) => Promise<void>;
-    updateUser: (user: User) => void;
+    updateUser: (user: User) => void;  // Actualiza estado local. Llama a checkUser() para re-sincronizar con el servidor.
     updateBalance: (amount: number) => void;
     checkUser: () => Promise<void>;
     refreshSession: () => Promise<void>;
@@ -36,9 +36,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const checkUser = async () => {
         try {
             const user = await authService.checkAuth();
-
-            console.log(user, "user en checkuser");
-
             setUser(user);
         } catch (e) {
             console.error(e);
@@ -99,8 +96,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(null);
     };
 
-    const updateUser = async (updatedUser: User) => {
-        checkUser();
+    const updateUser = (updatedUser: User) => {
+        setUser(updatedUser);
     };
 
     // Refresh JWT using the stored refresh token, then reload user from /auth/me.

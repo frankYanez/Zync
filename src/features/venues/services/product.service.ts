@@ -19,7 +19,6 @@ export interface CreateProductDto {
     description?: string;
     price: number;
     category: string;
-    imageUrl?: string;
 }
 
 // GET /venues/:venueId/products?category=Tragos
@@ -47,4 +46,14 @@ export const updateProduct = async (venueId: string, productId: string, data: Pa
 export const deleteProduct = async (venueId: string, productId: string): Promise<void> => {
     const config = await getAuthHeaders();
     await axios.delete(`${API_URL}/venues/${venueId}/products/${productId}`, config);
+};
+
+// PATCH /venues/:venueId/products/:productId/image
+export const uploadProductImage = async (venueId: string, productId: string, fileUri: string): Promise<{ imageUrl: string }> => {
+    const config = await getAuthHeaders(true);
+    const formData = new FormData();
+    const filename = fileUri.split('/').pop() ?? 'upload';
+    formData.append('file', { uri: fileUri, name: filename, type: 'image/jpeg' } as any);
+    const response = await axios.patch(`${API_URL}/venues/${venueId}/products/${productId}/image`, formData, config);
+    return response.data;
 };

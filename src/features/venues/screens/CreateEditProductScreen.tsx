@@ -2,10 +2,12 @@ import { NeonButton } from '@/components/NeonButton';
 import { NeonInput } from '@/components/NeonInput';
 import { ScreenLayout } from '@/components/ScreenLayout';
 import { ThemedText } from '@/components/themed-text';
-import { CreateProductDto } from '@/features/venues/services/product.service';
+import { CreateProductDto, uploadProductImage } from '@/features/venues/services/product.service';
 import { useVenueProducts } from '@/features/venues/hooks/useVenueProducts';
 import { ZyncTheme } from '@/shared/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -29,7 +31,8 @@ export default function CreateEditProductScreen() {
     const [description, setDescription] = useState('');
     const [price, setPrice] = useState('');
     const [category, setCategory] = useState(CATEGORIES[0]);
-    const [imageUrl, setImageUrl] = useState('');
+    const [existingImageUrl, setExistingImageUrl] = useState('');
+    const [pickedImageUri, setPickedImageUri] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const { products, add, update } = useVenueProducts(venueId);
@@ -42,8 +45,25 @@ export default function CreateEditProductScreen() {
         setDescription(p.description ?? '');
         setPrice(String(p.price));
         setCategory(p.category);
-        setImageUrl(p.imageUrl ?? '');
+        setExistingImageUrl(p.imageUrl ?? '');
     }, [products, id, isEdit]);
+
+    const pickImage = async () => {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+            Alert.alert('Permiso requerido', 'Necesitamos acceso a tu galería para subir fotos.');
+            return;
+        }
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+        });
+        if (!result.canceled && result.assets[0]) {
+            setPickedImageUri(result.assets[0].uri);
+        }
+    };
 
     const handleSubmit = async () => {
         if (!name.trim()) return Alert.alert('Error', 'Ingresá el nombre del producto.');
@@ -55,16 +75,23 @@ export default function CreateEditProductScreen() {
             description: description.trim() || undefined,
             price: parseFloat(price),
             category,
-            imageUrl: imageUrl.trim() || undefined,
         };
 
         setIsSubmitting(true);
         try {
+            let productId: string;
             if (isEdit && id) {
                 await update(id, data);
+                productId = id;
             } else {
-                await add(data);
+                const created = await add(data);
+                productId = created.id;
             }
+
+            if (pickedImageUri) {
+                await uploadProductImage(venueId, productId, pickedImageUri);
+            }
+
             router.back();
         } catch (error: any) {
             const msg = error?.response?.data?.message;
@@ -73,6 +100,8 @@ export default function CreateEditProductScreen() {
             setIsSubmitting(false);
         }
     };
+
+    const displayImageUri = pickedImageUri ?? existingImageUrl ?? null;
 
     return (
         <ScreenLayout style={styles.container} noPadding>
@@ -129,14 +158,22 @@ export default function CreateEditProductScreen() {
                     </View>
 
                     <View style={styles.field}>
-                        <ThemedText style={styles.label}>URL de imagen (opcional)</ThemedText>
-                        <NeonInput
-                            placeholder="https://..."
-                            value={imageUrl}
-                            onChangeText={setImageUrl}
-                            autoCapitalize="none"
-                            keyboardType="url"
-                        />
+                        <ThemedText style={styles.label}>Foto del producto (opcional)</ThemedText>
+                        <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
+                            {displayImageUri ? (
+                                <Image source={{ uri: displayImageUri }} style={styles.imagePreview} contentFit="cover" />
+                            ) : (
+                                <View style={styles.imagePlaceholder}>
+                                    <Ionicons name="camera-outline" size={32} color={ZyncTheme.colors.textSecondary} />
+                                    <ThemedText style={styles.imagePlaceholderText}>Elegir foto</ThemedText>
+                                </View>
+                            )}
+                        </TouchableOpacity>
+                        {displayImageUri && (
+                            <TouchableOpacity style={styles.changeImageBtn} onPress={pickImage}>
+                                <ThemedText style={styles.changeImageText}>Cambiar foto</ThemedText>
+                            </TouchableOpacity>
+                        )}
                     </View>
 
                     <View style={{ height: 16 }} />
@@ -180,4 +217,23 @@ const styles = StyleSheet.create({
     catChipActive: { backgroundColor: ZyncTheme.colors.primary, borderColor: ZyncTheme.colors.primary },
     catChipText: { fontSize: 13, color: ZyncTheme.colors.textSecondary },
     catChipTextActive: { color: '#000', fontWeight: '700' },
+    imagePicker: {
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: ZyncTheme.colors.border,
+        borderStyle: 'dashed',
+        overflow: 'hidden',
+        backgroundColor: ZyncTheme.colors.card,
+        height: 140,
+    },
+    imagePreview: { width: '100%', height: '100%' },
+    imagePlaceholder: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+    },
+    imagePlaceholderText: { fontSize: 13, color: ZyncTheme.colors.textSecondary },
+    changeImageBtn: { marginTop: 8, alignSelf: 'flex-start' },
+    changeImageText: { fontSize: 13, color: ZyncTheme.colors.primary, fontWeight: '600' },
 });

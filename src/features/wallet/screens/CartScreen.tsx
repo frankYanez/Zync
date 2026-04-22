@@ -66,11 +66,8 @@ export default function CartScreen() {
             });
 
             if (result.success && result.orderId) {
-                // Deduct points locally if used
-                if (usePoints && user) {
-                    // This is a minimal mock update since we don't have a real backend sync here
-                    const newPoints = Math.max(0, userPoints - Math.round(discount));
-                    // In a real app we'd await an updateBalance call
+                if (usePoints && discount > 0) {
+                    updateBalance(-Math.round(discount));
                 }
                 setOrderId(result.orderId);
                 setStatus('success');

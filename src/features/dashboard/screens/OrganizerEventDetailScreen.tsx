@@ -1,18 +1,20 @@
 import { CyberCard } from '@/components/CyberCard';
 import { NeonButton } from '@/components/NeonButton';
+import { NeonInput } from '@/components/NeonInput';
 import { ScreenLayout } from '@/components/ScreenLayout';
 import { ThemedText } from '@/components/themed-text';
 import { Event, LineupEntry, deleteEvent, endEvent, getEventById, getEventLineup } from '@/features/dashboard/services/event.service';
 import { DjProfile, PromoCode } from '@/features/dj/domain/dj.types';
 import { addDjToLineup, createOrganizerPromoCode, getDjs, getEventPromoCodes } from '@/features/dj/services/dj.service';
+import { TicketType, createTicketType, deleteTicketType, getTicketTypes } from '@/features/tickets/services/ticket.service';
 import { ZyncTheme } from '@/shared/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, ScrollView, Share, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Modal, ScrollView, Share, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 
-type Tab = 'info' | 'lineup' | 'promos';
+type Tab = 'info' | 'lineup' | 'promos' | 'tickets';
 
 export default function OrganizerEventDetailScreen() {
     const router = useRouter();
@@ -21,23 +23,33 @@ export default function OrganizerEventDetailScreen() {
     const [lineup, setLineup] = useState<LineupEntry[]>([]);
     const [allDjs, setAllDjs] = useState<DjProfile[]>([]);
     const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
+    const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
     const [tab, setTab] = useState<Tab>('info');
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(false);
     const [generatingForDj, setGeneratingForDj] = useState<string | null>(null);
 
+    // Ticket type creation modal state
+    const [showTicketModal, setShowTicketModal] = useState(false);
+    const [ttName, setTtName] = useState('');
+    const [ttPrice, setTtPrice] = useState('');
+    const [ttCapacity, setTtCapacity] = useState('');
+    const [ttDescription, setTtDescription] = useState('');
+    const [ttSubmitting, setTtSubmitting] = useState(false);
+
     const load = useCallback(async () => {
         if (!id) return;
         try {
-            const [ev, lp, djs] = await Promise.all([
+            const [ev, lp, djs, tts] = await Promise.all([
                 getEventById(id),
                 getEventLineup(id),
                 getDjs(),
+                getTicketTypes(id).catch(() => [] as TicketType[]),
             ]);
             setEvent(ev);
             setLineup(lp);
             setAllDjs(djs);
-            // Load promo codes for each DJ in the lineup in parallel
+            setTicketTypes(tts);
             try {
                 const perDj = await Promise.all(
                     lp.map(entry => getEventPromoCodes(id, entry.djProfileId).catch(() => [] as PromoCode[]))
@@ -138,6 +150,53 @@ export default function OrganizerEventDetailScreen() {
         }
     };
 
+    const handleCreateTicketType = async () => {
+        if (!id) return;
+        if (!ttName.trim()) return Alert.alert('Error', 'Ingresá el nombre del tipo de ticket.');
+        if (!ttPrice || isNaN(parseFloat(ttPrice))) return Alert.alert('Error', 'Ingresá un precio válido.');
+        setTtSubmitting(true);
+        try {
+            const created = await createTicketType(id, {
+                name: ttName.trim(),
+                description: ttDescription.trim() || undefined,
+                price: parseFloat(ttPrice),
+                capacity: ttCapacity ? parseInt(ttCapacity, 10) : undefined,
+            });
+            setTicketTypes(prev => [...prev, created]);
+            setShowTicketModal(false);
+            setTtName(''); setTtPrice(''); setTtCapacity(''); setTtDescription('');
+        } catch (e: any) {
+            const msg = e?.response?.data?.message;
+            Alert.alert('Error', Array.isArray(msg) ? msg.join('\n') : msg || 'No se pudo crear el tipo de ticket.');
+        } finally {
+            setTtSubmitting(false);
+        }
+    };
+
+    const handleDeleteTicketType = (tt: TicketType) => {
+        if (!id) return;
+        Alert.alert(
+            'Eliminar tipo de ticket',
+            `¿Eliminar "${tt.name}"? Los tickets ya vendidos no se ven afectados.`,
+            [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                    text: 'Eliminar',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await deleteTicketType(id, tt.id);
+                            setTicketTypes(prev => prev.filter(t => t.id !== tt.id));
+                        } catch (e: any) {
+                            const msg = e?.response?.data?.message;
+                            Alert.alert('Error', Array.isArray(msg) ? msg.join('\n') : msg || 'No se pudo eliminar.');
+                        }
+                    },
+                },
+            ],
+        );
+    };
+
     if (loading) {
         return (
             <ScreenLayout style={styles.centered} noPadding>
@@ -202,11 +261,12 @@ export default function OrganizerEventDetailScreen() {
             </View>
 
             {/* Tabs */}
-            <View style={styles.tabRow}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabRowScroll} contentContainerStyle={styles.tabRow}>
                 {([
-                    { key: 'info', label: 'Info' },
-                    { key: 'lineup', label: `Lineup (${lineup.length})` },
-                    { key: 'promos', label: `Promos (${promoCodes.length})` },
+                    { key: 'info',    label: 'Info' },
+                    { key: 'lineup',  label: `Lineup (${lineup.length})` },
+                    { key: 'promos',  label: `Promos (${promoCodes.length})` },
+                    { key: 'tickets', label: `Tickets (${ticketTypes.length})` },
                 ] as { key: Tab; label: string }[]).map(({ key, label }) => (
                     <TouchableOpacity key={key} style={[styles.tabBtn, tab === key && styles.tabBtnActive]} onPress={() => setTab(key)}>
                         <ThemedText style={[styles.tabText, tab === key && styles.tabTextActive]}>
@@ -214,9 +274,10 @@ export default function OrganizerEventDetailScreen() {
                         </ThemedText>
                     </TouchableOpacity>
                 ))}
-            </View>
+            </ScrollView>
 
-            {tab === 'info' ? (
+            {/* Info tab */}
+            {tab === 'info' && (
                 <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
                     <CyberCard style={styles.infoCard}>
                         <InfoRow icon="business-outline" label="Venue" value={event.venue?.name ?? '—'} />
@@ -235,93 +296,18 @@ export default function OrganizerEventDetailScreen() {
                     </CyberCard>
                     <View style={{ height: 60 }} />
                 </ScrollView>
-            ) : (
-                <View style={styles.lineupContainer}>
-                    {/* Current lineup */}
-                    {lineup.length > 0 && (
-                        <>
-                            <ThemedText style={styles.subSection}>EN EL LINEUP</ThemedText>
-                            {lineup.map(entry => (
-                                <View key={entry.id} style={styles.djRow}>
-                                    {entry.logoUrl ? (
-                                        <Image source={{ uri: entry.logoUrl }} style={styles.djAvatar} contentFit="cover" />
-                                    ) : (
-                                        <View style={[styles.djAvatar, styles.djAvatarFallback]}>
-                                            <Ionicons name="musical-notes" size={16} color="#000" />
-                                        </View>
-                                    )}
-                                    <View style={styles.djInfo}>
-                                        <ThemedText style={styles.djName}>{entry.artistName}</ThemedText>
-                                        {(entry.startTime || entry.endTime) && (
-                                            <ThemedText style={styles.djTime}>
-                                                {entry.startTime} – {entry.endTime}
-                                            </ThemedText>
-                                        )}
-                                    </View>
-                                    <View style={styles.inLineupBadge}>
-                                        <ThemedText style={styles.inLineupText}>En lineup</ThemedText>
-                                    </View>
-                                </View>
-                            ))}
-                        </>
-                    )}
-
-                    {/* Add DJs */}
-                    <ThemedText style={styles.subSection}>AGREGAR DJ</ThemedText>
-                    <FlatList
-                        data={availableDjs}
-                        keyExtractor={item => item.id}
-                        renderItem={({ item }) => (
-                            <View style={styles.djRow}>
-                                {item.logoUrl ? (
-                                    <Image source={{ uri: item.logoUrl }} style={styles.djAvatar} contentFit="cover" />
-                                ) : (
-                                    <View style={[styles.djAvatar, styles.djAvatarFallback]}>
-                                        <Ionicons name="musical-notes" size={16} color="#000" />
-                                    </View>
-                                )}
-                                <View style={styles.djInfo}>
-                                    <ThemedText style={styles.djName}>{item.artistName}</ThemedText>
-                                    <ThemedText style={styles.djGenres} numberOfLines={1}>{item.genres?.join(', ')}</ThemedText>
-                                </View>
-                                <TouchableOpacity
-                                    style={[styles.addBtn, actionLoading && { opacity: 0.5 }]}
-                                    onPress={() => handleAddDj(item.id)}
-                                    disabled={actionLoading}
-                                >
-                                    <Ionicons name="add" size={18} color="#000" />
-                                </TouchableOpacity>
-                            </View>
-                        )}
-                        contentContainerStyle={styles.djList}
-                        showsVerticalScrollIndicator={false}
-                        ListEmptyComponent={
-                            <ThemedText style={styles.emptyDjs}>
-                                {lineup.length > 0 ? 'Todos los DJs ya están en el lineup.' : 'No hay DJs disponibles.'}
-                            </ThemedText>
-                        }
-                    />
-                </View>
             )}
 
-            {tab === 'promos' && (
+            {/* Lineup + Promos tab */}
+            {(tab === 'lineup' || tab === 'promos') && (
                 <View style={styles.lineupContainer}>
-                    {lineup.length === 0 ? (
-                        <View style={styles.emptyPromosContainer}>
-                            <Ionicons name="pricetag-outline" size={48} color={ZyncTheme.colors.textSecondary} />
-                            <ThemedText style={styles.emptyDjs}>
-                                Agregá DJs al lineup primero para generar códigos.
-                            </ThemedText>
-                        </View>
-                    ) : (
-                        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.djList}>
-                            {lineup.map(entry => {
-                                const djCodes = promoCodes.filter(p => p.djProfileId === entry.djProfileId);
-                                const isGenerating = generatingForDj === entry.djProfileId;
-                                return (
-                                    <View key={entry.id} style={styles.promoDjBlock}>
-                                        {/* DJ header */}
-                                        <View style={styles.promoDjHeader}>
+                    {tab === 'lineup' && (
+                        <>
+                            {lineup.length > 0 && (
+                                <>
+                                    <ThemedText style={styles.subSection}>EN EL LINEUP</ThemedText>
+                                    {lineup.map(entry => (
+                                        <View key={entry.id} style={styles.djRow}>
                                             {entry.logoUrl ? (
                                                 <Image source={{ uri: entry.logoUrl }} style={styles.djAvatar} contentFit="cover" />
                                             ) : (
@@ -329,46 +315,237 @@ export default function OrganizerEventDetailScreen() {
                                                     <Ionicons name="musical-notes" size={16} color="#000" />
                                                 </View>
                                             )}
-                                            <ThemedText style={styles.djName}>{entry.artistName}</ThemedText>
-                                            <TouchableOpacity
-                                                style={[styles.addBtn, (isGenerating || !!generatingForDj) && { opacity: 0.5 }]}
-                                                onPress={() => handleGeneratePromo(entry.djProfileId, entry.artistName)}
-                                                disabled={isGenerating || !!generatingForDj}
-                                            >
-                                                {isGenerating
-                                                    ? <ActivityIndicator size="small" color="#000" />
-                                                    : <Ionicons name="add" size={18} color="#000" />}
-                                            </TouchableOpacity>
+                                            <View style={styles.djInfo}>
+                                                <ThemedText style={styles.djName}>{entry.artistName}</ThemedText>
+                                                {(entry.startTime || entry.endTime) && (
+                                                    <ThemedText style={styles.djTime}>
+                                                        {entry.startTime} – {entry.endTime}
+                                                    </ThemedText>
+                                                )}
+                                            </View>
+                                            <View style={styles.inLineupBadge}>
+                                                <ThemedText style={styles.inLineupText}>En lineup</ThemedText>
+                                            </View>
                                         </View>
+                                    ))}
+                                </>
+                            )}
 
-                                        {/* Promo codes for this DJ */}
-                                        {djCodes.length === 0 ? (
-                                            <ThemedText style={styles.noCodesText}>Sin códigos generados</ThemedText>
+                            <ThemedText style={styles.subSection}>AGREGAR DJ</ThemedText>
+                            <FlatList
+                                data={availableDjs}
+                                keyExtractor={item => item.id}
+                                renderItem={({ item }) => (
+                                    <View style={styles.djRow}>
+                                        {item.logoUrl ? (
+                                            <Image source={{ uri: item.logoUrl }} style={styles.djAvatar} contentFit="cover" />
                                         ) : (
-                                            djCodes.map(code => (
-                                                <View key={code.id} style={styles.promoCodeRow}>
-                                                    <View style={styles.promoCodeLeft}>
-                                                        <ThemedText style={styles.promoCodeText}>{code.code}</ThemedText>
-                                                        <ThemedText style={styles.promoCodeDate}>
-                                                            {new Date(code.createdAt).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })} · {code.usedCount} usos
-                                                        </ThemedText>
-                                                    </View>
+                                            <View style={[styles.djAvatar, styles.djAvatarFallback]}>
+                                                <Ionicons name="musical-notes" size={16} color="#000" />
+                                            </View>
+                                        )}
+                                        <View style={styles.djInfo}>
+                                            <ThemedText style={styles.djName}>{item.artistName}</ThemedText>
+                                            <ThemedText style={styles.djGenres} numberOfLines={1}>{item.genres?.join(', ')}</ThemedText>
+                                        </View>
+                                        <TouchableOpacity
+                                            style={[styles.addBtn, actionLoading && { opacity: 0.5 }]}
+                                            onPress={() => handleAddDj(item.id)}
+                                            disabled={actionLoading}
+                                        >
+                                            <Ionicons name="add" size={18} color="#000" />
+                                        </TouchableOpacity>
+                                    </View>
+                                )}
+                                contentContainerStyle={styles.djList}
+                                showsVerticalScrollIndicator={false}
+                                ListEmptyComponent={
+                                    <ThemedText style={styles.emptyDjs}>
+                                        {lineup.length > 0 ? 'Todos los DJs ya están en el lineup.' : 'No hay DJs disponibles.'}
+                                    </ThemedText>
+                                }
+                            />
+                        </>
+                    )}
+
+                    {tab === 'promos' && (
+                        <>
+                            {lineup.length === 0 ? (
+                                <View style={styles.emptyPromosContainer}>
+                                    <Ionicons name="pricetag-outline" size={48} color={ZyncTheme.colors.textSecondary} />
+                                    <ThemedText style={styles.emptyDjs}>
+                                        Agregá DJs al lineup primero para generar códigos.
+                                    </ThemedText>
+                                </View>
+                            ) : (
+                                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.djList}>
+                                    {lineup.map(entry => {
+                                        const djCodes = promoCodes.filter(p => p.djProfileId === entry.djProfileId);
+                                        const isGenerating = generatingForDj === entry.djProfileId;
+                                        return (
+                                            <View key={entry.id} style={styles.promoDjBlock}>
+                                                <View style={styles.promoDjHeader}>
+                                                    {entry.logoUrl ? (
+                                                        <Image source={{ uri: entry.logoUrl }} style={styles.djAvatar} contentFit="cover" />
+                                                    ) : (
+                                                        <View style={[styles.djAvatar, styles.djAvatarFallback]}>
+                                                            <Ionicons name="musical-notes" size={16} color="#000" />
+                                                        </View>
+                                                    )}
+                                                    <ThemedText style={styles.djName}>{entry.artistName}</ThemedText>
                                                     <TouchableOpacity
-                                                        style={styles.shareCodeBtn}
-                                                        onPress={() => Share.share({ message: `Usá el código ${code.code} en Zync para obtener descuentos 🎉` })}
+                                                        style={[styles.addBtn, (isGenerating || !!generatingForDj) && { opacity: 0.5 }]}
+                                                        onPress={() => handleGeneratePromo(entry.djProfileId, entry.artistName)}
+                                                        disabled={isGenerating || !!generatingForDj}
                                                     >
-                                                        <Ionicons name="share-outline" size={16} color={ZyncTheme.colors.primary} />
+                                                        {isGenerating
+                                                            ? <ActivityIndicator size="small" color="#000" />
+                                                            : <Ionicons name="add" size={18} color="#000" />}
                                                     </TouchableOpacity>
                                                 </View>
-                                            ))
-                                        )}
-                                    </View>
-                                );
-                            })}
-                        </ScrollView>
+
+                                                {djCodes.length === 0 ? (
+                                                    <ThemedText style={styles.noCodesText}>Sin códigos generados</ThemedText>
+                                                ) : (
+                                                    djCodes.map(code => (
+                                                        <View key={code.id} style={styles.promoCodeRow}>
+                                                            <View style={styles.promoCodeLeft}>
+                                                                <ThemedText style={styles.promoCodeText}>{code.code}</ThemedText>
+                                                                <ThemedText style={styles.promoCodeDate}>
+                                                                    {new Date(code.createdAt).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })} · {code.usedCount} usos
+                                                                </ThemedText>
+                                                            </View>
+                                                            <TouchableOpacity
+                                                                style={styles.shareCodeBtn}
+                                                                onPress={() => Share.share({ message: `Usá el código ${code.code} en Zync para obtener descuentos 🎉` })}
+                                                            >
+                                                                <Ionicons name="share-outline" size={16} color={ZyncTheme.colors.primary} />
+                                                            </TouchableOpacity>
+                                                        </View>
+                                                    ))
+                                                )}
+                                            </View>
+                                        );
+                                    })}
+                                </ScrollView>
+                            )}
+                        </>
                     )}
                 </View>
             )}
+
+            {/* Tickets tab */}
+            {tab === 'tickets' && (
+                <View style={styles.lineupContainer}>
+                    <View style={styles.ticketsHeader}>
+                        <ThemedText style={styles.subSection}>TIPOS DE TICKET</ThemedText>
+                        <TouchableOpacity style={styles.addTicketBtn} onPress={() => setShowTicketModal(true)}>
+                            <Ionicons name="add" size={18} color="#000" />
+                            <ThemedText style={styles.addTicketText}>Nuevo</ThemedText>
+                        </TouchableOpacity>
+                    </View>
+
+                    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.djList}>
+                        {ticketTypes.length === 0 ? (
+                            <View style={styles.emptyPromosContainer}>
+                                <Ionicons name="ticket-outline" size={48} color={ZyncTheme.colors.textSecondary} />
+                                <ThemedText style={styles.emptyDjs}>No hay tipos de ticket creados.</ThemedText>
+                            </View>
+                        ) : (
+                            ticketTypes.map(tt => (
+                                <View key={tt.id} style={styles.ticketTypeRow}>
+                                    <View style={styles.ticketTypeInfo}>
+                                        <ThemedText style={styles.djName}>{tt.name}</ThemedText>
+                                        <View style={styles.ticketTypeMeta}>
+                                            <ThemedText style={[styles.djGenres, { color: ZyncTheme.colors.primary }]}>
+                                                ${parseFloat(tt.price).toLocaleString('es-AR')}
+                                            </ThemedText>
+                                            {tt.capacity != null && (
+                                                <ThemedText style={styles.djGenres}>
+                                                    · {tt.soldCount}/{tt.capacity} vendidos
+                                                </ThemedText>
+                                            )}
+                                            {!tt.isActive && (
+                                                <View style={styles.inactiveBadge}>
+                                                    <ThemedText style={styles.inactiveBadgeText}>Inactivo</ThemedText>
+                                                </View>
+                                            )}
+                                        </View>
+                                        {tt.description ? (
+                                            <ThemedText style={styles.djGenres} numberOfLines={1}>{tt.description}</ThemedText>
+                                        ) : null}
+                                    </View>
+                                    <TouchableOpacity
+                                        style={styles.deleteTicketBtn}
+                                        onPress={() => handleDeleteTicketType(tt)}
+                                    >
+                                        <Ionicons name="trash-outline" size={18} color={ZyncTheme.colors.error} />
+                                    </TouchableOpacity>
+                                </View>
+                            ))
+                        )}
+                    </ScrollView>
+                </View>
+            )}
+
+            {/* Create ticket type modal */}
+            <Modal visible={showTicketModal} transparent animationType="slide" onRequestClose={() => setShowTicketModal(false)}>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalCard}>
+                        <View style={styles.modalHeader}>
+                            <ThemedText style={styles.modalTitle}>Nuevo tipo de ticket</ThemedText>
+                            <TouchableOpacity onPress={() => setShowTicketModal(false)}>
+                                <Ionicons name="close" size={24} color="white" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <ThemedText style={styles.modalLabel}>Nombre *</ThemedText>
+                        <TextInput
+                            style={styles.modalInput}
+                            placeholder="ej. General, VIP, Early Bird"
+                            placeholderTextColor="#555"
+                            value={ttName}
+                            onChangeText={setTtName}
+                        />
+
+                        <ThemedText style={styles.modalLabel}>Descripción (opcional)</ThemedText>
+                        <TextInput
+                            style={styles.modalInput}
+                            placeholder="ej. Acceso VIP con barra libre"
+                            placeholderTextColor="#555"
+                            value={ttDescription}
+                            onChangeText={setTtDescription}
+                        />
+
+                        <ThemedText style={styles.modalLabel}>Precio *</ThemedText>
+                        <TextInput
+                            style={styles.modalInput}
+                            placeholder="ej. 5000"
+                            placeholderTextColor="#555"
+                            value={ttPrice}
+                            onChangeText={t => setTtPrice(t.replace(/[^0-9.]/g, ''))}
+                            keyboardType="decimal-pad"
+                        />
+
+                        <ThemedText style={styles.modalLabel}>Capacidad (opcional, sin límite si vacío)</ThemedText>
+                        <TextInput
+                            style={styles.modalInput}
+                            placeholder="ej. 100"
+                            placeholderTextColor="#555"
+                            value={ttCapacity}
+                            onChangeText={t => setTtCapacity(t.replace(/[^0-9]/g, ''))}
+                            keyboardType="numeric"
+                        />
+
+                        <NeonButton
+                            title={ttSubmitting ? 'Creando...' : 'Crear tipo de ticket'}
+                            onPress={handleCreateTicketType}
+                            disabled={ttSubmitting}
+                            style={{ marginTop: 16 }}
+                        />
+                    </View>
+                </View>
+            </Modal>
         </ScreenLayout>
     );
 }
@@ -417,13 +594,12 @@ const styles = StyleSheet.create({
     dot: { width: 7, height: 7, borderRadius: 4 },
     statusText: { fontSize: 12, fontWeight: '600' },
     endBtn: { paddingHorizontal: 16, height: 34 },
+    tabRowScroll: { borderBottomWidth: 1, borderBottomColor: ZyncTheme.colors.border },
     tabRow: {
         flexDirection: 'row',
-        borderBottomWidth: 1,
-        borderBottomColor: ZyncTheme.colors.border,
-        marginHorizontal: ZyncTheme.spacing.m,
+        paddingHorizontal: ZyncTheme.spacing.m,
     },
-    tabBtn: { flex: 1, paddingVertical: 10, alignItems: 'center' },
+    tabBtn: { paddingVertical: 10, paddingHorizontal: 12, alignItems: 'center' },
     tabBtnActive: { borderBottomWidth: 2, borderBottomColor: ZyncTheme.colors.primary },
     tabText: { fontSize: 14, color: ZyncTheme.colors.textSecondary },
     tabTextActive: { color: ZyncTheme.colors.primary, fontWeight: '700' },
@@ -463,12 +639,9 @@ const styles = StyleSheet.create({
     },
     inLineupText: { fontSize: 11, color: ZyncTheme.colors.primary, fontWeight: '600' },
     addBtn: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
+        width: 32, height: 32, borderRadius: 16,
         backgroundColor: ZyncTheme.colors.primary,
-        justifyContent: 'center',
-        alignItems: 'center',
+        justifyContent: 'center', alignItems: 'center',
     },
     emptyDjs: { color: ZyncTheme.colors.textSecondary, textAlign: 'center', paddingVertical: 24, fontSize: 14 },
     emptyPromosContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 60, gap: 12 },
@@ -479,41 +652,67 @@ const styles = StyleSheet.create({
         marginBottom: ZyncTheme.spacing.m,
     },
     promoDjHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: ZyncTheme.spacing.s,
-        marginBottom: ZyncTheme.spacing.s,
+        flexDirection: 'row', alignItems: 'center',
+        gap: ZyncTheme.spacing.s, marginBottom: ZyncTheme.spacing.s,
     },
     promoCodeRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
         backgroundColor: ZyncTheme.colors.card,
-        borderRadius: 10,
-        borderWidth: 1,
-        borderColor: ZyncTheme.colors.border,
-        padding: ZyncTheme.spacing.m,
-        marginTop: ZyncTheme.spacing.s,
+        borderRadius: 10, borderWidth: 1, borderColor: ZyncTheme.colors.border,
+        padding: ZyncTheme.spacing.m, marginTop: ZyncTheme.spacing.s,
     },
     promoCodeLeft: { flex: 1 },
-    promoCodeText: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: ZyncTheme.colors.primary,
-        letterSpacing: 1.5,
-    },
+    promoCodeText: { fontSize: 16, fontWeight: 'bold', color: ZyncTheme.colors.primary, letterSpacing: 1.5 },
     promoCodeDate: { fontSize: 11, color: ZyncTheme.colors.textSecondary, marginTop: 2 },
-    shareCodeBtn: {
-        padding: 8,
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: ZyncTheme.colors.primary,
+    shareCodeBtn: { padding: 8, borderRadius: 8, borderWidth: 1, borderColor: ZyncTheme.colors.primary },
+    noCodesText: { fontSize: 12, color: ZyncTheme.colors.textSecondary, fontStyle: 'italic', paddingLeft: 48, paddingTop: 4 },
+    // Tickets tab
+    ticketsHeader: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+        marginTop: ZyncTheme.spacing.m, marginBottom: ZyncTheme.spacing.s,
     },
-    noCodesText: {
-        fontSize: 12,
-        color: ZyncTheme.colors.textSecondary,
-        fontStyle: 'italic',
-        paddingLeft: 48,
-        paddingTop: 4,
+    addTicketBtn: {
+        flexDirection: 'row', alignItems: 'center', gap: 4,
+        backgroundColor: ZyncTheme.colors.primary,
+        paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8,
+    },
+    addTicketText: { fontSize: 13, fontWeight: '700', color: '#000' },
+    ticketTypeRow: {
+        flexDirection: 'row', alignItems: 'center',
+        paddingVertical: ZyncTheme.spacing.s,
+        borderBottomWidth: 1, borderBottomColor: ZyncTheme.colors.border,
+        gap: ZyncTheme.spacing.s,
+    },
+    ticketTypeInfo: { flex: 1 },
+    ticketTypeMeta: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
+    inactiveBadge: {
+        backgroundColor: '#ff446622', borderRadius: 4,
+        paddingHorizontal: 6, paddingVertical: 2,
+    },
+    inactiveBadgeText: { fontSize: 10, color: '#ff4466', fontWeight: '700' },
+    deleteTicketBtn: { padding: 6 },
+    // Modal
+    modalOverlay: {
+        flex: 1, backgroundColor: 'rgba(0,0,0,0.7)',
+        justifyContent: 'flex-end',
+    },
+    modalCard: {
+        backgroundColor: ZyncTheme.colors.card,
+        borderTopLeftRadius: 24, borderTopRightRadius: 24,
+        padding: ZyncTheme.spacing.l,
+        paddingBottom: 40,
+        borderTopWidth: 1, borderColor: ZyncTheme.colors.border,
+    },
+    modalHeader: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+        marginBottom: ZyncTheme.spacing.l,
+    },
+    modalTitle: { fontSize: 18, fontWeight: '800', color: 'white' },
+    modalLabel: { fontSize: 12, fontWeight: '600', color: ZyncTheme.colors.textSecondary, marginBottom: 6, marginTop: 12 },
+    modalInput: {
+        backgroundColor: ZyncTheme.colors.background,
+        borderWidth: 1, borderColor: ZyncTheme.colors.border,
+        borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10,
+        color: 'white', fontSize: 14,
     },
 });

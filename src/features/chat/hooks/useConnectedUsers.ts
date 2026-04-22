@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { connectSocket, getOnlineUsers, joinEvent, offSocket, onOnlineUsersList, onPresenceUpdate } from '../services/socket.service';
+import { connectSocket, getOnlineUsers, joinEvent, leaveEvent, offSocket, onOnlineUsersList, onPresenceUpdate } from '../services/socket.service';
 
 export interface ConnectedUser {
     id: string;
@@ -90,6 +90,7 @@ export const useConnectedUsers = (eventId: string) => {
 
         return () => {
             isMounted = false;
+            leaveEvent(eventId);
             cleanupPresence?.();
             offSocket('presence:list', handleOnlineUsers);
         };

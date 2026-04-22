@@ -1,7 +1,9 @@
+import { deleteStory, markStorySeen } from '@/features/stories/services/story.service';
 import { Ionicons } from '@expo/vector-icons';
 import { MotiView } from 'moti';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+    Alert,
     Animated,
     Dimensions,
     GestureResponderEvent,
@@ -17,7 +19,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-// 9:16 box: as wide as the screen, height capped at screen height
 const STORY_WIDTH = SCREEN_WIDTH;
 const STORY_HEIGHT = Math.min(SCREEN_WIDTH * (16 / 9), SCREEN_HEIGHT);
 const STORY_VERTICAL_OFFSET = (SCREEN_HEIGHT - STORY_HEIGHT) / 2;
@@ -28,6 +29,8 @@ interface Story {
     id: string;
     mediaUrl: string;
     userId: string;
+    isDjStory?: boolean;
+    seenByViewer?: boolean;
     user?: { firstName?: string; lastName?: string; avatar?: string };
     createdAt?: string;
 }
@@ -38,6 +41,7 @@ interface StoryViewerModalProps {
     currentUserId?: string;
     visible: boolean;
     onClose: () => void;
+    onStoryDeleted?: (storyId: string) => void;
 }
 
 export const StoryViewerModal = ({
@@ -46,12 +50,14 @@ export const StoryViewerModal = ({
     currentUserId,
     visible,
     onClose,
+    onStoryDeleted,
 }: StoryViewerModalProps) => {
     const insets = useSafeAreaInsets();
     const [currentIndex, setCurrentIndex] = useState(initialIndex);
     const [paused, setPaused] = useState(false);
     const progressAnims = useRef<Animated.Value[]>([]);
     const elapsed = useRef<number>(0);
+    const seenRef = useRef<Set<string>>(new Set());
 
     const story = stories[currentIndex];
 
@@ -74,14 +80,20 @@ export const StoryViewerModal = ({
         [stories.length, onClose]
     );
 
-    // Start/restart progress animation whenever currentIndex changes
+    // Mark story as seen when first displayed
+    useEffect(() => {
+        if (!visible || !story) return;
+        if (seenRef.current.has(story.id)) return;
+        seenRef.current.add(story.id);
+        markStorySeen(story.id).catch(() => {});
+    }, [currentIndex, visible, story]);
+
     useEffect(() => {
         if (!visible) return;
 
         const anim = progressAnims.current[currentIndex];
         if (!anim) return;
 
-        // Fill completed bars
         for (let i = 0; i < currentIndex; i++) {
             progressAnims.current[i].setValue(1);
         }
@@ -102,7 +114,6 @@ export const StoryViewerModal = ({
         return () => anim.stopAnimation();
     }, [currentIndex, visible]);
 
-    // Pause / resume
     useEffect(() => {
         if (!visible) return;
         const anim = progressAnims.current[currentIndex];
@@ -127,12 +138,12 @@ export const StoryViewerModal = ({
         }
     }, [paused]);
 
-    // Reset on open / close
     useEffect(() => {
         if (visible) {
             setCurrentIndex(initialIndex);
             elapsed.current = 0;
             setPaused(false);
+            seenRef.current.clear();
             progressAnims.current.forEach(a => a.setValue(0));
         } else {
             progressAnims.current.forEach(a => {
@@ -152,11 +163,41 @@ export const StoryViewerModal = ({
         }
     };
 
+    const handleDelete = () => {
+        if (!story) return;
+        Alert.alert(
+            'Eliminar historia',
+            '¿Seguro que querés eliminar esta historia?',
+            [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                    text: 'Eliminar',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await deleteStory(story.id);
+                            onStoryDeleted?.(story.id);
+                            if (stories.length <= 1) {
+                                onClose();
+                            } else {
+                                goTo(currentIndex < stories.length - 1 ? currentIndex : currentIndex - 1);
+                            }
+                        } catch {
+                            Alert.alert('Error', 'No se pudo eliminar la historia.');
+                        }
+                    },
+                },
+            ],
+        );
+    };
+
     if (!story) return null;
 
+    const isOwner = story.userId === currentUserId;
+
     const userName =
-        story.userId === currentUserId
-            ? 'You'
+        isOwner
+            ? 'Tú'
             : story.user?.firstName
             ? `${story.user.firstName}${story.user.lastName ? ' ' + story.user.lastName : ''}`
             : 'User';
@@ -172,7 +213,6 @@ export const StoryViewerModal = ({
           })()
         : '';
 
-    // How far from top of the 9:16 box the overlays start
     const overlayTop = Math.max(insets.top - STORY_VERTICAL_OFFSET, 8);
 
     return (
@@ -183,25 +223,17 @@ export const StoryViewerModal = ({
             statusBarTranslucent
             onRequestClose={onClose}
         >
-            {/* Full screen black background */}
             <View style={styles.screen}>
-
-                {/* 9:16 story card */}
                 <View style={styles.storyCard}>
-
-                    {/* Media */}
                     <Image
                         source={{ uri: story.mediaUrl }}
                         style={StyleSheet.absoluteFillObject}
                         resizeMode="cover"
                     />
 
-                    {/* Top fade */}
                     <View style={styles.topFade} />
-                    {/* Bottom fade */}
                     <View style={styles.bottomFade} />
 
-                    {/* Tap zones (covers the card) */}
                     <Pressable
                         style={StyleSheet.absoluteFillObject}
                         onPress={handleTap}
@@ -236,10 +268,7 @@ export const StoryViewerModal = ({
                         <View style={styles.userInfo}>
                             <View style={styles.avatarRing}>
                                 {story.user?.avatar ? (
-                                    <Image
-                                        source={{ uri: story.user.avatar }}
-                                        style={styles.avatar}
-                                    />
+                                    <Image source={{ uri: story.user.avatar }} style={styles.avatar} />
                                 ) : (
                                     <View style={[styles.avatar, styles.avatarFallback]}>
                                         <Text style={styles.avatarInitial}>
@@ -250,22 +279,30 @@ export const StoryViewerModal = ({
                             </View>
                             <View>
                                 <Text style={styles.userName}>{userName}</Text>
-                                {timeAgo ? (
-                                    <Text style={styles.timeAgo}>{timeAgo}</Text>
-                                ) : null}
+                                {timeAgo ? <Text style={styles.timeAgo}>{timeAgo}</Text> : null}
                             </View>
                         </View>
 
-                        <TouchableOpacity
-                            onPress={onClose}
-                            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                            style={styles.closeBtn}
-                        >
-                            <Ionicons name="close" size={26} color="white" />
-                        </TouchableOpacity>
+                        <View style={styles.actions}>
+                            {isOwner && (
+                                <TouchableOpacity
+                                    onPress={handleDelete}
+                                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                                    style={styles.actionBtn}
+                                >
+                                    <Ionicons name="trash-outline" size={20} color="rgba(255,80,80,0.9)" />
+                                </TouchableOpacity>
+                            )}
+                            <TouchableOpacity
+                                onPress={onClose}
+                                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                                style={styles.closeBtn}
+                            >
+                                <Ionicons name="close" size={26} color="white" />
+                            </TouchableOpacity>
+                        </View>
                     </View>
 
-                    {/* Pause indicator */}
                     {paused && (
                         <MotiView
                             from={{ opacity: 0, scale: 0.8 }}
@@ -297,31 +334,25 @@ const styles = StyleSheet.create({
     },
     topFade: {
         position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
+        top: 0, left: 0, right: 0,
         height: 160,
         backgroundColor: 'rgba(0,0,0,0.5)',
     },
     bottomFade: {
         position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
+        bottom: 0, left: 0, right: 0,
         height: 80,
         backgroundColor: 'rgba(0,0,0,0.35)',
     },
     progressRow: {
         position: 'absolute',
-        left: 10,
-        right: 10,
+        left: 10, right: 10,
         flexDirection: 'row',
         gap: 4,
         zIndex: 10,
     },
     progressTrack: {
-        flex: 1,
-        height: 2.5,
+        flex: 1, height: 2.5,
         backgroundColor: 'rgba(255,255,255,0.35)',
         borderRadius: 2,
         overflow: 'hidden',
@@ -333,62 +364,38 @@ const styles = StyleSheet.create({
     },
     header: {
         position: 'absolute',
-        left: 14,
-        right: 14,
+        left: 14, right: 14,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
         zIndex: 10,
     },
-    userInfo: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 10,
-    },
-    avatarRing: {
-        width: 40,
-        height: 40,
+    userInfo: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    actions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    actionBtn: {
+        backgroundColor: 'rgba(0,0,0,0.3)',
         borderRadius: 20,
-        borderWidth: 2,
-        borderColor: '#CCFF00',
-        padding: 2,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    avatar: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-    },
-    avatarFallback: {
-        backgroundColor: '#333',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    avatarInitial: {
-        color: '#fff',
-        fontSize: 13,
-        fontWeight: 'bold',
-    },
-    userName: {
-        color: '#fff',
-        fontWeight: '700',
-        fontSize: 14,
-    },
-    timeAgo: {
-        color: 'rgba(255,255,255,0.55)',
-        fontSize: 11,
-        marginTop: 1,
+        padding: 4,
     },
     closeBtn: {
         backgroundColor: 'rgba(0,0,0,0.3)',
         borderRadius: 20,
         padding: 4,
     },
+    avatarRing: {
+        width: 40, height: 40, borderRadius: 20,
+        borderWidth: 2, borderColor: '#CCFF00',
+        padding: 2,
+        justifyContent: 'center', alignItems: 'center',
+    },
+    avatar: { width: 32, height: 32, borderRadius: 16 },
+    avatarFallback: { backgroundColor: '#333', justifyContent: 'center', alignItems: 'center' },
+    avatarInitial: { color: '#fff', fontSize: 13, fontWeight: 'bold' },
+    userName: { color: '#fff', fontWeight: '700', fontSize: 14 },
+    timeAgo: { color: 'rgba(255,255,255,0.55)', fontSize: 11, marginTop: 1 },
     pauseIndicator: {
         position: 'absolute',
-        top: '50%',
-        left: '50%',
+        top: '50%', left: '50%',
         transform: [{ translateX: -22 }, { translateY: -22 }],
         zIndex: 20,
     },

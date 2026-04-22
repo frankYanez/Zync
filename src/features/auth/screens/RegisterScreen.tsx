@@ -8,11 +8,25 @@ import { ZyncTheme } from '@/shared/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Alert, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+
+let GoogleSignin: any = null;
+let statusCodes: any = {};
+try {
+    const GoogleModule = require('@react-native-google-signin/google-signin');
+    GoogleSignin = GoogleModule.GoogleSignin;
+    statusCodes = GoogleModule.statusCodes;
+    GoogleSignin.configure({
+        webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+        androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
+    });
+} catch (e) {
+    console.log('Google Sign-In native module not available.');
+}
 
 export default function RegisterScreen() {
     const router = useRouter();
-    const { register, verifyEmail, resendVerification, requestEmailVerification } = useAuth(); // Added requestEmailVerification
+    const { register, verifyEmail, resendVerification, requestEmailVerification, loginWithGoogle } = useAuth();
 
     // Form State
     const [firstName, setFirstName] = useState('');
@@ -21,6 +35,7 @@ export default function RegisterScreen() {
     const [password, setPassword] = useState('');
 
     const [loading, setLoading] = useState(false);
+    const [googleLoading, setGoogleLoading] = useState(false);
 
     // Verification Modal State
     const [isModalVisible, setIsModalVisible] = useState(false);
@@ -110,6 +125,28 @@ export default function RegisterScreen() {
         }
     }
 
+    const handleGoogleSignUp = async () => {
+        setGoogleLoading(true);
+        try {
+            await GoogleSignin.hasPlayServices();
+            await GoogleSignin.signIn();
+            const tokens = await GoogleSignin.getTokens();
+            if (!tokens.accessToken) throw new Error('No accessToken received');
+            await loginWithGoogle(tokens.accessToken);
+        } catch (error: any) {
+            if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+                // usuario canceló
+            } else if (error.code === statusCodes.IN_PROGRESS) {
+                // ya hay un sign-in en progreso
+            } else {
+                const message = error.response?.data?.message || 'Google sign-up failed.';
+                Alert.alert('Error', message);
+            }
+        } finally {
+            setGoogleLoading(false);
+        }
+    };
+
     const handleResend = async () => {
         try {
             await resendVerification(email);
@@ -182,6 +219,31 @@ export default function RegisterScreen() {
                                 textStyle={{ fontSize: 18, fontWeight: '900' }}
                                 style={styles.registerButton}
                             />
+
+                            <View style={styles.dividerRow}>
+                                <View style={styles.dividerLine} />
+                                <ThemedText style={styles.dividerText}>OR</ThemedText>
+                                <View style={styles.dividerLine} />
+                            </View>
+
+                            <TouchableOpacity
+                                style={[styles.googleButton, googleLoading && styles.googleButtonDisabled]}
+                                onPress={handleGoogleSignUp}
+                                disabled={googleLoading}
+                                activeOpacity={0.8}
+                            >
+                                {googleLoading ? (
+                                    <ActivityIndicator size="small" color={ZyncTheme.colors.text} />
+                                ) : (
+                                    <>
+                                        <Image
+                                            source={{ uri: 'https://www.google.com/favicon.ico' }}
+                                            style={styles.googleIcon}
+                                        />
+                                        <ThemedText style={styles.googleButtonText}>CONTINUE WITH GOOGLE</ThemedText>
+                                    </>
+                                )}
+                            </TouchableOpacity>
                         </View>
                     </ScrollView>
                 </TouchableWithoutFeedback>
@@ -251,7 +313,7 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         padding: ZyncTheme.spacing.m,
-        paddingBottom: 40,
+        paddingBottom: 60,
     },
     backButton: {
         marginBottom: ZyncTheme.spacing.m,
@@ -288,6 +350,46 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.5,
         shadowRadius: 15,
         elevation: 10,
+    },
+    dividerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: ZyncTheme.spacing.l,
+        gap: ZyncTheme.spacing.m,
+    },
+    dividerLine: {
+        flex: 1,
+        height: 1,
+        backgroundColor: ZyncTheme.colors.border,
+    },
+    dividerText: {
+        color: ZyncTheme.colors.textSecondary,
+        fontSize: ZyncTheme.typography.size.s,
+        letterSpacing: 1,
+    },
+    googleButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: 56,
+        borderWidth: 1,
+        borderColor: ZyncTheme.colors.border,
+        borderRadius: ZyncTheme.borderRadius.m,
+        backgroundColor: ZyncTheme.colors.card,
+        gap: ZyncTheme.spacing.s,
+    },
+    googleButtonDisabled: {
+        opacity: 0.5,
+    },
+    googleIcon: {
+        width: 20,
+        height: 20,
+    },
+    googleButtonText: {
+        color: ZyncTheme.colors.text,
+        fontSize: ZyncTheme.typography.size.s,
+        fontWeight: '700',
+        letterSpacing: 1,
     },
     modalContainer: {
         flex: 1,

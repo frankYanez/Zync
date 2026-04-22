@@ -16,28 +16,33 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const STATUS_MAP = {
-    valid:   { label: 'Válido',   color: '#22C55E' },
-    used:    { label: 'Utilizado', color: '#888'    },
-    expired: { label: 'Expirado',  color: '#ff4466' },
+    VALID:     { label: 'Válido',     color: '#22C55E' },
+    USED:      { label: 'Utilizado',  color: '#888'    },
+    CANCELLED: { label: 'Cancelado',  color: '#ff4466' },
+    EXPIRED:   { label: 'Expirado',   color: '#ff4466' },
 };
 
 function TicketCard({ ticket, onPress }: { ticket: Ticket; onPress: () => void }) {
-    const status = STATUS_MAP[ticket.status];
-    const eventDate = new Date(ticket.eventDate);
+    const status = STATUS_MAP[ticket.status] ?? STATUS_MAP.EXPIRED;
+    const eventDate = new Date(ticket.event.startsAt);
     const isPast = eventDate < new Date();
+    const eventName = ticket.event.name;
+    const venueName = ticket.event.venue?.name ?? '—';
+    const imageUrl = ticket.event.imageUrl;
+    const pricePaid = parseFloat(ticket.pricePaid);
 
     return (
         <TouchableOpacity style={[styles.card, isPast && styles.cardPast]} onPress={onPress} activeOpacity={0.85}>
-            {ticket.coverImageUrl && (
-                <Image source={{ uri: ticket.coverImageUrl }} style={styles.cover} contentFit="cover" />
+            {imageUrl && (
+                <Image source={{ uri: imageUrl }} style={styles.cover} contentFit="cover" />
             )}
-            <View style={[styles.cardContent, !ticket.coverImageUrl && { paddingTop: 16 }]}>
+            <View style={[styles.cardContent, !imageUrl && { paddingTop: 16 }]}>
                 <View style={styles.cardTop}>
                     <View style={{ flex: 1 }}>
-                        <ThemedText style={styles.eventName} numberOfLines={2}>{ticket.eventName}</ThemedText>
+                        <ThemedText style={styles.eventName} numberOfLines={2}>{eventName}</ThemedText>
                         <View style={styles.metaRow}>
                             <Ionicons name="location-outline" size={13} color="#666" />
-                            <ThemedText style={styles.metaText}>{ticket.venueName}</ThemedText>
+                            <ThemedText style={styles.metaText}>{venueName}</ThemedText>
                         </View>
                         <View style={styles.metaRow}>
                             <Ionicons name="calendar-outline" size={13} color="#666" />
@@ -52,8 +57,8 @@ function TicketCard({ ticket, onPress }: { ticket: Ticket; onPress: () => void }
                 </View>
 
                 <View style={styles.cardFooter}>
-                    <ThemedText style={styles.price}>${ticket.price.toLocaleString('es-AR')}</ThemedText>
-                    {ticket.status === 'valid' && (
+                    <ThemedText style={styles.price}>${pricePaid.toLocaleString('es-AR')}</ThemedText>
+                    {ticket.status === 'VALID' && (
                         <View style={styles.qrHint}>
                             <Ionicons name="qr-code-outline" size={14} color={ZyncTheme.colors.primary} />
                             <ThemedText style={styles.qrHintText}>Ver QR</ThemedText>

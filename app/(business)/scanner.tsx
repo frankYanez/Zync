@@ -33,20 +33,24 @@ export default function BusinessScannerScreen() {
 
         try {
             if (mode === 'ticket') {
-                const eventId = currentEstablishment?.id ?? '';
-                const res = await validateTicket(data, eventId);
+                const ticket = await validateTicket(data);
                 setResult({
-                    valid: res.valid,
-                    message: res.valid ? '¡Acceso permitido!' : (res.reason ?? 'Acceso denegado'),
-                    userName: res.user?.name,
+                    valid: true,
+                    message: '¡Acceso permitido!',
+                    userName: ticket.event?.name,
                 });
             } else {
                 // order mode: data is the orderId
                 await updateOrderStatus(data, 'delivered');
                 setResult({ valid: true, message: 'Pedido marcado como entregado' });
             }
-        } catch {
-            setResult({ valid: false, message: 'Error al procesar el código' });
+        } catch (e: any) {
+            const errorCode = e?.response?.data?.errorCode;
+            let message = 'Acceso denegado';
+            if (errorCode === 'TICKET_ALREADY_USED') message = 'Ticket ya utilizado';
+            else if (errorCode === 'TICKET_NOT_VALID') message = 'Ticket cancelado o expirado';
+            else if (errorCode === 'TICKET_NOT_FOUND') message = 'Ticket no encontrado';
+            setResult({ valid: false, message });
         } finally {
             setIsProcessing(false);
             // reset after 3s to allow another scan

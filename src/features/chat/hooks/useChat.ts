@@ -29,6 +29,13 @@ export const useChat = (eventId: string, currentUserId: string, otherUserId?: st
     const flatListRef = useRef<FlatList>(null);
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const lastTypingSentRef = useRef<number>(0);
+    // Ref mirror of messages so markAllAsSeen can read latest without being in deps
+    const messagesRef = useRef<Message[]>([]);
+    const markAllSeenDebounceRef = useRef<NodeJS.Timeout | null>(null);
+
+    useEffect(() => {
+        messagesRef.current = messages;
+    }, [messages]);
 
     const scrollToBottom = () => {
         flatListRef.current?.scrollToEnd({ animated: true });
@@ -47,20 +54,26 @@ export const useChat = (eventId: string, currentUserId: string, otherUserId?: st
     };
 
     // --- Status Updates ---
-    const markAsSeen = useCallback((messageId: string) => {
-        sendMessageSeen(messageId);
-        setMessages(prev => prev.map(msg =>
-            msg.id === messageId ? { ...msg, seenAt: new Date().toISOString() } : msg
-        ));
-    }, []);
-
+    // Batch: marks all unseen messages in a single setMessages call, debounced to
+    // avoid the render cascade triggered by onContentSizeChange → markAllAsSeen → setMessages → re-render loop.
     const markAllAsSeen = useCallback(() => {
-        messages.forEach(msg => {
-            if (msg.fromUserId !== currentUserId && !msg.seenAt) {
-                markAsSeen(msg.id);
+        if (markAllSeenDebounceRef.current) clearTimeout(markAllSeenDebounceRef.current);
+        markAllSeenDebounceRef.current = setTimeout(() => {
+            const unseenIds: string[] = [];
+            messagesRef.current.forEach(msg => {
+                if (msg.fromUserId !== currentUserId && !msg.seenAt) {
+                    unseenIds.push(msg.id);
+                    sendMessageSeen(msg.id);
+                }
+            });
+            if (unseenIds.length > 0) {
+                const seenAt = new Date().toISOString();
+                setMessages(prev => prev.map(msg =>
+                    unseenIds.includes(msg.id) ? { ...msg, seenAt } : msg
+                ));
             }
-        });
-    }, [messages, markAsSeen, currentUserId]);
+        }, 300) as unknown as NodeJS.Timeout;
+    }, [currentUserId]);
 
     useEffect(() => {
         let isMounted = true;
@@ -79,8 +92,27 @@ export const useChat = (eventId: string, currentUserId: string, otherUserId?: st
             };
 
             const isMyMessage = newMessage.fromUserId === currentUserId;
-            // Ignore own messages from socket to prevent duplication (handled optimistically)
-            if (isMyMessage) return;
+
+            if (isMyMessage) {
+                // Reconcile the optimistic message (random ID) with the server-confirmed ID.
+                // This allows delivery/seen receipts to match by real message ID.
+                if (isMounted) {
+                    setMessages(prev => {
+                        const idx = prev.findIndex(
+                            m => m.fromUserId === currentUserId
+                                && m.content === newMessage.content
+                                && m.id !== newMessage.id
+                        );
+                        if (idx !== -1) {
+                            const updated = [...prev];
+                            updated[idx] = { ...newMessage };
+                            return updated;
+                        }
+                        return prev;
+                    });
+                }
+                return;
+            }
 
             sendMessageDelivered(newMessage.id!);
 
@@ -131,6 +163,18 @@ export const useChat = (eventId: string, currentUserId: string, otherUserId?: st
             onMessageDelivered(handleMessageDelivered);
             onMessageSeen(handleMessageSeen);
 
+            // Join the socket room FIRST so the server starts sending messages
+            // to this client before we fetch history. The merge below handles
+            // deduplication between history and any messages received in this window.
+            joinEvent(eventId, () => {
+                if (isMounted) setIsJoined(true);
+            });
+
+            // enterEvent (REST) and history fetch are independent — run in parallel.
+            enterEvent(eventId).catch(() => {
+                // Failure (already entered, event full, etc.) must not block anything.
+            });
+
             try {
                 let history: Message[] = [];
                 if (otherUserId) {
@@ -152,15 +196,6 @@ export const useChat = (eventId: string, currentUserId: string, otherUserId?: st
             } catch (e) {
                 console.error('useChat: Error fetching history:', e);
             } finally {
-                try {
-                    await enterEvent(eventId);
-                } catch {
-                    // enterEvent failure (already entered, event full, etc.) must not
-                    // prevent the socket from joining the room.
-                }
-                joinEvent(eventId, () => {
-                    if (isMounted) setIsJoined(true);
-                });
                 if (isMounted) setLoading(false);
             }
         };
@@ -171,6 +206,7 @@ export const useChat = (eventId: string, currentUserId: string, otherUserId?: st
 
         return () => {
             isMounted = false;
+            if (markAllSeenDebounceRef.current) clearTimeout(markAllSeenDebounceRef.current);
             offSocket('new-message', handleNewMessage);
             offSocket('event-message', handleNewMessage);
             offSocket('typing', handleTyping);

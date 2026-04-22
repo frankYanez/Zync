@@ -8,7 +8,7 @@ import { Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { ThemedText } from './themed-text';
 
 const DJ_ONLY_TABS = ['requests', 'dj/promo-codes'];
-const BUSINESS_ONLY_TABS = ['products/index', 'scanner', 'events/index'];
+const BUSINESS_ONLY_TABS = ['products/index', 'scanner', 'events/index', 'orders'];
 const ALWAYS_HIDDEN_TABS = [
     'dj/gigs',
     'events/lineup',

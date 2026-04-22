@@ -36,11 +36,16 @@ Root Stack (_layout.tsx)
 ├── (business)/      — DJ/Business tabs (role-conditional)
 │   ├── Shared: Home, Profile
 │   ├── DJ-only: Requests (songs), dj/promo-codes
-│   ├── Business-only: Products, Scanner, Orders
-│   └── Hidden: dj/gigs, events/lineup, config
+│   ├── Business-only: Products, Scanner, Events, Orders
+│   └── Hidden: dj/gigs, events/lineup, events/create, events/[id],
+│              products/create, products/[id], products/create-venue, config
 ├── chat/            — index (list), [id] (1-to-1), connected-users
 ├── tickets/         — index (user ticket list), [id] (ticket detail with QR)
-├── profile/         — edit, change-password, create-dj, create-organizer, edit-dj
+├── orders/          — index (order history), [orderId] (order detail)
+├── profile/         — edit, change-password, create-dj, create-organizer,
+│                       edit-dj, edit-organizer, notifications, payment-methods, security
+├── cart             — cart screen
+├── menu             — venue menu
 └── dj/              — [id] (public DJ profile view)
 ```
 
@@ -68,22 +73,22 @@ Context-only (no Redux/Zustand):
 
 Each feature follows: `screens/`, `services/`, `domain/` (types), `context/`, `hooks/`.
 
-- **auth** — JWT auth, token refresh, OTP email verification
-- **chat** — Socket.io real-time messaging (1-to-1 and event group chats)
+- **auth** — JWT auth, token refresh, OTP email verification, Google OAuth (`loginWithGoogle` via `@react-native-google-signin/google-signin`; requires `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` and `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID` env vars). Google module is loaded with a try/catch so it degrades gracefully on web/simulators. `google-auth.service.ts` handles the backend exchange.
+- **chat** — Socket.io real-time messaging (1-to-1 and event group chats). Components: `ChatBubble`, `ChatHeader`, `ChatInput`, `ConnectedUsersCarousel`, `EventStoriesCarousel`, `StoryViewerModal`, `TypingIndicator`. `useChat` handles optimistic messages (reconciled with server-confirmed IDs), delivery/seen read receipts with debounced `markAllAsSeen`, and typing throttle (max 1 emit/2 s). The socket is a singleton — do not call `disconnectSocket()` inside `useChat` or `useConnectedUsers`; disconnect only on logout.
 - **dj** — DJ profiles, gigs, promo codes, stats (`DjStats`); follow/unfollow DJs (`followDj`/`unfollowDj`); DJ reviews (`getDjReviews`, `submitDjReview`); live mode toggle (`setDjLiveMode`); DJ feed of upcoming gigs from followed DJs (`getDjFeed`)
 - **profile** — User profile editing, avatar upload, DJ/organizer sub-profiles; `stats.service.ts` exposes user tier (`bronze`/`silver`/`gold`)
 - **wallet** — Cart, orders, payment methods; `wallet.service.ts` for balance/top-up
-- **dashboard** — Home feed, event/venue discovery; `BusinessHomeScreen` (venue metrics + live pending orders); event management for organizers (`getMyEvents`, `createEvent`, `updateEvent`, `deleteEvent`); geolocation check-in (`checkLocation` → `POST /events/check-location`); lineup management (`addDjToLineup`)
+- **dashboard** — Home feed, event/venue discovery; `BusinessHomeScreen` (venue metrics + live pending orders); event management for organizers (`getMyEvents`, `createEvent`, `updateEvent`, `deleteEvent`); geolocation check-in (`checkLocation` → `POST /events/check-location`); lineup management (`addDjToLineup`). `OrganizerEventDetailScreen` has 4 tabs: Info, Lineup, Promos, Tickets.
 - **scanner** — QR code scanning
-- **tickets** — User ticket purchase/display with QR codes; `validateTicket` for business scanner. **Note:** currently mock-only (see TODO comments in `ticket.service.ts`)
-- **venues** — Venue creation and management (`createVenue`, `getMyVenues`); venue reviews; media upload (image/video via Cloudinary); active event lookup (`getVenueActiveEvent`); orders fulfillment view for venue owners
+- **tickets** — Real API (no longer mocked). User flow: browse `TicketType` list per event → `purchaseTicket(ticketTypeId)` → view ticket with QR (`qrToken`) → `cancelTicket`. Organizer flow: `createTicketType`, `updateTicketType`, `deleteTicketType` (UI in `OrganizerEventDetailScreen` "Tickets" tab). Business scanner: `validateTicket(qrToken)` returns full `Ticket` or throws with `errorCode`. Statuses: `VALID | USED | CANCELLED | EXPIRED`.
+- **venues** — Venue creation and management (`createVenue`, `getMyVenues`); venue reviews; media upload (image/video via Cloudinary); active event lookup (`getVenueActiveEvent`); orders fulfillment view for venue owners; `getVenueTimezones()` for IANA timezone list.
 - **music** — Spotify integration: client-credentials OAuth, `searchTracks(query)`
-- **stories** — Event stories: create, view by event, view by user-in-event
+- **stories** — Event stories: `createStory` (image or video up to 50 MB), `deleteStory` (author only), `markStorySeen` (called automatically in `StoryViewerModal` on first display), `getEventStories` (DJs first), `getUserStoriesInEvent`. Full `Story` type includes `mediaType`, `viewCount`, `seenByViewer`, `isDjStory`, `expiresAt`.
+- **notifications** — Push notifications (Android only via `expo-notifications`). `registerForPushNotifications()` requests permission and returns an Expo push token; `savePushToken(token)` persists it to the backend (`PUT /users/push-token`). Located in `src/features/notifications/services/notifications.service.ts`.
 
 ### Mock Services
 
 Several services are temporarily mock-only while backend endpoints are being built. They include `TODO` comments with the real endpoint. Check before integrating:
-- `src/features/tickets/services/ticket.service.ts` — all endpoints mocked
 - `src/features/wallet/services/wallet.service.ts` — `topUp` is mocked; `getBalance` is real
 - `src/features/profile/services/stats.service.ts` — `getUserStats` is mocked
 - `src/features/venues/services/venue.service.ts` — `createVenue`, `deleteVenue` are mocked
@@ -145,3 +150,4 @@ Shared UI components (`src/components/`): `NeonButton`, `NeonInput`, `NeonModal`
 - `useDjPromoCodes` — Fetches/generates promo codes; exposes `createPromoCode(eventId)`
 - `useSongRequests` — Fetches song requests for a DJ; exposes `pending`, `accepted`, `history`, and `updateStatus(requestId, status)`
 - `useProfile` (`src/features/profile/hooks/`) — Fetches and updates the authenticated user's profile; exposes `profile`, `isLoading`, `isSaving`, `updateField(field, value)`, `setAvatarUrl`, `refetch`. Always use this hook instead of calling `profile.service.ts` directly from screens.
+- `useVenueProducts` (`src/features/venues/hooks/`) — Fetches and manages products for a venue.

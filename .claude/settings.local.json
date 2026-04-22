@@ -12,7 +12,18 @@
       "Bash(npx expo:*)",
       "Bash(npx tsc:*)",
       "Bash(npm list:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "WebFetch(domain:stitch.withgoogle.com)",
+      "WebSearch",
+      "WebFetch(domain:www.sotaaz.com)",
+      "WebFetch(domain:github.com)",
+      "Skill(update-config)",
+      "Bash(claude mcp:*)",
+      "Bash(find \"C:/Users/frank/Downloads/Zync-mobile/app/\\(auth\\)\" -type f)",
+      "Bash(find \"C:/Users/frank/Downloads/Zync-mobile/app/\\(tabs\\)\" -type f)",
+      "Bash(find:*)",
+      "Bash(grep -oP \"\\\\`\\\\\\\\\\\\$\\\\{API_URL\\\\}[^'\\\\\"]+\\\\`|\\\\`\\\\\\\\\\\\$\\\\{BASE_URL\\\\}[^'\\\\\"]+\\\\`\")",
+      "Bash(grep -n \"toal\\\\|tota\\\\|totla\\\\|speling\" /c/Users/frank/Downloads/Zync-mobile/src/**/*.ts*)"
     ]
   }
 }

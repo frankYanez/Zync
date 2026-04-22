@@ -17,6 +17,12 @@ export interface CreateVenueDto {
     description?: string;
 }
 
+// GET /venues/timezones
+export const getVenueTimezones = async (): Promise<string[]> => {
+    const response = await axios.get(`${API_URL}/venues/timezones`);
+    return response.data;
+};
+
 export const getVenues = async (): Promise<Venue[]> => {
     const response = await axios.get(`${API_URL}/venues`);
     return response.data;
