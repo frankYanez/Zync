@@ -25,7 +25,8 @@
       "Bash(grep -oP \"\\\\`\\\\\\\\\\\\$\\\\{API_URL\\\\}[^'\\\\\"]+\\\\`|\\\\`\\\\\\\\\\\\$\\\\{BASE_URL\\\\}[^'\\\\\"]+\\\\`\")",
       "Bash(grep -n \"toal\\\\|tota\\\\|totla\\\\|speling\" /c/Users/frank/Downloads/Zync-mobile/src/**/*.ts*)",
       "Bash(ssh -T git@github.com)",
-      "Bash(echo \"exit: $?\")"
+      "Bash(echo \"exit: $?\")",
+      "Bash(git pull *)"
     ]
   }
 }
