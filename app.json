@@ -63,6 +63,12 @@
         "projectId": "e151b624-aa5d-4c04-be8a-fc96524acc50"
       }
     },
-    "owner": "gonzachabit"
+    "owner": "gonzachabit",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/e151b624-aa5d-4c04-be8a-fc96524acc50"
+    }
   }
 }
