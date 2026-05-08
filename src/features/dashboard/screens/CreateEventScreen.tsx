@@ -7,8 +7,8 @@ import { getMyVenues } from '@/features/venues/services/venue.service';
 import { ZyncTheme } from '@/shared/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import React, { useCallback, useState } from 'react';
 import {
     Alert,
     KeyboardAvoidingView,
@@ -35,11 +35,13 @@ export default function CreateEventScreen() {
     const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    useEffect(() => {
-        getMyVenues()
-            .then(setVenues)
-            .catch(e => console.error('Failed to load venues', e));
-    }, []);
+    useFocusEffect(
+        useCallback(() => {
+            getMyVenues()
+                .then(setVenues)
+                .catch(e => console.error('Failed to load venues', e));
+        }, [])
+    );
 
     const fmt = (d: Date) =>
         d.toLocaleString('es-AR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -88,10 +90,19 @@ export default function CreateEventScreen() {
 
                     {/* Venue selector */}
                     <View style={styles.field}>
-                        <ThemedText style={styles.label}>Venue *</ThemedText>
+                        <View style={styles.labelRow}>
+                            <ThemedText style={styles.label}>Venue *</ThemedText>
+                            <TouchableOpacity
+                                style={styles.addVenueBtn}
+                                onPress={() => router.push('/(business)/products/create-venue' as any)}
+                            >
+                                <Ionicons name="add" size={14} color="#000" />
+                                <ThemedText style={styles.addVenueBtnText}>Nuevo</ThemedText>
+                            </TouchableOpacity>
+                        </View>
                         {venues.length === 0 ? (
                             <ThemedText style={styles.hint}>
-                                No tenés venues creados. Creá uno desde tu perfil.
+                                No tenés venues creados. Presioná &quot;Nuevo&quot; para crear uno.
                             </ThemedText>
                         ) : (
                             <View style={styles.venueGrid}>
@@ -201,6 +212,17 @@ const styles = StyleSheet.create({
     scroll: { padding: ZyncTheme.spacing.m },
     field: { marginBottom: ZyncTheme.spacing.l },
     label: { fontSize: 13, fontWeight: '600', color: 'white', marginBottom: 8 },
+    labelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+    addVenueBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        backgroundColor: ZyncTheme.colors.primary,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 8,
+    },
+    addVenueBtnText: { fontSize: 12, fontWeight: '700', color: '#000' },
     hint: { fontSize: 13, color: ZyncTheme.colors.textSecondary, fontStyle: 'italic' },
     venueGrid: { gap: ZyncTheme.spacing.s },
     venueChip: {

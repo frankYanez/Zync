@@ -6,7 +6,7 @@ import { getMyEvents } from '@/features/dashboard/services/event.service';
 import { ZyncTheme } from '@/shared/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Event } from '../domain/event.types';
@@ -71,18 +71,24 @@ export default function OrganizerEventsScreen() {
     const [refreshing, setRefreshing] = useState(false);
 
     const load = useCallback(async () => {
+        setLoading(true);
         try {
             const data = await getMyEvents();
             setEvents(data);
-        } catch (e) {
-            console.error('Failed to load events', e);
+        } catch (e: any) {
+            const status = e?.response?.status;
+            if (status === 400 || status === 401 || status === 403) {
+                setEvents([]);
+            } else {
+                console.error('Failed to load events', e);
+            }
         } finally {
             setLoading(false);
             setRefreshing(false);
         }
     }, []);
 
-    useEffect(() => { load(); }, [load]);
+    useFocusEffect(useCallback(() => { load(); }, []));
 
     const onRefresh = () => { setRefreshing(true); load(); };
 

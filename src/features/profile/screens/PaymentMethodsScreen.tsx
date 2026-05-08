@@ -1,20 +1,24 @@
 import { CyberCard } from '@/components/CyberCard';
 import { ScreenLayout } from '@/components/ScreenLayout';
 import { ThemedText } from '@/components/themed-text';
+import { getBalance, WalletBalance } from '@/features/wallet/services/wallet.service';
 import { ZyncTheme } from '@/shared/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React from 'react';
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
-
-const CARD_ICON: Record<string, any> = {
-    visa: 'card',
-    mastercard: 'card',
-    amex: 'card',
-};
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 export default function PaymentMethodsScreen() {
     const router = useRouter();
+    const [balance, setBalance] = useState<WalletBalance | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        getBalance()
+            .then(setBalance)
+            .catch(() => {})
+            .finally(() => setIsLoading(false));
+    }, []);
 
     return (
         <ScreenLayout style={styles.container} noPadding>
@@ -29,13 +33,47 @@ export default function PaymentMethodsScreen() {
                 {/* Zync Points balance */}
                 <ThemedText style={styles.sectionLabel}>TU SALDO</ThemedText>
                 <CyberCard style={styles.pointsCard}>
-                    <View style={styles.pointsRow}>
-                        <Ionicons name="star" size={28} color={ZyncTheme.colors.primary} />
-                        <View>
-                            <ThemedText style={styles.pointsLabel}>Zync Points</ThemedText>
-                            <ThemedText style={styles.pointsHint}>Acumulá puntos en cada pedido</ThemedText>
+                    {isLoading ? (
+                        <ActivityIndicator size="small" color={ZyncTheme.colors.primary} />
+                    ) : (
+                        <View style={styles.pointsRow}>
+                            <View style={styles.pointsIcon}>
+                                <Ionicons name="star" size={24} color={ZyncTheme.colors.primary} />
+                            </View>
+                            <View style={styles.pointsInfo}>
+                                <ThemedText style={styles.pointsLabel}>Zync Points</ThemedText>
+                                <ThemedText style={styles.pointsValue}>
+                                    {balance?.zyncPoints?.toLocaleString('es-AR') ?? '0'} puntos
+                                </ThemedText>
+                                <ThemedText style={styles.pointsHint}>
+                                    Acumulá puntos en cada pedido
+                                </ThemedText>
+                            </View>
                         </View>
-                    </View>
+                    )}
+                </CyberCard>
+
+                {/* Wallet balance */}
+                <ThemedText style={styles.sectionLabel}>BILLETERA</ThemedText>
+                <CyberCard style={styles.pointsCard}>
+                    {isLoading ? (
+                        <ActivityIndicator size="small" color={ZyncTheme.colors.primary} />
+                    ) : (
+                        <View style={styles.pointsRow}>
+                            <View style={[styles.pointsIcon, { backgroundColor: ZyncTheme.colors.primary + '20' }]}>
+                                <Ionicons name="wallet" size={24} color={ZyncTheme.colors.primary} />
+                            </View>
+                            <View style={styles.pointsInfo}>
+                                <ThemedText style={styles.pointsLabel}>Saldo disponible</ThemedText>
+                                <ThemedText style={styles.pointsValue}>
+                                    ${(balance?.balance ?? 0).toLocaleString('es-AR')}
+                                </ThemedText>
+                                <ThemedText style={styles.pointsHint}>
+                                    Usalo para compras en eventos
+                                </ThemedText>
+                            </View>
+                        </View>
+                    )}
                 </CyberCard>
 
                 {/* Payment methods — coming soon */}
@@ -78,7 +116,14 @@ const styles = StyleSheet.create({
     },
     pointsCard: { padding: ZyncTheme.spacing.m },
     pointsRow: { flexDirection: 'row', alignItems: 'center', gap: ZyncTheme.spacing.m },
-    pointsLabel: { fontSize: 16, fontWeight: '700', color: 'white' },
+    pointsIcon: {
+        width: 48, height: 48, borderRadius: 12,
+        backgroundColor: 'rgba(204,255,0,0.1)',
+        justifyContent: 'center', alignItems: 'center',
+    },
+    pointsInfo: { flex: 1 },
+    pointsLabel: { fontSize: 14, fontWeight: '600', color: ZyncTheme.colors.textSecondary },
+    pointsValue: { fontSize: 22, fontWeight: '800', color: ZyncTheme.colors.primary, marginTop: 2 },
     pointsHint: { fontSize: 12, color: ZyncTheme.colors.textSecondary, marginTop: 2 },
     comingSoonCard: { padding: ZyncTheme.spacing.xl },
     comingSoon: { alignItems: 'center', gap: ZyncTheme.spacing.m },

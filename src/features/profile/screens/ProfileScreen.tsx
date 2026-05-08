@@ -25,8 +25,8 @@ export default function ProfileScreen() {
     useEffect(() => {
         getMyOrders()
             .then(orders => setOrderCount(orders.length))
-            .catch(() => {});
-        getUserStats().then(setUserStats).catch(() => {});
+            .catch(() => { });
+        getUserStats().then(setUserStats).catch(() => { });
     }, []);
 
     const handleLogout = async () => {

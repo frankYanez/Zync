@@ -449,5 +449,7 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginBottom: 10,
         color: '#fff',
+        paddingTop: 4,
+        includeFontPadding: false,
     },
 });

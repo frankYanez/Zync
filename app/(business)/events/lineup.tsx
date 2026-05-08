@@ -7,7 +7,7 @@ import { addDjToLineup, getDjs } from '@/features/dj/services/dj.service';
 import { ZyncTheme } from '@/shared/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
     ActivityIndicator,
@@ -36,27 +36,35 @@ export default function OrganizerLineupScreen() {
     const [lineupLoading, setLineupLoading] = useState(false);
     const [addingDjId, setAddingDjId] = useState<string | null>(null);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const [eventList, djList] = await Promise.all([getMyEvents(), getDjs()]);
-                const mapped: EventSummary[] = eventList.map((e: any) => ({
-                    id: e.id,
-                    name: e.name,
-                    date: e.startDate ?? e.startsAt ?? '',
-                }));
-                setEvents(mapped);
-                setDjs(djList);
-                if (mapped.length > 0) setSelectedEventId(mapped[0].id);
-            } catch (error) {
-                console.error('Error fetching data:', error);
-                Alert.alert('Error', 'No se pudieron cargar los datos.');
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        fetchData();
-    }, []);
+    useFocusEffect(
+        useCallback(() => {
+            const fetchData = async () => {
+                try {
+                    const [eventList, djList] = await Promise.all([getMyEvents(), getDjs()]);
+                    const mapped: EventSummary[] = eventList.map((e: any) => ({
+                        id: e.id,
+                        name: e.name,
+                        date: e.startDate ?? e.startsAt ?? '',
+                    }));
+                    setEvents(mapped);
+                    setDjs(djList);
+                    if (mapped.length > 0) setSelectedEventId(mapped[0].id);
+                } catch (error: any) {
+                    const status = error?.response?.status;
+                    if (status === 400 || status === 401 || status === 403) {
+                        setEvents([]);
+                        setDjs([]);
+                    } else {
+                        console.error('Error fetching data:', error);
+                        Alert.alert('Error', 'No se pudieron cargar los datos.');
+                    }
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+            fetchData();
+        }, [])
+    );
 
     const fetchLineup = useCallback(async (eventId: string) => {
         setLineupLoading(true);

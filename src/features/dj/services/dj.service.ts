@@ -91,9 +91,9 @@ export const deleteGig = async (djProfileId: string, gigId: string): Promise<voi
 };
 
 // POST /events/:eventId/broadcast
-// TODO: replace mock → connect when backend implements the endpoint
-export const sendBroadcast = async (_eventId: string, _message: string, _type: 'announcement' | 'song' = 'announcement'): Promise<void> => {
-    // mock: endpoint not yet available
+export const sendBroadcast = async (eventId: string, message: string, type: 'announcement' | 'song' = 'announcement'): Promise<void> => {
+    const config = await getAuthHeaders();
+    await axios.post(`${API_URL}/events/${eventId}/broadcast`, { message, type }, config);
 };
 
 // 3. POST /dj/:djProfileId/follow (auth)

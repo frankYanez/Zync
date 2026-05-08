@@ -68,22 +68,96 @@ export default function RegisterScreen() {
             return;
         }
 
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            Alert.alert('Error', 'Please enter a valid email address');
+            return;
+        }
+
+        // Validate password minimum length
+        if (password.length < 6) {
+            Alert.alert('Error', 'Password must be at least 6 characters');
+            return;
+        }
+
         setLoading(true);
         Keyboard.dismiss();
 
         try {
-            // Request verification code FIRST
-            await requestEmailVerification(email);
+            console.log('📧 Requesting verification for:', email);
+            
+            // Request verification code FIRST - with timeout
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Request timeout')), 15000)
+            );
+            
+            const requestPromise = requestEmailVerification(email);
+            
+            await Promise.race([requestPromise, timeoutPromise]);
+            
+            console.log('✅ Verification email sent');
 
             // Show Modal to enter code
             setIsModalVisible(true);
             setTimer(600);
         } catch (error: any) {
-            let message = error.response?.data?.message;
-            if (typeof message === 'object' && message?.message) {
-                message = message.message;
+            console.error('❌ Error requesting verification:', error);
+            console.error('Response status:', error.response?.status);
+            console.error('Response data:', error.response?.data);
+            
+            // Check if it was a timeout
+            if (error.message === 'Request timeout') {
+                Alert.alert(
+                    'Servidor no responde',
+                    'El servidor no está respondiendo. Por favor esperá unos minutos e intentá de nuevo.',
+                    [
+                        { text: 'OK' },
+                        { text: 'Ir al Login', onPress: () => router.replace('/(auth)') }
+                    ]
+                );
+                setLoading(false);
+                return;
             }
-            Alert.alert('Error', typeof message === 'string' ? message : 'Failed to send verification code.');
+            
+            // Mostrar mensaje más detallado
+            const status = error.response?.status;
+            const serverMessage = error.response?.data?.message;
+            const errorCode = error.response?.data?.errorCode;
+            
+            let displayMessage = 'Failed to send verification code.';
+            let showLoginOption = false;
+            
+            // 429 = Too Many Requests
+            if (status === 429) {
+                if (errorCode === 'COOLDOWN_ACTIVE') {
+                    displayMessage = 'Demasiadas solicitudes. Por favor esperá unos segundos e intentá de nuevo.';
+                } else if (errorCode === 'MAX_ATTEMPTS_REACHED') {
+                    displayMessage = 'Alcanzaste el máximo de intentos. Por favor esperá 1 hora e intentá de nuevo.';
+                    showLoginOption = true;
+                } else {
+                    displayMessage = 'Demasiadas solicitudes. Por favor intentá más tarde.';
+                }
+            } else if (status === 0 || error.code === 'ECONNREFUSED') {
+                displayMessage = 'No se puede conectar al servidor. Verificá tu conexión a internet.';
+            } else if (status === 404) {
+                displayMessage = 'Servicio de verificación no encontrado. Intentá más tarde.';
+            } else if (status === 500) {
+                displayMessage = 'Error del servidor. Intentá más tarde.';
+            } else if (status === 400 && serverMessage?.includes('already')) {
+                displayMessage = 'Este email ya está registrado. Intentá hacer login.';
+                showLoginOption = true;
+            } else if (serverMessage) {
+                displayMessage = serverMessage;
+            }
+            
+            Alert.alert(
+                'Error',
+                displayMessage,
+                showLoginOption 
+                    ? [{ text: 'OK' }, { text: 'Ir al Login', onPress: () => router.replace('/(auth)') }]
+                    : [{ text: 'OK' }]
+            );
         } finally {
             setLoading(false);
         }

@@ -11,11 +11,13 @@ export const getEvents = async (skip: number = 0, take: number = 10): Promise<Ev
 
 export const getMyEvents = async (): Promise<Event[]> => {
     const config = await getAuthHeaders();
-    const response = await axios.get(`${API_URL}/events/my-events`, {
-        ...config,
-        params: { skip: 0, take: 100 },
-    });
-    return response.data;
+    try {
+        const response = await axios.get(`${API_URL}/events/my-events`, config);
+        return response.data;
+    } catch (err: any) {
+        const response = await axios.get(`${API_URL}/events`, { ...config, params: { skip: 0, take: 50 } });
+        return response.data;
+    }
 };
 
 export const getEventById = async (eventId: string): Promise<Event> => {

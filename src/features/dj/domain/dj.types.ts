@@ -12,6 +12,7 @@ export interface DjProfile {
     logoUrl: string | null;
     bannerUrl: string | null;
     isFollowing?: boolean;
+    isLive?: boolean;
 }
 
 export type GigStatus = 'pending' | 'confirmed' | 'cancelled';
@@ -57,9 +58,8 @@ export interface DjStats {
     acceptedRequests: number;
     rejectedRequests: number;
     playedRequests: number;
-    // Not returned by the API yet — kept optional for screen compatibility
     totalEarnings?: number;
-    activeEvents?: { id: string; name: string }[];
+    activeEvents?: { id: string; name: string; startsAt?: string; revenue?: number }[];
 }
 
 export type PromoCodeType = 'DRINK' | 'ENTRY' | 'MERCH' | 'OTHER';

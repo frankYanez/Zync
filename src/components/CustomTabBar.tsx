@@ -7,8 +7,8 @@ import React from 'react';
 import { Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { ThemedText } from './themed-text';
 
-const DJ_ONLY_TABS = ['requests', 'dj/promo-codes'];
-const BUSINESS_ONLY_TABS = ['products/index', 'scanner', 'events/index', 'orders'];
+const DJ_TABS = ['index', 'requests', 'dj/promo-codes', 'profile'];
+const BUSINESS_TABS = ['index', 'products/index', 'scanner', 'events/index', 'profile'];
 const ALWAYS_HIDDEN_TABS = [
     'dj/gigs',
     'events/lineup',
@@ -18,10 +18,14 @@ const ALWAYS_HIDDEN_TABS = [
     'products/[id]',
     'products/create-venue',
     'config',
+    'orders',
 ];
 
 export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
     const { currentRole } = useRole();
+
+    // Determinar qué tabs mostrar según el rol
+    const allowedTabs = currentRole === 'dj' ? DJ_TABS : currentRole === 'business' ? BUSINESS_TABS : ['index', 'wallet', 'beats', 'profile'];
 
     return (
         <View style={styles.container}>
@@ -31,10 +35,9 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
 
                 // Hide auxiliary screens never meant for the tab bar
                 if (ALWAYS_HIDDEN_TABS.includes(route.name)) return null;
-                // Hide DJ-only tabs when role is not DJ
-                if (DJ_ONLY_TABS.includes(route.name) && currentRole !== 'dj') return null;
-                // Hide Business-only tabs when role is not business
-                if (BUSINESS_ONLY_TABS.includes(route.name) && currentRole !== 'business') return null;
+
+                // Hide tabs not allowed for current role
+                if (!allowedTabs.includes(route.name)) return null;
 
                 const onPress = () => {
                     const event = navigation.emit({
@@ -114,8 +117,7 @@ const styles = StyleSheet.create({
         borderTopWidth: 1,
         borderTopColor: ZyncTheme.colors.border,
         paddingBottom: Platform.OS === 'ios' ? 20 : 10,
-        paddingTop: 10,
-        height: Platform.OS === 'ios' ? 85 : 65,
+        height: Platform.OS === 'ios' ? 95 : 65,
     },
     tab: {
         flex: 1,

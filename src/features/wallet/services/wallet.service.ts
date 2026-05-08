@@ -9,10 +9,10 @@ export interface WalletBalance {
 }
 
 // POST /wallet/topup  { amount }
-// TODO: replace mock → await axios.post(`${API_URL}/wallet/topup`, { amount }, await getAuthHeaders())
 export const topUp = async (amount: number): Promise<WalletBalance> => {
-    // mock: simula respuesta del servidor
-    return { balance: amount, zyncPoints: Math.floor(amount / 100) };
+    const config = await getAuthHeaders();
+    const response = await axios.post(`${API_URL}/wallet/topup`, { amount }, config);
+    return response.data;
 };
 
 // GET /wallet/balance

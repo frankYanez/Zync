@@ -8,7 +8,7 @@ import { Venue, deleteVenue, getMyVenues } from '@/features/venues/services/venu
 import { ZyncTheme } from '@/shared/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
     ActivityIndicator,
@@ -38,15 +38,20 @@ export default function ProductsManagementScreen() {
             if (data.length > 0 && !selectedVenue) {
                 setSelectedVenue(data[0]);
             }
-        } catch (e) {
-            console.error('Failed to load venues', e);
+        } catch (e: any) {
+            const status = e?.response?.status;
+            if (status === 403 || status === 401) {
+                setVenues([]);
+            } else {
+                console.error('Failed to load venues', e);
+            }
         } finally {
             setLoadingVenues(false);
             setRefreshing(false);
         }
     }, [selectedVenue]);
 
-    useEffect(() => { loadVenues(); }, []);
+    useFocusEffect(useCallback(() => { loadVenues(); }, []));
 
     const onRefresh = () => {
         setRefreshing(true);

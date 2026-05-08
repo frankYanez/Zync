@@ -100,6 +100,14 @@ export default function BusinessHomeScreen() {
             ]);
             setStats(s);
             setOrders(o);
+        } catch (e: any) {
+            const status = e?.response?.status;
+            if (status === 403 || status === 401 || status === 400) {
+                setStats(null);
+                setOrders([]);
+            } else {
+                console.error('Failed to load business data', e);
+            }
         } finally {
             setIsLoading(false);
         }
@@ -129,7 +137,7 @@ export default function BusinessHomeScreen() {
                             {currentEstablishment?.name ?? 'Mi Local'}
                         </ThemedText>
                     </View>
-                    <TouchableOpacity style={styles.ordersBtn} onPress={() => router.push('/(business)/orders' as any)}>
+                    <TouchableOpacity style={styles.ordersBtn} onPress={() => router.push('/orders' as any)}>
                         <Ionicons name="receipt-outline" size={20} color={ZyncTheme.colors.primary} />
                         <ThemedText style={styles.ordersBtnText}>Pedidos</ThemedText>
                     </TouchableOpacity>

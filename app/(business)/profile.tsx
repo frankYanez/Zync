@@ -56,7 +56,14 @@ export default function BusinessProfileScreen() {
         if (currentRole !== 'business') return;
         getOrganizerProfile()
             .then(setOrganizerProfile)
-            .catch(() => {});
+            .catch((err) => {
+                const is404 = err?.response?.status === 404;
+                const is400 = err?.response?.status === 400;
+                if (!is404 && !is400) {
+                    console.warn('Error loading organizer profile:', err?.message);
+                }
+                setOrganizerProfile(null);
+            });
     }, [currentRole]);
 
     const renderStars = (score: number, size = 14) =>
@@ -346,13 +353,39 @@ export default function BusinessProfileScreen() {
 
                     <TouchableOpacity
                         style={styles.menuItem}
-                        onPress={() => router.push('/(business)/dj/promo-codes' as any)}
+                        onPress={() => router.push('/(business)/dj/promo-codes')}
                     >
                         <View style={styles.menuItemLeft}>
                             <View style={[styles.menuIcon, { backgroundColor: 'rgba(16,185,129,0.15)' }]}>
                                 <Ionicons name="pricetag-outline" size={18} color="#10B981" />
                             </View>
                             <ThemedText style={styles.menuLabel}>Códigos de descuento</ThemedText>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color={ZyncTheme.colors.textSecondary} />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.menuItem}
+                        onPress={() => router.push('/(business)/dj/stats' as any)}
+                    >
+                        <View style={styles.menuItemLeft}>
+                            <View style={[styles.menuIcon, { backgroundColor: 'rgba(168,85,247,0.15)' }]}>
+                                <Ionicons name="bar-chart-outline" size={18} color="#A855F7" />
+                            </View>
+                            <ThemedText style={styles.menuLabel}>Estadísticas</ThemedText>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color={ZyncTheme.colors.textSecondary} />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.menuItem}
+                        onPress={() => router.push('/(business)/dj/live' as any)}
+                    >
+                        <View style={styles.menuItemLeft}>
+                            <View style={[styles.menuIcon, { backgroundColor: 'rgba(34,197,94,0.15)' }]}>
+                                <Ionicons name="wifi" size={18} color="#22C55E" />
+                            </View>
+                            <ThemedText style={styles.menuLabel}>Modo En Vivo</ThemedText>
                         </View>
                         <Ionicons name="chevron-forward" size={18} color={ZyncTheme.colors.textSecondary} />
                     </TouchableOpacity>
@@ -466,7 +499,10 @@ export default function BusinessProfileScreen() {
                         <Ionicons name="chevron-forward" size={18} color={ZyncTheme.colors.textSecondary} />
                     </TouchableOpacity>
 
-                    <View style={styles.menuItem}>
+                    <TouchableOpacity
+                        style={styles.menuItem}
+                        onPress={() => router.push('/(business)/staff' as any)}
+                    >
                         <View style={styles.menuItemLeft}>
                             <View style={[styles.menuIcon, { backgroundColor: 'rgba(16,185,129,0.15)' }]}>
                                 <Ionicons name="people-outline" size={18} color="#10B981" />
@@ -474,7 +510,7 @@ export default function BusinessProfileScreen() {
                             <ThemedText style={styles.menuLabel}>Gestión de staff</ThemedText>
                         </View>
                         <Ionicons name="chevron-forward" size={18} color={ZyncTheme.colors.textSecondary} />
-                    </View>
+                    </TouchableOpacity>
                 </View>
 
                 <View style={styles.roleSelectorContainer}>

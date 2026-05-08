@@ -21,7 +21,7 @@ export const useRole = () => {
 };
 
 function isRoleAllowed(role: UserRole, backendRoles: string[]): boolean {
-    if (role === 'business') return backendRoles.includes('ORGANIZER');
+    if (role === 'business') return backendRoles.includes('ORGANIZER') || backendRoles.includes('BUSINESS');
     if (role === 'dj') return backendRoles.includes('DJ');
     return true; // 'user' is always allowed
 }

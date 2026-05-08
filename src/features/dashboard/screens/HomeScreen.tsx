@@ -6,14 +6,16 @@ import { VideoBackground } from '@/components/VideoBackground';
 import { ThemedText } from '@/components/themed-text';
 import { useZync } from '@/context/ZyncContext';
 import { useCart } from '@/features/wallet/context/CartContext';
+import { getEventById, getEventLineup, LineupEntry } from '@/features/dashboard/services/event.service';
 import { ZyncTheme } from '@/shared/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { MotiView } from 'moti';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import LiveOrderBanner from '../components/LiveOrderBanner';
 import OrderStatusModal from '../components/OrderStatusModal';
+import { EventsCarousel } from '../components/EventsCarousel';
 import { PromotionsCarousel } from '../components/PromotionsCarousel';
 import { QuickAccessCarousel } from '../components/QuickAccessCarousel';
 
@@ -23,9 +25,28 @@ export default function HomeScreen() {
   const { activeOrders } = useCart();
   const [modalVisible, setModalVisible] = useState(false);
   const [orderModalVisible, setOrderModalVisible] = useState(false);
+  const [eventDj, setEventDj] = useState<LineupEntry | null>(null);
 
   const hasLiveDj = currentEstablishment?.currentDj?.isLive;
   const currentEventId = currentEstablishment?.eventId ?? null;
+
+  useEffect(() => {
+    const fetchEventDj = async () => {
+      if (!currentEventId) {
+        setEventDj(null);
+        return;
+      }
+      try {
+        const lineup = await getEventLineup(currentEventId);
+        if (lineup.length > 0) {
+          setEventDj(lineup[0]);
+        }
+      } catch (e) {
+        console.error('Failed to fetch event lineup', e);
+      }
+    };
+    fetchEventDj();
+  }, [currentEventId]);
 
 
   return (
@@ -73,16 +94,21 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          {/* LIVE DJ SECTION */}
-          {hasLiveDj && (
+          {/* LIVE DJ SECTION - show event DJ if available, otherwise establishment DJ */}
+          {(hasLiveDj || eventDj) && (
             <View style={styles.djContainer}>
               <View style={styles.liveBadge}>
                 <View style={styles.liveDot} />
                 <ThemedText style={styles.liveText}>LIVE DJ SET</ThemedText>
               </View>
-              <ThemedText style={styles.djName}>{currentEstablishment?.currentDj?.name}</ThemedText>
+              <ThemedText style={styles.djName}>
+                {eventDj?.djName ?? currentEstablishment?.currentDj?.name ?? 'DJ'}
+              </ThemedText>
             </View>
           )}
+
+          {/* EVENTS / VENUES CAROUSEL */}
+          <EventsCarousel />
 
           {/* PROMOTIONS CAROUSEL */}
           <View style={styles.promoSection}>
@@ -112,8 +138,8 @@ export default function HomeScreen() {
             <ThemedText style={styles.scanLabel}>ESCANEAR PARA PAGAR</ThemedText>
           </View>
 
-          {/* QUICK ACCESS CAROUSEL */}
-          <QuickAccessCarousel />
+          {/* QUICK ACCESS CAROUSEL — only when venue is selected */}
+          {currentEstablishment && <QuickAccessCarousel />}
 
         </ScrollView>
       </VideoBackground>

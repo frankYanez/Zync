@@ -12,7 +12,8 @@ export interface UserStats {
 }
 
 // GET /users/me/stats
-// TODO: replace mock → await axios.get(`${API_URL}/users/me/stats`, await getAuthHeaders())
 export const getUserStats = async (): Promise<UserStats> => {
-    return { totalOrders: 0, totalSpent: 0, tier: 'bronze' };
+    const config = await getAuthHeaders();
+    const response = await axios.get(`${API_URL}/users/me/stats`, config);
+    return response.data;
 };

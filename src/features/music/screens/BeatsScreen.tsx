@@ -98,6 +98,18 @@ function BeatsTab() {
         }
     };
 
+    if (!currentEstablishment) {
+        return (
+            <View style={styles.centered}>
+                <Ionicons name="musical-notes-outline" size={52} color={ZyncTheme.colors.textSecondary} style={{ opacity: 0.4 }} />
+                <ThemedText style={styles.emptyText}>Sin establecimiento</ThemedText>
+                <ThemedText style={[styles.emptyText, { fontSize: 13, textAlign: 'center', paddingHorizontal: 32 }]}>
+                    Seleccioná un lugar en Inicio para buscar canciones
+                </ThemedText>
+            </View>
+        );
+    }
+
     return (
         <View style={{ flex: 1 }}>
             {/* No DJ banner */}

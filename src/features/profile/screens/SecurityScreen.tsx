@@ -2,15 +2,17 @@ import { CyberCard } from '@/components/CyberCard';
 import { ScreenLayout } from '@/components/ScreenLayout';
 import { ThemedText } from '@/components/themed-text';
 import { useAuth } from '@/features/auth/context/AuthContext';
+import { deleteMyAccount } from '@/features/profile/services/profile.service';
 import { ZyncTheme } from '@/shared/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React from 'react';
-import { Alert, StyleSheet, TouchableOpacity, View } from 'react-native';
+import React, { useState } from 'react';
+import { ActivityIndicator, Alert, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 export default function SecurityScreen() {
     const router = useRouter();
     const { logout } = useAuth();
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const handleDeleteAccount = () => {
         Alert.alert(
@@ -22,7 +24,7 @@ export default function SecurityScreen() {
                     text: 'Eliminar mi cuenta',
                     style: 'destructive',
                     onPress: () => {
-                        Alert.alert(
+                        Alert.prompt(
                             '¿Estás completamente seguro?',
                             'Escribí "ELIMINAR" para confirmar.',
                             [
@@ -30,12 +32,27 @@ export default function SecurityScreen() {
                                 {
                                     text: 'Confirmar',
                                     style: 'destructive',
-                                    onPress: async () => {
-                                        await logout();
-                                        router.replace('/(auth)');
+                                    onPress: async (input?: string) => {
+                                        if (input !== 'ELIMINAR') {
+                                            Alert.alert('Error', 'Debés escribir "ELIMINAR" para confirmar.');
+                                            return;
+                                        }
+                                        setIsDeleting(true);
+                                        try {
+                                            await deleteMyAccount();
+                                            await logout();
+                                            router.replace('/(auth)');
+                                        } catch (e: any) {
+                                            setIsDeleting(false);
+                                            const msg = e?.response?.data?.message;
+                                            Alert.alert('Error', Array.isArray(msg) ? msg.join('\n') : msg || 'No se pudo eliminar la cuenta.');
+                                        }
                                     },
                                 },
                             ],
+                            'plain-text',
+                            '',
+                            'default'
                         );
                     },
                 },
